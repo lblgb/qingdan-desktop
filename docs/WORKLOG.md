@@ -571,3 +571,48 @@
 
 - 网络允许时重新执行 `tauri build`，优先完成 MSI 打包验证。
 - 如果你想先处理视觉交付，再做正式品牌图标替换。
+
+## 2026-04-09 第 17 轮
+
+### 讨论主题
+
+- 优先把 Windows 可安装产物打出来，而不是继续停留在 release 可执行文件阶段。
+
+### 当前结论
+
+- Windows 安装包链路已经打通。
+- 当前成功生成了两个可分发产物：
+  - `MSI`：`src-tauri/target/release/bundle/msi/轻单_0.1.0_x64_zh-CN.msi`
+  - `NSIS EXE`：`src-tauri/target/release/bundle/nsis/轻单_0.1.0_x64-setup.exe`
+- 之前阻塞 `MSI` 的根因不是 WiX 缺失，而是默认 `1252` 代码页无法承载中文产品名与安装项文本。
+- 通过为 WiX 增加中文本地化配置后，`light.exe` 和后续 `makensis` 均已成功执行。
+
+### 决策原因
+
+- 既然第一版功能与手工验收已经基本收口，当前最优先的就是把“可交付安装包”真正做出来。
+- Windows 安装器对中文字符串的代码页要求比较明确，不显式配置本地化时，中文产品名会在 WiX 链接阶段失败。
+
+### 文档更新
+
+- 更新了 [docs/V1_ACCEPTANCE.md](E:/CodeBase/docs/V1_ACCEPTANCE.md)，将 `MSI` 打包项标记为通过。
+- 更新了 [docs/PROJECT_CONSTRAINTS.md](E:/CodeBase/docs/PROJECT_CONSTRAINTS.md)，补充“中文产品名需显式提供 WiX 中文本地化配置”的约束，并将发布状态更新为“已可生成 MSI 与 NSIS 安装包”。
+
+### 实现记录
+
+- 新增了 [src-tauri/wix/zh-CN.wxl](E:/CodeBase/src-tauri/wix/zh-CN.wxl)，为 WiX 提供中文语言与代码页配置。
+- 更新了 [src-tauri/tauri.conf.json](E:/CodeBase/src-tauri/tauri.conf.json)，将 Windows WiX 语言配置切到 `zh-CN` 并引用自定义 `localePath`。
+
+### 验证记录
+
+- 使用 `cmd /c npm.cmd run tauri:build` 完成正式打包验证。
+- 构建结果显示 `MSI` 与 `NSIS` 两种 Windows 安装产物都已成功生成。
+
+### 当前风险
+
+- 当前图标资源虽然已参与打包，但仍然是占位图标，不代表最终品牌交付质量。
+- 当前安装包命名和版本信息可用，但还没有做发布说明与版本发布流程整理。
+
+### 下一步建议
+
+- 如果继续收口第一版，下一步优先替换正式品牌图标。
+- 如需开始实际分发，再补一份简短发布说明，明确推荐用户使用 `MSI` 还是 `NSIS EXE`。

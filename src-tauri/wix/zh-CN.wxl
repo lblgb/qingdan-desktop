@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WixLocalization
+  xmlns="http://schemas.microsoft.com/wix/2006/localization"
+  Culture="zh-cn"
+  Codepage="936"
+>
+  <String Id="TauriLanguage">2052</String>
+  <String Id="TauriCodepage">936</String>
+  <String Id="LaunchApp">启动轻单</String>
+  <String Id="DowngradeErrorMessage">系统中已安装更新版本的轻单。</String>
+  <String Id="PathEnvVarFeature">将轻单的安装目录加入系统 PATH 环境变量，以便在任意位置调用程序。</String>
+  <String Id="InstallAppFeature">安装轻单。</String>
+</WixLocalization>
