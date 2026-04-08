@@ -20,8 +20,12 @@ export function AppShell() {
   const tasks = useTaskStore((state) => state.tasks)
   const activeFilter = useTaskStore((state) => state.activeFilter)
   const isHydrated = useTaskStore((state) => state.isHydrated)
+  const isLoading = useTaskStore((state) => state.isLoading)
+  const activeAction = useTaskStore((state) => state.activeAction)
+  const feedback = useTaskStore((state) => state.feedback)
   const hydrateTasks = useTaskStore((state) => state.hydrateTasks)
   const setFilter = useTaskStore((state) => state.setFilter)
+  const dismissFeedback = useTaskStore((state) => state.dismissFeedback)
 
   useEffect(() => {
     void hydrateTasks()
@@ -46,6 +50,10 @@ export function AppShell() {
     active: activeCount,
     completed: completedCount,
   }
+  const statusNotice =
+    activeAction === 'hydrate'
+      ? { tone: 'info' as const, message: '正在读取本地任务数据...' }
+      : feedback
 
   return (
     <main className="app-shell">
@@ -156,17 +164,34 @@ export function AppShell() {
 
         <section className="content-column">
           <div className="content-card panel-surface">
-            <div className="content-overview">
-              <div>
-                <p className="section-tag">任务概览</p>
-                <h2>把今天要处理的事放在一个稳定的工作台里</h2>
-              </div>
-              <p className="section-note">
-                {isHydrated
-                  ? '当前已经完成 Tauri 环境修复，真实数据层接入正在按阶段推进。'
-                  : '正在加载本地任务数据...'}
-              </p>
+          <div className="content-overview">
+            <div>
+              <p className="section-tag">任务概览</p>
+              <h2>把今天要处理的事放在一个稳定的工作台里</h2>
             </div>
+            <p className="section-note">
+              {isHydrated
+                ? '当前已经完成 Tauri 环境修复，真实数据层接入正在按阶段推进。'
+                : isLoading
+                  ? '正在加载本地任务数据...'
+                  : '任务数据尚未完成初始化，可重试读取本地数据。'}
+            </p>
+          </div>
+
+          {statusNotice ? (
+            <div className={`status-banner ${statusNotice.tone}`}>
+              <p>{statusNotice.message}</p>
+              {statusNotice.tone === 'error' && !isHydrated ? (
+                <button className="secondary-button" onClick={() => void hydrateTasks()} type="button">
+                  重试读取
+                </button>
+              ) : feedback ? (
+                <button className="secondary-button" onClick={dismissFeedback} type="button">
+                  知道了
+                </button>
+              ) : null}
+            </div>
+          ) : null}
 
             <TaskComposer />
             <TaskList />

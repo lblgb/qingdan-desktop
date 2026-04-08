@@ -370,3 +370,57 @@
 
 - 重启桌面应用并验证编辑后的任务在应用重启后仍能保留。
 - 如果编辑体验基本稳定，可继续补充更细的加载/错误反馈，而不是马上扩展更多任务字段。
+
+## 2026-04-09 第 12 轮
+
+### 讨论主题
+
+- 进入第一版收口阶段，先补齐用户可见反馈，再做正式构建验证与发布前风险记录。
+
+### 当前结论
+
+- 当前界面已补齐最小可用的加载中、保存中、成功和失败反馈。
+- 首页在任务读取阶段会显示加载提示；若初始化失败，会给出显式错误信息和重试入口。
+- 新建任务时录入区会显示“保存中”状态并禁用表单，避免重复提交。
+- 编辑、完成、删除任务时，列表区会显示对应的进行中提示，操作结束后会给出成功或失败反馈。
+- `tsc -b` 已通过，`cargo check` 已通过。
+- `tauri build` 已完成前端生产构建和宿主层 release 编译，并生成 `src-tauri/target/release/qingdan-desktop.exe`。
+- Windows MSI 打包阶段当前阻塞在 WiX 工具链下载，不是项目代码编译错误。
+
+### 决策原因
+
+- 第一版当前缺的不是新字段，而是异步链路缺少用户可见反馈，会直接影响日常使用体验。
+- 先把反馈补齐，再做正式构建验证，可以更准确地区分“交互可用性问题”和“发布链路问题”。
+- 把 WiX 下载阻塞单独记录出来，能避免后续把外部依赖问题误判成 Tauri 或业务代码问题。
+
+### 文档更新
+
+- 更新了 [docs/ARCHITECTURE.md](E:/CodeBase/docs/ARCHITECTURE.md)，新增“第一版收口范围”，明确本轮目标、包含项、非范围项与验收基线。
+- 重写并更新了 [docs/PROJECT_CONSTRAINTS.md](E:/CodeBase/docs/PROJECT_CONSTRAINTS.md)，补充第一版收口阶段约束，以及 Windows MSI 首次打包依赖 WiX 下载的说明。
+
+### 实现记录
+
+- 更新了 [src/stores/taskStore.ts](E:/CodeBase/src/stores/taskStore.ts)，补充异步动作态、加载态与统一反馈信息。
+- 更新了 [src/app/AppShell.tsx](E:/CodeBase/src/app/AppShell.tsx)，接入首页状态提示条和初始化失败后的重试入口。
+- 更新了 [src/components/TaskComposer.tsx](E:/CodeBase/src/components/TaskComposer.tsx)，补充新建任务的提交中反馈和禁用态。
+- 更新了 [src/components/TaskList.tsx](E:/CodeBase/src/components/TaskList.tsx)，补充编辑、完成、删除动作的过程提示。
+- 更新了 [src/index.css](E:/CodeBase/src/index.css)，补充状态提示条、内联反馈和禁用态样式。
+
+### 验证记录
+
+- 使用 `cmd /c node_modules\\.bin\\tsc.cmd -b` 验证前端 TypeScript 构建，通过。
+- 使用 `cargo check` 验证宿主层编译，通过。
+- 使用 `cmd /c npm.cmd run tauri:build` 进行正式构建验证，前端生产构建与 Rust release 编译通过。
+- `tauri build` 日志显示当前阻塞点为 `Downloading https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip`。
+
+### 当前风险
+
+- 第一版虽然已补齐最小可用反馈，但还没有做完整的手工验收清单。
+- Windows 安装包产物仍未最终生成，当前只能确认 release 可执行文件已生成，不能确认 MSI 完整打包链路。
+- 正式品牌图标仍未替换，当前图标资源仍属于占位方案。
+
+### 下一步建议
+
+- 继续做一轮手工验收，重点验证新增、编辑、完成、删除在重启后的保留情况，以及失败反馈是否符合预期。
+- 网络链路稳定后重新执行 `tauri build`，完成 WiX 下载和 MSI 安装包验证。
+- 第一版收口完成后，再决定是否进入图标替换和发布整理。

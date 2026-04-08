@@ -32,6 +32,7 @@ export function TaskList() {
   const toggleTask = useTaskStore((state) => state.toggleTask)
   const removeTask = useTaskStore((state) => state.removeTask)
   const isMutating = useTaskStore((state) => state.isMutating)
+  const activeAction = useTaskStore((state) => state.activeAction)
   const emptyState = EMPTY_STATE_COPY[activeFilter]
   const taskGroups = buildTaskGroups(filteredTasks, activeFilter)
 
@@ -89,6 +90,14 @@ export function TaskList() {
         </div>
         <p className="section-note">共 {filteredTasks.length} 项，当前按时间语义分组展示。</p>
       </div>
+
+      {isMutating && activeAction !== 'create' ? (
+        <p className="list-feedback">
+          {activeAction === 'update' && '正在保存任务修改...'}
+          {activeAction === 'toggle' && '正在更新任务状态...'}
+          {activeAction === 'remove' && '正在删除任务...'}
+        </p>
+      ) : null}
 
       <div className="task-group-list">
         {taskGroups.map((group) => (
