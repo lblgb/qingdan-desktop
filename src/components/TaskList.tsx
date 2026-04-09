@@ -28,24 +28,29 @@ const EMPTY_STATE_COPY = {
 export function TaskList() {
   const filteredTasks = useTaskStore((state) => state.filteredTasks)
   const activeFilter = useTaskStore((state) => state.activeFilter)
+  const activeGroupFilter = useTaskStore((state) => state.activeGroupFilter)
+  const availableTaskGroups = useTaskStore((state) => state.taskGroups)
   const updateTask = useTaskStore((state) => state.updateTask)
   const toggleTask = useTaskStore((state) => state.toggleTask)
   const removeTask = useTaskStore((state) => state.removeTask)
   const isMutating = useTaskStore((state) => state.isMutating)
   const activeAction = useTaskStore((state) => state.activeAction)
+  const isGrouping = useTaskStore((state) => state.activeAction === 'group')
   const emptyState = EMPTY_STATE_COPY[activeFilter]
-  const taskGroups = buildTaskGroups(filteredTasks, activeFilter)
+  const taskSections = buildTaskGroups(filteredTasks, activeFilter)
 
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
   const [editingDescription, setEditingDescription] = useState('')
   const [editingDueAt, setEditingDueAt] = useState('')
+  const [editingGroupId, setEditingGroupId] = useState('')
 
   function handleStartEdit(task: TaskItem) {
     setEditingTaskId(task.id)
     setEditingTitle(task.title)
     setEditingDescription(task.description)
     setEditingDueAt(task.dueAt ?? '')
+    setEditingGroupId(task.groupId ?? '')
   }
 
   function handleCancelEdit() {
@@ -53,6 +58,7 @@ export function TaskList() {
     setEditingTitle('')
     setEditingDescription('')
     setEditingDueAt('')
+    setEditingGroupId('')
   }
 
   async function handleSubmitEdit(taskId: string) {
@@ -65,7 +71,7 @@ export function TaskList() {
       id: taskId,
       title: nextTitle,
       description: editingDescription.trim(),
-      groupId: filteredTasks.find((task) => task.id === taskId)?.groupId ?? null,
+      groupId: editingGroupId || null,
       dueAt: editingDueAt || null,
     })
 
@@ -89,7 +95,10 @@ export function TaskList() {
           <p className="section-tag">当前列表</p>
           <h2>任务清单</h2>
         </div>
-        <p className="section-note">共 {filteredTasks.length} 项，当前按时间语义分组展示。</p>
+        <p className="section-note">
+          共 {filteredTasks.length} 项，当前按时间语义分组展示
+          {activeGroupFilter !== 'all-groups' ? '，并叠加了任务组筛选。' : '。'}
+        </p>
       </div>
 
       {isMutating && activeAction !== 'create' ? (
@@ -97,11 +106,12 @@ export function TaskList() {
           {activeAction === 'update' && '正在保存任务修改...'}
           {activeAction === 'toggle' && '正在更新任务状态...'}
           {activeAction === 'remove' && '正在删除任务...'}
+          {activeAction === 'group' && '正在调整任务组归属...'}
         </p>
       ) : null}
 
       <div className="task-group-list">
-        {taskGroups.map((group) => (
+        {taskSections.map((group) => (
           <section key={group.key} className="task-group">
             <header className="task-group-header">
               <div>
@@ -161,6 +171,23 @@ export function TaskList() {
                             />
                           </label>
 
+                          <label className="task-edit-field" htmlFor={`edit-group-${task.id}`}>
+                            <span>所属任务组</span>
+                            <select
+                              id={`edit-group-${task.id}`}
+                              value={editingGroupId}
+                              onChange={(event) => setEditingGroupId(event.target.value)}
+                              disabled={isMutating}
+                            >
+                              <option value="">未分组</option>
+                              {availableTaskGroups.map((group) => (
+                                <option key={group.id} value={group.id}>
+                                  {group.name}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+
                           <div className="task-meta">
                             <span>{formatTaskDate(task.createdAt, '创建于 YYYY-MM-DD')}</span>
                             <span>{formatTaskDate(task.updatedAt, '最近更新于 YYYY-MM-DD')}</span>
@@ -210,6 +237,11 @@ export function TaskList() {
                           </div>
 
                           <div className="task-meta">
+                            <span>
+                              {task.groupId
+                                ? `任务组：${availableTaskGroups.find((group) => group.id === task.groupId)?.name ?? '未知分组'}`
+                                : '未分组'}
+                            </span>
                             <span>{formatTaskDate(task.dueAt)}</span>
                             <span>{formatTaskDate(task.createdAt, '创建于 YYYY-MM-DD')}</span>
                           </div>
@@ -220,7 +252,7 @@ export function TaskList() {
                             className="secondary-button"
                             onClick={() => handleStartEdit(task)}
                             type="button"
-                            disabled={isMutating}
+                            disabled={isMutating || isGrouping}
                           >
                             编辑
                           </button>
