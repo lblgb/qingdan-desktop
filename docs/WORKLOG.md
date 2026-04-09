@@ -987,3 +987,41 @@
 
 - 直接按 [docs/V015_ACCEPTANCE.md](E:/CodeBase/docs/V015_ACCEPTANCE.md) 跑一轮第二版手工验收。
 - 验收结束后，再决定是继续补少量体验项，还是正式将第二版收口。
+
+## 2026-04-10 第 27 轮
+
+### 讨论主题
+
+- 修复旧 SQLite 数据库在接入 `group_id` 后，应用启动阶段因索引创建时机错误导致的崩溃问题。
+
+### 当前结论
+
+- 根因已确认：旧库中的 `tasks` 表还没有 `group_id` 字段时，初始化逻辑先执行了 `idx_tasks_group_id` 索引创建，导致 setup 阶段直接失败。
+- 当前已调整数据库初始化顺序：
+  - 先执行基础表初始化
+  - 再补 `tasks.group_id` 字段兼容
+  - 最后再单独创建 `group_id` 索引
+- 这样旧库和新库都能走同一条初始化链路，不会再因为补列前建索引而崩溃。
+
+### 决策原因
+
+- 这是标准的数据库演进兼容问题，关键不是“有没有补列逻辑”，而是“补列逻辑是否发生在依赖该字段的索引和查询之前”。
+- 当前项目已经有真实用户数据，不能依赖“删库重建”规避这类兼容错误，必须在启动初始化中处理顺序。
+
+### 文档更新
+
+- 更新了 [docs/WORKLOG.md](E:/CodeBase/docs/WORKLOG.md)，记录本次旧库兼容启动问题的根因与修复方式。
+
+### 实现记录
+
+- 更新了 [src-tauri/src/db/mod.rs](E:/CodeBase/src-tauri/src/db/mod.rs)，将 `tasks.group_id` 索引创建从批量初始化 SQL 中拆出，改为在补列完成后单独执行。
+
+### 验证记录
+
+- 使用 `cmd /c node_modules\\.bin\\tsc.cmd -b` 验证前端 TypeScript 构建，通过。
+- 使用 `cargo check` 验证宿主层 Rust 编译，通过。
+
+### 下一步建议
+
+- 重新执行 `npm run tauri:dev`，确认旧库环境下应用可以正常拉起。
+- 拉起后继续按 [docs/V015_ACCEPTANCE.md](E:/CodeBase/docs/V015_ACCEPTANCE.md) 进行第二版验收。

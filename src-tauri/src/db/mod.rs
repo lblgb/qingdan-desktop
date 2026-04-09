@@ -46,7 +46,6 @@ pub fn init_database(db_path: &PathBuf) -> Result<(), String> {
 
             CREATE INDEX IF NOT EXISTS idx_task_groups_updated_at ON task_groups(updated_at DESC);
             CREATE INDEX IF NOT EXISTS idx_tasks_completed ON tasks(completed);
-            CREATE INDEX IF NOT EXISTS idx_tasks_group_id ON tasks(group_id);
             CREATE INDEX IF NOT EXISTS idx_tasks_due_at ON tasks(due_at);
             CREATE INDEX IF NOT EXISTS idx_tasks_updated_at ON tasks(updated_at DESC);
             ",
@@ -54,6 +53,7 @@ pub fn init_database(db_path: &PathBuf) -> Result<(), String> {
         .map_err(|error| format!("初始化任务表失败：{error}"))?;
 
     ensure_tasks_group_column(&connection)?;
+    ensure_tasks_group_index(&connection)?;
 
     Ok(())
 }
@@ -83,6 +83,17 @@ fn ensure_tasks_group_column(connection: &Connection) -> Result<(), String> {
             .execute("ALTER TABLE tasks ADD COLUMN group_id TEXT NULL", [])
             .map_err(|error| format!("为 tasks 表补充 group_id 字段失败：{error}"))?;
     }
+
+    Ok(())
+}
+
+fn ensure_tasks_group_index(connection: &Connection) -> Result<(), String> {
+    connection
+        .execute(
+            "CREATE INDEX IF NOT EXISTS idx_tasks_group_id ON tasks(group_id)",
+            [],
+        )
+        .map_err(|error| format!("为 tasks.group_id 创建索引失败：{error}"))?;
 
     Ok(())
 }
