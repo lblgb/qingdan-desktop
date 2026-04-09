@@ -3,6 +3,7 @@
  */
 import { useEffect } from 'react'
 import { TaskComposer } from '../components/TaskComposer'
+import { TaskGroupManager } from '../components/TaskGroupManager'
 import { TaskList } from '../components/TaskList'
 import { formatTaskDate } from '../lib/date'
 import { useTaskStore } from '../stores/taskStore'
@@ -268,6 +269,7 @@ export function AppShell() {
           ) : null}
 
             <TaskComposer />
+            <TaskGroupManager />
             <TaskList />
           </div>
         </section>

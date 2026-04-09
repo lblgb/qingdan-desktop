@@ -456,6 +456,7 @@ textarea {
 }
 
 .composer-card,
+.task-group-manager-card,
 .task-list-card {
   padding: 0;
   background: transparent;
@@ -589,6 +590,86 @@ textarea {
 .group-creator-form {
   display: grid;
   gap: 14px;
+}
+
+.task-group-manager-card {
+  display: grid;
+  gap: 16px;
+}
+
+.group-manager-list {
+  display: grid;
+  gap: 14px;
+}
+
+.group-manager-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  padding: 20px;
+  border-radius: 22px;
+  background: rgba(248, 252, 251, 0.9);
+  border: 1px solid rgba(18, 52, 47, 0.08);
+}
+
+.group-manager-item.active {
+  background: linear-gradient(180deg, rgba(232, 249, 246, 0.95), rgba(245, 252, 250, 0.92));
+  border-color: rgba(13, 148, 136, 0.18);
+}
+
+.group-manager-body,
+.group-manager-heading {
+  display: grid;
+  gap: 10px;
+}
+
+.group-manager-heading {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.group-manager-heading h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.02rem;
+}
+
+.group-manager-heading p,
+.group-manager-empty p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.group-manager-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+}
+
+.group-manager-meta span {
+  border-radius: 999px;
+  padding: 0.4rem 0.78rem;
+  background: rgba(18, 52, 47, 0.05);
+}
+
+.group-manager-empty {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(13, 148, 136, 0.06);
+  color: var(--text-secondary);
+}
+
+.group-manager-empty strong {
+  color: var(--text-primary);
+}
+
+.active-chip-button {
+  background: rgba(13, 148, 136, 0.12);
+  color: var(--accent-strong);
 }
 
 .primary-button,
