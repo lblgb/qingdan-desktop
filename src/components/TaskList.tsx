@@ -65,6 +65,7 @@ export function TaskList() {
       id: taskId,
       title: nextTitle,
       description: editingDescription.trim(),
+      groupId: filteredTasks.find((task) => task.id === taskId)?.groupId ?? null,
       dueAt: editingDueAt || null,
     })
 

@@ -27,6 +27,7 @@ export function TaskComposer() {
     void addTask({
       title: nextTitle,
       description: description.trim(),
+      groupId: null,
       dueAt: dueAt || null,
     }).then(() => {
       setTitle('')

@@ -7,7 +7,10 @@ use uuid::Uuid;
 
 use crate::{
     db::{open_connection, DatabaseState},
-    models::{CreateTaskInput, TaskItem, UpdateTaskInput},
+    models::{
+        CreateTaskGroupInput, CreateTaskInput, TaskGroup, TaskItem, UpdateTaskGroupInput,
+        UpdateTaskInput,
+    },
 };
 
 fn list_tasks_inner(state: &DatabaseState) -> Result<Vec<TaskItem>, String> {
@@ -15,7 +18,7 @@ fn list_tasks_inner(state: &DatabaseState) -> Result<Vec<TaskItem>, String> {
     let mut statement = connection
         .prepare(
             "
-            SELECT id, title, description, completed, due_at, created_at, updated_at
+            SELECT id, title, description, completed, group_id, due_at, created_at, updated_at
             FROM tasks
             ORDER BY
                 completed ASC,
@@ -33,9 +36,10 @@ fn list_tasks_inner(state: &DatabaseState) -> Result<Vec<TaskItem>, String> {
                 title: row.get(1)?,
                 description: row.get(2)?,
                 completed: row.get::<_, i64>(3)? != 0,
-                due_at: row.get(4)?,
-                created_at: row.get(5)?,
-                updated_at: row.get(6)?,
+                group_id: row.get(4)?,
+                due_at: row.get(5)?,
+                created_at: row.get(6)?,
+                updated_at: row.get(7)?,
             })
         })
         .map_err(|error| format!("映射任务列表失败：{error}"))?;
@@ -50,10 +54,44 @@ fn now_iso_string() -> Result<String, String> {
         .map_err(|error| format!("生成时间戳失败：{error}"))
 }
 
+fn list_task_groups_inner(state: &DatabaseState) -> Result<Vec<TaskGroup>, String> {
+    let connection = open_connection(&state.db_path)?;
+    let mut statement = connection
+        .prepare(
+            "
+            SELECT id, name, description, created_at, updated_at
+            FROM task_groups
+            ORDER BY updated_at DESC, created_at DESC
+            ",
+        )
+        .map_err(|error| format!("查询任务组列表失败：{error}"))?;
+
+    let rows = statement
+        .query_map([], |row| {
+            Ok(TaskGroup {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                description: row.get(2)?,
+                created_at: row.get(3)?,
+                updated_at: row.get(4)?,
+            })
+        })
+        .map_err(|error| format!("映射任务组列表失败：{error}"))?;
+
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|error| format!("读取任务组列表失败：{error}"))
+}
+
 /// 查询任务列表。
 #[tauri::command]
 pub fn list_tasks(state: State<'_, DatabaseState>) -> Result<Vec<TaskItem>, String> {
     list_tasks_inner(&state)
+}
+
+/// 查询任务组列表。
+#[tauri::command]
+pub fn list_task_groups(state: State<'_, DatabaseState>) -> Result<Vec<TaskGroup>, String> {
+    list_task_groups_inner(&state)
 }
 
 /// 创建任务。
@@ -73,13 +111,14 @@ pub fn create_task(
     connection
         .execute(
             "
-            INSERT INTO tasks (id, title, description, completed, due_at, created_at, updated_at)
-            VALUES (?1, ?2, ?3, 0, ?4, ?5, ?6)
+            INSERT INTO tasks (id, title, description, completed, group_id, due_at, created_at, updated_at)
+            VALUES (?1, ?2, ?3, 0, ?4, ?5, ?6, ?7)
             ",
             params![
                 Uuid::new_v4().to_string(),
                 title,
                 input.description.trim(),
+                input.group_id,
                 input.due_at,
                 timestamp,
                 timestamp
@@ -110,7 +149,8 @@ pub fn update_task(
             SET title = ?2,
                 description = ?3,
                 due_at = ?4,
-                updated_at = ?5
+                group_id = ?5,
+                updated_at = ?6
             WHERE id = ?1
             ",
             params![
@@ -118,6 +158,7 @@ pub fn update_task(
                 title,
                 input.description.trim(),
                 input.due_at,
+                input.group_id,
                 now_iso_string()?
             ],
         )
@@ -154,6 +195,126 @@ pub fn delete_task(task_id: String, state: State<'_, DatabaseState>) -> Result<V
     connection
         .execute("DELETE FROM tasks WHERE id = ?1", params![task_id])
         .map_err(|error| format!("删除任务失败：{error}"))?;
+
+    list_tasks_inner(&state)
+}
+
+/// 创建任务组。
+#[tauri::command]
+pub fn create_task_group(
+    input: CreateTaskGroupInput,
+    state: State<'_, DatabaseState>,
+) -> Result<Vec<TaskGroup>, String> {
+    let name = input.name.trim().to_string();
+    if name.is_empty() {
+        return Err("任务组名称不能为空".to_string());
+    }
+
+    let timestamp = now_iso_string()?;
+    let connection = open_connection(&state.db_path)?;
+
+    connection
+        .execute(
+            "
+            INSERT INTO task_groups (id, name, description, created_at, updated_at)
+            VALUES (?1, ?2, ?3, ?4, ?5)
+            ",
+            params![
+                Uuid::new_v4().to_string(),
+                name,
+                input.description.trim(),
+                timestamp,
+                timestamp
+            ],
+        )
+        .map_err(|error| format!("创建任务组失败：{error}"))?;
+
+    list_task_groups_inner(&state)
+}
+
+/// 编辑任务组。
+#[tauri::command]
+pub fn update_task_group(
+    input: UpdateTaskGroupInput,
+    state: State<'_, DatabaseState>,
+) -> Result<Vec<TaskGroup>, String> {
+    let name = input.name.trim().to_string();
+    if name.is_empty() {
+        return Err("任务组名称不能为空".to_string());
+    }
+
+    let connection = open_connection(&state.db_path)?;
+
+    connection
+        .execute(
+            "
+            UPDATE task_groups
+            SET name = ?2,
+                description = ?3,
+                updated_at = ?4
+            WHERE id = ?1
+            ",
+            params![input.id, name, input.description.trim(), now_iso_string()?],
+        )
+        .map_err(|error| format!("编辑任务组失败：{error}"))?;
+
+    list_task_groups_inner(&state)
+}
+
+/// 删除任务组。
+#[tauri::command]
+pub fn delete_task_group(
+    group_id: String,
+    state: State<'_, DatabaseState>,
+) -> Result<Vec<TaskGroup>, String> {
+    let mut connection = open_connection(&state.db_path)?;
+    let transaction = connection
+        .transaction()
+        .map_err(|error| format!("开启删除任务组事务失败：{error}"))?;
+
+    transaction
+        .execute(
+            "
+            UPDATE tasks
+            SET group_id = NULL,
+                updated_at = ?2
+            WHERE group_id = ?1
+            ",
+            params![group_id, now_iso_string()?],
+        )
+        .map_err(|error| format!("迁移组内任务失败：{error}"))?;
+
+    transaction
+        .execute("DELETE FROM task_groups WHERE id = ?1", params![group_id])
+        .map_err(|error| format!("删除任务组失败：{error}"))?;
+
+    transaction
+        .commit()
+        .map_err(|error| format!("提交删除任务组事务失败：{error}"))?;
+
+    list_task_groups_inner(&state)
+}
+
+/// 调整任务所属组。
+#[tauri::command]
+pub fn assign_task_group(
+    task_id: String,
+    group_id: Option<String>,
+    state: State<'_, DatabaseState>,
+) -> Result<Vec<TaskItem>, String> {
+    let connection = open_connection(&state.db_path)?;
+
+    connection
+        .execute(
+            "
+            UPDATE tasks
+            SET group_id = ?2,
+                updated_at = ?3
+            WHERE id = ?1
+            ",
+            params![task_id, group_id, now_iso_string()?],
+        )
+        .map_err(|error| format!("调整任务所属组失败：{error}"))?;
 
     list_tasks_inner(&state)
 }

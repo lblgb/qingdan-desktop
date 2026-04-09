@@ -3,6 +3,8 @@
  */
 export type TaskFilter = 'all' | 'active' | 'completed'
 
+export type TaskGroupFilter = 'all-groups' | 'ungrouped' | string
+
 /**
  * 任务实体。
  */
@@ -11,7 +13,19 @@ export interface TaskItem {
   title: string
   description: string
   completed: boolean
+  groupId: string | null
   dueAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+/**
+ * 任务组实体。
+ */
+export interface TaskGroup {
+  id: string
+  name: string
+  description: string
   createdAt: string
   updatedAt: string
 }
@@ -22,6 +36,7 @@ export interface TaskItem {
 export interface CreateTaskInput {
   title: string
   description: string
+  groupId: string | null
   dueAt: string | null
 }
 
@@ -32,5 +47,23 @@ export interface UpdateTaskInput {
   id: string
   title: string
   description: string
+  groupId: string | null
   dueAt: string | null
+}
+
+/**
+ * 创建任务组时的输入结构。
+ */
+export interface CreateTaskGroupInput {
+  name: string
+  description: string
+}
+
+/**
+ * 编辑任务组时的输入结构。
+ */
+export interface UpdateTaskGroupInput {
+  id: string
+  name: string
+  description: string
 }

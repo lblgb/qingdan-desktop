@@ -10,7 +10,19 @@ pub struct TaskItem {
     pub title: String,
     pub description: String,
     pub completed: bool,
+    pub group_id: Option<String>,
     pub due_at: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+/// 任务组实体模型。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskGroup {
+    pub id: String,
+    pub name: String,
+    pub description: String,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -21,6 +33,7 @@ pub struct TaskItem {
 pub struct CreateTaskInput {
     pub title: String,
     pub description: String,
+    pub group_id: Option<String>,
     pub due_at: Option<String>,
 }
 
@@ -31,5 +44,23 @@ pub struct UpdateTaskInput {
     pub id: String,
     pub title: String,
     pub description: String,
+    pub group_id: Option<String>,
     pub due_at: Option<String>,
+}
+
+/// 新建任务组输入。
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateTaskGroupInput {
+    pub name: String,
+    pub description: String,
+}
+
+/// 编辑任务组输入。
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateTaskGroupInput {
+    pub id: String,
+    pub name: String,
+    pub description: String,
 }

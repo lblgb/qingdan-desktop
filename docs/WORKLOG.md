@@ -745,3 +745,57 @@
 - 先实现组的数据模型、数据库表结构和命令层接口。
 - 再实现前端状态仓库中的组列表、组筛选和任务归组能力。
 - 最后再切换首页录入交互为按钮 + 弹窗，并补齐对应验收项。
+
+## 2026-04-10 第 22 轮
+
+### 讨论主题
+
+- 按 `v0.1.5` 规划顺序，先实现任务组的数据层、SQLite 表结构和命令层接口，为后续前端组筛选与弹窗新建铺路。
+
+### 当前结论
+
+- SQLite 已新增 `task_groups` 表，并为 `tasks` 表接入 `group_id` 关联字段。
+- 当前实现保持了既有数据兼容：若旧库中 `tasks` 表尚无 `group_id` 字段，启动时会自动补齐。
+- 宿主层已补齐任务组基础命令：
+  - `list_task_groups`
+  - `create_task_group`
+  - `update_task_group`
+  - `delete_task_group`
+  - `assign_task_group`
+- 当前任务模型、前端共享类型和数据访问层已同步支持 `groupId` 与任务组类型。
+- 本轮尚未开始调整前端状态仓库、筛选 UI 和弹窗录入入口，界面行为保持第一版现状。
+
+### 决策原因
+
+- 任务组会同时影响数据库、命令层、前端类型和筛选语义，先把数据边界打稳，后面的界面改造返工更少。
+- 现有用户数据已经在本地 SQLite 中存在，因此必须优先考虑兼容旧表结构，而不能直接假设全量重建数据库。
+- 在组 UI 尚未接入前，先补前端共享类型和存储接口，可以把后续状态仓库改造与宿主层演进解耦。
+
+### 文档更新
+
+- 更新了 [docs/WORKLOG.md](E:/CodeBase/docs/WORKLOG.md)，记录本轮任务组数据层接入结果与当前边界。
+
+### 实现记录
+
+- 更新了 [src-tauri/src/db/mod.rs](E:/CodeBase/src-tauri/src/db/mod.rs)，新增 `task_groups` 表初始化、`tasks.group_id` 字段兼容检查和相关索引。
+- 更新了 [src-tauri/src/models/mod.rs](E:/CodeBase/src-tauri/src/models/mod.rs)，补充任务组模型、任务组输入结构，以及任务上的 `group_id` 字段。
+- 更新了 [src-tauri/src/commands/tasks.rs](E:/CodeBase/src-tauri/src/commands/tasks.rs)，新增任务组 CRUD 与任务归组命令，同时让现有任务创建/编辑链路支持 `group_id`。
+- 更新了 [src-tauri/src/lib.rs](E:/CodeBase/src-tauri/src/lib.rs)，注册新的任务组相关 Tauri 命令。
+- 更新了 [src/features/tasks/task.types.ts](E:/CodeBase/src/features/tasks/task.types.ts) 与 [src/features/tasks/task.storage.ts](E:/CodeBase/src/features/tasks/task.storage.ts)，同步前端任务组类型、任务 `groupId` 字段及本地回退访问接口。
+- 更新了 [src/features/tasks/task.mock.ts](E:/CodeBase/src/features/tasks/task.mock.ts)、[src/components/TaskComposer.tsx](E:/CodeBase/src/components/TaskComposer.tsx) 和 [src/components/TaskList.tsx](E:/CodeBase/src/components/TaskList.tsx)，补齐对新字段的兼容。
+
+### 验证记录
+
+- 使用 `cmd /c node_modules\\.bin\\tsc.cmd -b` 验证前端 TypeScript 构建，通过。
+- 使用 `cargo check` 验证宿主层 Rust 编译，通过。
+
+### 当前风险
+
+- 前端状态仓库仍然只维护单一状态筛选，下一轮进入组筛选时会涉及状态结构调整。
+- 当前界面尚未暴露任务组能力，因此虽然数据层已就绪，但用户还不能在 UI 中直接创建组或归组。
+- 任务列表仍只展示时间语义分组，后续接入组筛选时必须保证现有时间分组口径不被破坏。
+
+### 下一步建议
+
+- 先改前端状态仓库，接入任务组列表、组筛选状态和基础归组动作。
+- 然后再改首页交互，把常驻录入区切换为“按钮 + 弹窗”，并在弹窗中接入组选择。
