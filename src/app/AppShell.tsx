@@ -88,6 +88,10 @@ export function AppShell() {
         </div>
       </section>
 
+      <section className="auxiliary-panel">
+        <TaskGroupManager />
+      </section>
+
       <section className="workspace-panel">
         <aside className="sidebar-stack">
           <section className="sidebar-card panel-surface">
@@ -184,7 +188,6 @@ export function AppShell() {
               </div>
             ) : null}
 
-            <TaskGroupManager />
             <TaskList />
           </div>
         </section>

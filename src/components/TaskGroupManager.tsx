@@ -59,13 +59,13 @@ export function TaskGroupManager() {
   }
 
   return (
-    <section className="task-group-manager-card">
+    <section className="task-group-manager-card panel-surface">
       <div className="section-heading">
         <div>
           <p className="section-tag">任务组管理</p>
-          <h2>整理当前这批任务该怎么分组</h2>
+          <h2>整理任务组</h2>
         </div>
-        <p className="section-note">支持改名、补说明和删除。删除组时，组内任务会自动转回未分组。</p>
+        <p className="section-note">这里专门处理任务组本身，任务清单区域只保留筛选和列表浏览。</p>
       </div>
 
       {taskGroups.length === 0 ? (
