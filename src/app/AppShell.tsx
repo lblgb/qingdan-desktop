@@ -5,6 +5,7 @@ import { useEffect } from 'react'
 import { TaskComposer } from '../components/TaskComposer'
 import { TaskGroupManager } from '../components/TaskGroupManager'
 import { TaskList } from '../components/TaskList'
+import { TaskOverview } from '../components/TaskOverview'
 import { useTaskStore } from '../stores/taskStore'
 
 const FILTER_OPTIONS = [
@@ -81,7 +82,10 @@ export function AppShell() {
           </div>
         </div>
 
-        <TaskComposer />
+        <div className="topbar-actions">
+          <TaskOverview />
+          <TaskComposer />
+        </div>
       </section>
 
       <section className="workspace-panel">
