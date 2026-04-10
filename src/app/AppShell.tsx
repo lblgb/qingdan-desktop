@@ -1,7 +1,7 @@
 /**
- * 文件说明：应用主界面，负责组织待办概览、筛选和任务列表。
+ * 文件说明：应用主界面，负责组织顶部动作、工作视图筛选和任务清单。
  */
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { TaskComposer } from '../components/TaskComposer'
 import { TaskGroupManager } from '../components/TaskGroupManager'
 import { TaskList } from '../components/TaskList'
@@ -11,17 +11,9 @@ import { useTaskStore } from '../stores/taskStore'
 const FILTER_OPTIONS = [
   { key: 'all', label: '全部任务', hint: '查看完整清单' },
   { key: 'active', label: '进行中', hint: '聚焦待处理事项' },
-  { key: 'completed', label: '已完成', hint: '回顾已收尾工作' },
+  { key: 'completed', label: '已完成', hint: '回看已经收尾的任务' },
 ] as const
 
-const GROUP_FILTER_OPTIONS = [
-  { key: 'all-groups', label: '全部组', hint: '不过滤任务归属' },
-  { key: 'ungrouped', label: '未分组', hint: '查看还没归组的任务' },
-] as const
-
-/**
- * 应用壳组件。
- */
 export function AppShell() {
   const tasks = useTaskStore((state) => state.tasks)
   const taskGroups = useTaskStore((state) => state.taskGroups)
@@ -34,6 +26,9 @@ export function AppShell() {
   const setFilter = useTaskStore((state) => state.setFilter)
   const setGroupFilter = useTaskStore((state) => state.setGroupFilter)
   const dismissFeedback = useTaskStore((state) => state.dismissFeedback)
+
+  const [isMoreFiltersOpen, setIsMoreFiltersOpen] = useState(false)
+  const [activeConditionPanel, setActiveConditionPanel] = useState<'root' | 'groups'>('root')
 
   useEffect(() => {
     void hydrateTasks()
@@ -48,26 +43,57 @@ export function AppShell() {
     active: activeCount,
     completed: completedCount,
   }
+
   const statusScopedTasks =
     activeFilter === 'active'
       ? tasks.filter((task) => !task.completed)
       : activeFilter === 'completed'
         ? tasks.filter((task) => task.completed)
         : tasks
+
   const groupFilterCounts = {
     'all-groups': statusScopedTasks.length,
     ungrouped: statusScopedTasks.filter((task) => !task.groupId).length,
   }
-  const dynamicGroupOptions = taskGroups.map((group) => ({
-    key: group.id,
-    label: group.name,
-    hint: group.description || '聚焦这一组中的任务',
-    count: statusScopedTasks.filter((task) => task.groupId === group.id).length,
-  }))
+
+  const dynamicGroupOptions = useMemo(
+    () =>
+      taskGroups.map((group) => ({
+        key: group.id,
+        label: group.name,
+        hint: group.description || '聚焦这一组中的任务',
+        count: statusScopedTasks.filter((task) => task.groupId === group.id).length,
+      })),
+    [statusScopedTasks, taskGroups],
+  )
+
+  const activeGroupFilterLabel =
+    activeGroupFilter === 'all-groups'
+      ? '全部组'
+      : activeGroupFilter === 'ungrouped'
+        ? '未分组'
+        : dynamicGroupOptions.find((group) => group.key === activeGroupFilter)?.label ?? '任务组'
+
   const statusNotice =
     activeAction === 'hydrate'
       ? { tone: 'info' as const, message: '正在读取本地任务数据...' }
       : feedback
+
+  function handleToggleMoreFilters() {
+    setIsMoreFiltersOpen((current) => {
+      const next = !current
+      if (next) {
+        setActiveConditionPanel('root')
+      }
+      return next
+    })
+  }
+
+  function handleSelectGroupFilter(filter: typeof activeGroupFilter) {
+    setGroupFilter(filter)
+    setIsMoreFiltersOpen(false)
+    setActiveConditionPanel('root')
+  }
 
   return (
     <main className="app-shell">
@@ -84,12 +110,9 @@ export function AppShell() {
 
         <div className="topbar-actions">
           <TaskOverview />
+          <TaskGroupManager />
           <TaskComposer />
         </div>
-      </section>
-
-      <section className="auxiliary-panel">
-        <TaskGroupManager />
       </section>
 
       <section className="workspace-panel">
@@ -116,57 +139,81 @@ export function AppShell() {
                   <strong>{filterCounts[option.key]}</strong>
                 </button>
               ))}
-            </div>
-          </section>
 
-          <section className="sidebar-card panel-surface">
-            <div className="sidebar-heading">
-              <div>
-                <p className="section-tag">任务组</p>
-                <h2>筛选任务归属</h2>
-              </div>
-              <span className="sidebar-count">
-                {activeGroupFilter === 'all-groups'
-                  ? taskGroups.length
-                  : activeGroupFilter === 'ungrouped'
-                    ? groupFilterCounts.ungrouped
-                    : dynamicGroupOptions.find((group) => group.key === activeGroupFilter)?.count ?? 0}
-              </span>
-            </div>
+              <button
+                className={isMoreFiltersOpen || activeGroupFilter !== 'all-groups' ? 'filter-button active' : 'filter-button'}
+                onClick={handleToggleMoreFilters}
+                type="button"
+              >
+                <span>更多条件</span>
+                <small>
+                  {activeGroupFilter === 'all-groups' ? '收纳任务组和后续附加筛选' : `当前已按 ${activeGroupFilterLabel} 筛选`}
+                </small>
+                <strong>{activeGroupFilter === 'all-groups' ? '...' : activeGroupFilterLabel}</strong>
+              </button>
 
-            <div className="filter-list">
-              {GROUP_FILTER_OPTIONS.map((option) => (
-                <button
-                  key={option.key}
-                  className={option.key === activeGroupFilter ? 'filter-button active' : 'filter-button'}
-                  onClick={() => setGroupFilter(option.key)}
-                  type="button"
-                >
-                  <span>{option.label}</span>
-                  <small>{option.hint}</small>
-                  <strong>{groupFilterCounts[option.key]}</strong>
-                </button>
-              ))}
+              {isMoreFiltersOpen ? (
+                <div className="nested-filter-panel">
+                  {activeConditionPanel === 'root' ? (
+                    <div className="nested-filter-list">
+                      <button className="nested-filter-button" onClick={() => setActiveConditionPanel('groups')} type="button">
+                        <span>任务组</span>
+                        <small>按任务归属进一步筛选清单</small>
+                        <strong>{activeGroupFilterLabel}</strong>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="nested-filter-list">
+                      <div className="nested-filter-toolbar">
+                        <button className="nested-filter-back" onClick={() => setActiveConditionPanel('root')} type="button">
+                          返回
+                        </button>
+                        <span>任务组</span>
+                      </div>
 
-              {dynamicGroupOptions.length > 0 ? (
-                dynamicGroupOptions.map((group) => (
-                  <button
-                    key={group.key}
-                    className={group.key === activeGroupFilter ? 'filter-button active' : 'filter-button'}
-                    onClick={() => setGroupFilter(group.key)}
-                    type="button"
-                  >
-                    <span>{group.label}</span>
-                    <small>{group.hint}</small>
-                    <strong>{group.count}</strong>
-                  </button>
-                ))
-              ) : (
-                <div className="group-filter-empty">
-                  <strong>还没有任务组</strong>
-                  <p>可以先从顶部的新建菜单里创建任务组。</p>
+                      <button
+                        className={activeGroupFilter === 'all-groups' ? 'nested-filter-button active' : 'nested-filter-button'}
+                        onClick={() => handleSelectGroupFilter('all-groups')}
+                        type="button"
+                      >
+                        <span>全部组</span>
+                        <small>不过滤任务归属</small>
+                        <strong>{groupFilterCounts['all-groups']}</strong>
+                      </button>
+
+                      <button
+                        className={activeGroupFilter === 'ungrouped' ? 'nested-filter-button active' : 'nested-filter-button'}
+                        onClick={() => handleSelectGroupFilter('ungrouped')}
+                        type="button"
+                      >
+                        <span>未分组</span>
+                        <small>查看还未归组的任务</small>
+                        <strong>{groupFilterCounts.ungrouped}</strong>
+                      </button>
+
+                      {dynamicGroupOptions.length > 0 ? (
+                        dynamicGroupOptions.map((group) => (
+                          <button
+                            key={group.key}
+                            className={activeGroupFilter === group.key ? 'nested-filter-button active' : 'nested-filter-button'}
+                            onClick={() => handleSelectGroupFilter(group.key)}
+                            type="button"
+                          >
+                            <span>{group.label}</span>
+                            <small>{group.hint}</small>
+                            <strong>{group.count}</strong>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="group-filter-empty">
+                          <strong>还没有任务组</strong>
+                          <p>可以从顶部的任务组管理里新增任务组。</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              )}
+              ) : null}
             </div>
           </section>
         </aside>

@@ -1,7 +1,7 @@
 /**
- * 文件说明：任务列表组件，负责展示筛选结果并提供编辑、完成与删除操作。
+ * 文件说明：任务列表组件，负责展示筛选结果并提供编辑、完成、删除和分页操作。
  */
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { buildTaskGroups } from '../features/tasks/task.grouping'
 import type { TaskItem } from '../features/tasks/task.types'
 import { formatTaskDate } from '../lib/date'
@@ -10,11 +10,11 @@ import { useTaskStore } from '../stores/taskStore'
 const EMPTY_STATE_COPY = {
   all: {
     title: '还没有可展示的任务',
-    description: '先在上方添加一项任务，当前工作台会立即开始积累。',
+    description: '先在上方新建一项任务，当前工作台会立刻开始积累。',
   },
   active: {
     title: '当前没有进行中的任务',
-    description: '可以切换到“全部任务”查看历史，或直接新建下一项待办。',
+    description: '可以切回“全部任务”查看历史，或直接新建下一项待办。',
   },
   completed: {
     title: '还没有已完成的任务',
@@ -22,9 +22,8 @@ const EMPTY_STATE_COPY = {
   },
 } as const
 
-/**
- * 任务列表组件。
- */
+const PAGE_SIZE = 10
+
 export function TaskList() {
   const filteredTasks = useTaskStore((state) => state.filteredTasks)
   const activeFilter = useTaskStore((state) => state.activeFilter)
@@ -37,13 +36,31 @@ export function TaskList() {
   const activeAction = useTaskStore((state) => state.activeAction)
   const isGrouping = useTaskStore((state) => state.activeAction === 'group')
   const emptyState = EMPTY_STATE_COPY[activeFilter]
-  const taskSections = buildTaskGroups(filteredTasks, activeFilter)
 
+  const [currentPage, setCurrentPage] = useState(1)
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
   const [editingDescription, setEditingDescription] = useState('')
   const [editingDueAt, setEditingDueAt] = useState('')
   const [editingGroupId, setEditingGroupId] = useState('')
+
+  const totalPages = Math.max(1, Math.ceil(filteredTasks.length / PAGE_SIZE))
+  const pagedTasks = useMemo(() => {
+    const safePage = Math.min(currentPage, totalPages)
+    const startIndex = (safePage - 1) * PAGE_SIZE
+    return filteredTasks.slice(startIndex, startIndex + PAGE_SIZE)
+  }, [currentPage, filteredTasks, totalPages])
+  const taskSections = buildTaskGroups(pagedTasks, activeFilter)
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [activeFilter, activeGroupFilter])
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages)
+    }
+  }, [currentPage, totalPages])
 
   function handleStartEdit(task: TaskItem) {
     setEditingTaskId(task.id)
@@ -96,8 +113,8 @@ export function TaskList() {
           <h2>任务清单</h2>
         </div>
         <p className="section-note">
-          共 {filteredTasks.length} 项，当前按时间语义分组展示
-          {activeGroupFilter !== 'all-groups' ? '，并叠加了任务组筛选。' : '。'}
+          共 {filteredTasks.length} 项，当前第 {currentPage} / {totalPages} 页，每页 {PAGE_SIZE} 项
+          {activeGroupFilter !== 'all-groups' ? '，并叠加了附加条件筛选。' : '。'}
         </p>
       </div>
 
@@ -146,7 +163,7 @@ export function TaskList() {
                               id={`edit-title-${task.id}`}
                               value={editingTitle}
                               onChange={(event) => setEditingTitle(event.target.value)}
-                              placeholder="例如：整理第一版功能清单"
+                              placeholder="例如：整理第二版验收问题"
                             />
                           </label>
 
@@ -195,12 +212,7 @@ export function TaskList() {
                         </form>
 
                         <div className="task-actions">
-                          <button
-                            className="secondary-button"
-                            onClick={handleCancelEdit}
-                            type="button"
-                            disabled={isMutating}
-                          >
+                          <button className="secondary-button" onClick={handleCancelEdit} type="button" disabled={isMutating}>
                             取消
                           </button>
                           <button
@@ -256,12 +268,7 @@ export function TaskList() {
                           >
                             编辑
                           </button>
-                          <button
-                            className="ghost-button"
-                            onClick={() => void removeTask(task.id)}
-                            type="button"
-                            disabled={isMutating}
-                          >
+                          <button className="ghost-button" onClick={() => void removeTask(task.id)} type="button" disabled={isMutating}>
                             删除
                           </button>
                         </div>
@@ -274,6 +281,41 @@ export function TaskList() {
           </section>
         ))}
       </div>
+
+      {filteredTasks.length > PAGE_SIZE ? (
+        <div className="pagination-bar">
+          <p className="section-note">
+            当前展示 {(currentPage - 1) * PAGE_SIZE + 1}-{Math.min(currentPage * PAGE_SIZE, filteredTasks.length)} / {filteredTasks.length}
+          </p>
+          <div className="pagination-actions">
+            <button className="secondary-button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} type="button" disabled={currentPage === 1}>
+              上一页
+            </button>
+
+            <div className="pagination-pages">
+              {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                <button
+                  key={page}
+                  className={page === currentPage ? 'pagination-page-button active' : 'pagination-page-button'}
+                  onClick={() => setCurrentPage(page)}
+                  type="button"
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+
+            <button
+              className="secondary-button"
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              type="button"
+              disabled={currentPage === totalPages}
+            >
+              下一页
+            </button>
+          </div>
+        </div>
+      ) : null}
     </section>
   )
 }
