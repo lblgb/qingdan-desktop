@@ -122,9 +122,7 @@ textarea {
 }
 
 .topbar,
-.hero-panel,
 .workspace-panel,
-.hero-grid,
 .content-column,
 .sidebar-stack,
 .content-card {
@@ -136,6 +134,10 @@ textarea {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   margin-bottom: 20px;
+}
+
+.topbar-compact {
+  margin-bottom: 24px;
 }
 
 .brand-block {
@@ -160,10 +162,10 @@ textarea {
 }
 
 .topbar h1,
-.hero-copy-block h2,
 .sidebar-card h2,
 .content-card h2,
 .composer-card h2,
+.task-group-manager-card h2,
 .task-list-card h2,
 .empty-state h2 {
   margin: 0;
@@ -184,13 +186,6 @@ textarea {
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-}
-
-.topbar-meta {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 10px;
 }
 
 .meta-pill,
@@ -234,26 +229,6 @@ textarea {
 .panel-muted {
   background: var(--surface-muted);
 }
-
-.hero-panel {
-  grid-template-columns: 1.05fr 1fr;
-  align-items: stretch;
-  margin-bottom: 24px;
-}
-
-.hero-copy-block {
-  padding: 28px;
-  align-content: start;
-  gap: 18px;
-}
-
-.hero-copy-block h2 {
-  font-size: clamp(2rem, 3vw, 3.1rem);
-  line-height: 1.06;
-  max-width: 10ch;
-}
-
-.hero-copy,
 .section-note,
 .task-main p,
 .empty-state p,
@@ -262,27 +237,6 @@ textarea {
 .inline-feedback {
   margin: 0;
   color: var(--text-secondary);
-}
-
-.panel-strong .hero-copy {
-  color: rgba(244, 251, 249, 0.82);
-}
-
-.hero-points {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.hero-points span {
-  border-radius: 999px;
-  padding: 0.6rem 0.9rem;
-  background: rgba(255, 255, 255, 0.12);
-  color: var(--text-on-dark);
-}
-
-.hero-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .stat-card,
@@ -464,33 +418,47 @@ textarea {
   box-shadow: none;
 }
 
-.composer-launcher {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) auto;
-  gap: 20px;
-  align-items: center;
-  padding: 24px 26px;
-  border-radius: 26px;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(246, 251, 249, 0.88)),
-    radial-gradient(circle at top right, rgba(13, 148, 136, 0.08), transparent 34%);
-  border: 1px solid rgba(18, 52, 47, 0.08);
-  box-shadow: var(--shadow-md);
+.composer-toolbar {
+  position: relative;
 }
 
-.composer-launch-copy {
+.toolbar-trigger-button {
+  min-width: 104px;
+}
+
+.toolbar-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 12;
   display: grid;
   gap: 8px;
+  min-width: 280px;
+  padding: 10px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(18, 52, 47, 0.08);
+  box-shadow: 0 22px 44px rgba(17, 54, 49, 0.16);
 }
 
-.composer-launch-actions {
+.toolbar-menu-button {
   display: grid;
-  justify-items: end;
-  gap: 10px;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: 16px;
+  background: rgba(13, 148, 136, 0.05);
+  text-align: left;
+  color: var(--text-primary);
 }
 
-.composer-open-button {
-  min-width: 136px;
+.toolbar-menu-button strong {
+  font-size: 0.95rem;
+}
+
+.toolbar-menu-button span {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
 }
 
 .composer-form label {
@@ -538,6 +506,10 @@ textarea {
     radial-gradient(circle at top right, rgba(249, 115, 22, 0.08), transparent 28%);
   border: 1px solid rgba(18, 52, 47, 0.12);
   box-shadow: 0 30px 80px rgba(10, 30, 28, 0.24);
+}
+
+.task-modal-compact {
+  width: min(560px, 100%);
 }
 
 .task-modal-header,
@@ -914,7 +886,6 @@ select:disabled {
 }
 
 @media (max-width: 1080px) {
-  .hero-panel,
   .workspace-panel {
     grid-template-columns: 1fr;
   }
@@ -931,19 +902,17 @@ select:disabled {
   }
 
   .topbar,
-  .hero-grid,
   .sidebar-stack,
   .workspace-panel,
-  .composer-launcher,
   .task-modal-grid,
-  .task-item {
+  .task-item,
+  .group-manager-item,
+  .group-manager-heading {
     grid-template-columns: 1fr;
   }
 
-  .topbar-meta,
   .composer-actions,
   .section-heading,
-  .content-overview,
   .task-main-row,
   .status-banner,
   .task-modal-header,
@@ -960,5 +929,11 @@ select:disabled {
 
   .task-actions {
     justify-content: flex-start;
+  }
+
+  .toolbar-menu {
+    left: 0;
+    right: auto;
+    min-width: min(280px, calc(100vw - 32px));
   }
 }

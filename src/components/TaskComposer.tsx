@@ -1,11 +1,11 @@
 /**
- * 文件说明：任务录入组件，负责以按钮 + 弹窗的方式创建任务，并提供最小可用的任务组创建入口。
+ * 文件说明：顶部动作组件，统一提供“新建任务”和“新建任务组”入口，并承载对应弹窗。
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTaskStore } from '../stores/taskStore'
 
 /**
- * 任务录入组件。
+ * 顶部动作组件。
  */
 export function TaskComposer() {
   const addTask = useTaskStore((state) => state.addTask)
@@ -14,49 +14,82 @@ export function TaskComposer() {
   const activeAction = useTaskStore((state) => state.activeAction)
   const isMutating = useTaskStore((state) => state.isMutating)
 
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false)
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false)
+
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [dueAt, setDueAt] = useState('')
   const [groupId, setGroupId] = useState('')
-  const [isGroupEditorOpen, setIsGroupEditorOpen] = useState(false)
+
   const [groupName, setGroupName] = useState('')
   const [groupDescription, setGroupDescription] = useState('')
+
+  const menuRef = useRef<HTMLDivElement | null>(null)
 
   const isSubmittingTask = isMutating && activeAction === 'create'
   const isSubmittingGroup = isMutating && activeAction === 'group'
 
   useEffect(() => {
-    if (!isModalOpen) {
+    function handleClickOutside(event: MouseEvent) {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setIsMenuOpen(false)
+      }
+    }
+
+    window.addEventListener('mousedown', handleClickOutside)
+    return () => window.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  useEffect(() => {
+    if (!isTaskModalOpen && !isGroupModalOpen) {
       return
     }
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape' && !isSubmittingTask && !isSubmittingGroup) {
-        closeModal()
+      if (event.key !== 'Escape' || isSubmittingTask || isSubmittingGroup) {
+        return
+      }
+
+      if (isTaskModalOpen) {
+        closeTaskModal()
+      }
+
+      if (isGroupModalOpen) {
+        closeGroupModal()
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isModalOpen, isSubmittingGroup, isSubmittingTask])
+  }, [isGroupModalOpen, isSubmittingGroup, isSubmittingTask, isTaskModalOpen])
 
-  function openModal() {
-    setIsModalOpen(true)
+  function openTaskModal() {
+    setIsMenuOpen(false)
+    setIsTaskModalOpen(true)
   }
 
-  function closeModal() {
-    setIsModalOpen(false)
+  function openGroupModal() {
+    setIsMenuOpen(false)
+    setIsGroupModalOpen(true)
+  }
+
+  function closeTaskModal() {
+    setIsTaskModalOpen(false)
     setTitle('')
     setDescription('')
     setDueAt('')
     setGroupId('')
-    setIsGroupEditorOpen(false)
+  }
+
+  function closeGroupModal() {
+    setIsGroupModalOpen(false)
     setGroupName('')
     setGroupDescription('')
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmitTask(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     const nextTitle = title.trim()
@@ -71,10 +104,12 @@ export function TaskComposer() {
       dueAt: dueAt || null,
     })
 
-    closeModal()
+    closeTaskModal()
   }
 
-  async function handleCreateGroup() {
+  async function handleSubmitGroup(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
     const nextGroupName = groupName.trim()
     if (!nextGroupName) {
       return
@@ -85,37 +120,36 @@ export function TaskComposer() {
       description: groupDescription.trim(),
     })
 
-    const latestGroup = useTaskStore.getState().taskGroups[0]
-    if (latestGroup) {
-      setGroupId(latestGroup.id)
-    }
-
-    setGroupName('')
-    setGroupDescription('')
-    setIsGroupEditorOpen(false)
+    closeGroupModal()
   }
 
   return (
-    <section className="composer-card">
-      <div className="composer-launcher">
-        <div className="composer-launch-copy">
-          <p className="section-tag">新建任务</p>
-          <h2>把录入入口收成一个明确动作，不再长期占据主界面。</h2>
-          <p className="section-note">
-            第二版开始把“新建任务”切成弹窗流，主界面更多留给筛选、分组和列表决策。
-          </p>
-        </div>
+    <>
+      <div ref={menuRef} className="composer-toolbar">
+        <button
+          className="primary-button toolbar-trigger-button"
+          onClick={() => setIsMenuOpen((value) => !value)}
+          type="button"
+        >
+          新建
+        </button>
 
-        <div className="composer-launch-actions">
-          <button className="primary-button composer-open-button" onClick={openModal} type="button">
-            新建任务
-          </button>
-          <p className="composer-tip">支持标题、备注、截止日期和所属任务组。</p>
-        </div>
+        {isMenuOpen ? (
+          <div className="toolbar-menu">
+            <button className="toolbar-menu-button" onClick={openTaskModal} type="button">
+              <strong>新建任务</strong>
+              <span>录入标题、备注、日期和所属组</span>
+            </button>
+            <button className="toolbar-menu-button" onClick={openGroupModal} type="button">
+              <strong>新建任务组</strong>
+              <span>先建一个新的任务归类</span>
+            </button>
+          </div>
+        ) : null}
       </div>
 
-      {isModalOpen ? (
-        <div className="modal-backdrop" onClick={closeModal} role="presentation">
+      {isTaskModalOpen ? (
+        <div className="modal-backdrop" onClick={closeTaskModal} role="presentation">
           <section
             className="task-modal"
             aria-labelledby="task-modal-title"
@@ -125,28 +159,27 @@ export function TaskComposer() {
           >
             <div className="task-modal-header">
               <div>
-                <p className="section-tag">任务录入</p>
-                <h2 id="task-modal-title">添加一条新的待办</h2>
+                <h2 id="task-modal-title">新建任务</h2>
               </div>
               <button
                 className="secondary-button modal-close-button"
-                onClick={closeModal}
+                onClick={closeTaskModal}
                 type="button"
-                disabled={isSubmittingTask || isSubmittingGroup}
+                disabled={isSubmittingTask}
               >
                 关闭
               </button>
             </div>
 
-            <form className="composer-form task-modal-form" onSubmit={(event) => void handleSubmit(event)}>
+            <form className="composer-form task-modal-form" onSubmit={(event) => void handleSubmitTask(event)}>
               <label htmlFor="task-title">
                 <span>标题</span>
                 <input
                   id="task-title"
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
-                  placeholder="例如：整理第二版弹窗交互"
-                  disabled={isSubmittingTask || isSubmittingGroup}
+                  placeholder="例如：整理第二版验收问题"
+                  disabled={isSubmittingTask}
                 />
               </label>
 
@@ -158,7 +191,7 @@ export function TaskComposer() {
                   onChange={(event) => setDescription(event.target.value)}
                   placeholder="补充目标、上下文或拆解点"
                   rows={4}
-                  disabled={isSubmittingTask || isSubmittingGroup}
+                  disabled={isSubmittingTask}
                 />
               </label>
 
@@ -170,7 +203,7 @@ export function TaskComposer() {
                     type="date"
                     value={dueAt}
                     onChange={(event) => setDueAt(event.target.value)}
-                    disabled={isSubmittingTask || isSubmittingGroup}
+                    disabled={isSubmittingTask}
                   />
                 </label>
 
@@ -180,7 +213,7 @@ export function TaskComposer() {
                     id="task-group-id"
                     value={groupId}
                     onChange={(event) => setGroupId(event.target.value)}
-                    disabled={isSubmittingTask || isSubmittingGroup}
+                    disabled={isSubmittingTask}
                   >
                     <option value="">未分组</option>
                     {taskGroups.map((group) => (
@@ -192,78 +225,15 @@ export function TaskComposer() {
                 </label>
               </div>
 
-              <section className="group-creator-card">
-                <div className="group-creator-header">
-                  <div>
-                    <p className="section-tag">任务组</p>
-                    <h3>需要新组时，在这里顺手建一个</h3>
-                  </div>
-                  <button
-                    className="secondary-button"
-                    onClick={() => setIsGroupEditorOpen((value) => !value)}
-                    type="button"
-                    disabled={isSubmittingTask || isSubmittingGroup}
-                  >
-                    {isGroupEditorOpen ? '收起' : '新建任务组'}
-                  </button>
-                </div>
-
-                {isGroupEditorOpen ? (
-                  <div className="group-creator-form">
-                    <label htmlFor="group-name">
-                      <span>任务组名称</span>
-                      <input
-                        id="group-name"
-                        value={groupName}
-                        onChange={(event) => setGroupName(event.target.value)}
-                        placeholder="例如：版本迭代"
-                        disabled={isSubmittingTask || isSubmittingGroup}
-                      />
-                    </label>
-
-                    <label htmlFor="group-description">
-                      <span>任务组说明</span>
-                      <input
-                        id="group-description"
-                        value={groupDescription}
-                        onChange={(event) => setGroupDescription(event.target.value)}
-                        placeholder="说明这一组主要装什么任务"
-                        disabled={isSubmittingTask || isSubmittingGroup}
-                      />
-                    </label>
-
-                    <div className="group-creator-actions">
-                      <p className="composer-tip">创建成功后会自动选中刚建的任务组。</p>
-                      <button
-                        className="secondary-button"
-                        onClick={() => void handleCreateGroup()}
-                        type="button"
-                        disabled={isSubmittingTask || isSubmittingGroup}
-                      >
-                        {isSubmittingGroup ? '创建中...' : '保存任务组'}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="section-note">当前已有 {taskGroups.length} 个任务组，可直接在上方下拉中选择。</p>
-                )}
-              </section>
-
               <div className="composer-actions task-modal-actions">
                 <div className="composer-feedback">
-                  <p className="composer-tip">建议标题只写动作，备注写上下文，方便后续快速扫清单。</p>
                   {isSubmittingTask ? <span className="inline-feedback">正在保存到本地数据库...</span> : null}
                 </div>
                 <div className="task-modal-button-row">
-                  <button
-                    className="secondary-button"
-                    onClick={closeModal}
-                    type="button"
-                    disabled={isSubmittingTask || isSubmittingGroup}
-                  >
+                  <button className="secondary-button" onClick={closeTaskModal} type="button" disabled={isSubmittingTask}>
                     取消
                   </button>
-                  <button className="primary-button" type="submit" disabled={isSubmittingTask || isSubmittingGroup}>
+                  <button className="primary-button" type="submit" disabled={isSubmittingTask}>
                     {isSubmittingTask ? '保存中...' : '创建任务'}
                   </button>
                 </div>
@@ -272,6 +242,71 @@ export function TaskComposer() {
           </section>
         </div>
       ) : null}
-    </section>
+
+      {isGroupModalOpen ? (
+        <div className="modal-backdrop" onClick={closeGroupModal} role="presentation">
+          <section
+            className="task-modal task-modal-compact"
+            aria-labelledby="group-modal-title"
+            aria-modal="true"
+            role="dialog"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="task-modal-header">
+              <div>
+                <h2 id="group-modal-title">新建任务组</h2>
+              </div>
+              <button
+                className="secondary-button modal-close-button"
+                onClick={closeGroupModal}
+                type="button"
+                disabled={isSubmittingGroup}
+              >
+                关闭
+              </button>
+            </div>
+
+            <form className="composer-form task-modal-form" onSubmit={(event) => void handleSubmitGroup(event)}>
+              <label htmlFor="group-name">
+                <span>任务组名称</span>
+                <input
+                  id="group-name"
+                  value={groupName}
+                  onChange={(event) => setGroupName(event.target.value)}
+                  placeholder="例如：版本迭代"
+                  disabled={isSubmittingGroup}
+                />
+              </label>
+
+              <label htmlFor="group-description">
+                <span>任务组说明</span>
+                <textarea
+                  id="group-description"
+                  value={groupDescription}
+                  onChange={(event) => setGroupDescription(event.target.value)}
+                  placeholder="说明这一组主要装什么任务"
+                  rows={3}
+                  disabled={isSubmittingGroup}
+                />
+              </label>
+
+              <div className="composer-actions task-modal-actions">
+                <div className="composer-feedback">
+                  {isSubmittingGroup ? <span className="inline-feedback">正在创建任务组...</span> : null}
+                </div>
+                <div className="task-modal-button-row">
+                  <button className="secondary-button" onClick={closeGroupModal} type="button" disabled={isSubmittingGroup}>
+                    取消
+                  </button>
+                  <button className="primary-button" type="submit" disabled={isSubmittingGroup}>
+                    {isSubmittingGroup ? '创建中...' : '创建任务组'}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </section>
+        </div>
+      ) : null}
+    </>
   )
 }
