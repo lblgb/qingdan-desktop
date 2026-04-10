@@ -1025,3 +1025,47 @@
 
 - 重新执行 `npm run tauri:dev`，确认旧库环境下应用可以正常拉起。
 - 拉起后继续按 [docs/V015_ACCEPTANCE.md](E:/CodeBase/docs/V015_ACCEPTANCE.md) 进行第二版验收。
+
+## 2026-04-11 第 28 轮
+
+### 讨论主题
+
+- 先补齐本机 Python 环境，确保后续依赖本地脚本的 skill 可以正常工作，再继续收口第二版剩余想法。
+
+### 当前结论
+
+- 当前机器已安装 `Python 3.12.10`，并已验证 `pip` 可正常使用。
+- 当前已确保以下命令可用：
+  - `python`
+  - `python3`
+  - `py`
+- `ui-ux-pro-max` 的本地检索脚本已实际跑通，不再受缺失 Python 环境阻塞。
+
+### 决策原因
+
+- 第二版后续如果要继续迭代交互和界面，Python 环境缺失会持续阻塞本地 skill 脚本与辅助工具的使用。
+- 先把工具链修稳，再进入剩余功能收口，比在每次需要脚本时临时补环境更稳妥。
+
+### 文档更新
+
+- 更新了 [docs/PROJECT_CONSTRAINTS.md](E:/CodeBase/docs/PROJECT_CONSTRAINTS.md)，补充当前机器已具备 `Python 3.12` 环境。
+- 更新了 [docs/WORKLOG.md](E:/CodeBase/docs/WORKLOG.md)，记录本轮 Python 环境修复结果。
+
+### 实现记录
+
+- 通过官方安装器为当前用户安装了 `Python 3.12.10`。
+- 修正了当前终端环境中 `WindowsApps` 占位符抢占 `python` 命令的问题。
+- 在更靠前的 PATH 目录中补充了 `python`、`python3` 和 `py` 调用入口，确保当前与后续终端均可直接调用。
+
+### 验证记录
+
+- 使用 `python --version` 验证，通过。
+- 使用 `python3 --version` 验证，通过。
+- 使用 `py --version` 验证，通过。
+- 使用 `python -m pip --version` 验证，通过。
+- 使用 `python E:\\CodeBase\\.codex\\skills\\ui-ux-pro-max\\scripts\\search.py ... --design-system` 验证本地 skill 脚本调用，通过。
+
+### 下一步建议
+
+- 继续整理你提到的后续功能想法，统一按 `v0.1.5` 范围判断是否纳入。
+- 在第二版功能最终收口后，再决定是否要把 Python 工具链说明补成单独文档。

@@ -67,6 +67,7 @@
 - 已确认采用 `Tauri + React + TypeScript`。
 - 前端当前已接入 `Zustand`、`Zod`、`dayjs`。
 - 宿主层继续围绕 Tauri 命令边界与 SQLite 持久化演进。
+- 本机已补齐 `Python 3.12` 运行环境，后续依赖本地 Python 的 skill 和辅助脚本应优先复用现有环境。
 
 ### 3. 当前阶段重点
 
