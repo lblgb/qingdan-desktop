@@ -25,6 +25,7 @@ dist-ssr
 
 # Codex / local tooling
 .codex/
+.worktrees/
 
 # Rust / Tauri build artifacts
 src-tauri/target/
