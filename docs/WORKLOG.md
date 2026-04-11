@@ -1285,3 +1285,44 @@
 
 - 后续新一轮规划应默认从 `v0.1.5` 已收口版本继续，而不是回头再拆这版范围。
 - 下一阶段建议优先考虑“优先级 + 更多条件体系扩展”，或继续补界面精修。
+
+## 2026-04-11 第 35 轮
+### 讨论主题
+
+- 补齐 `v0.1.5` GitHub Release 的安装包资产，并将发布资产要求固化到项目约束中。
+
+### 当前结论
+
+- `v0.1.5` 的 GitHub Release 不应只包含 tag 与发布说明，还应包含实际可下载安装的 Windows 安装包资产。
+- 当前项目后续发布的默认交付基线明确为同时附带：
+  - `轻单_<version>_x64-setup.exe`
+  - `轻单_<version>_x64_zh-CN.msi`
+- 若缺失上述任一安装产物，应视为发布内容不完整。
+
+### 决策原因
+
+- 当前项目面向 Windows 桌面端使用场景，Release 页面对外的核心价值不仅是版本说明，还包括可直接下载的安装包。
+- 仅有 tag 和 release notes 不足以构成完整交付；需要把“说明”和“安装产物”同时补齐，才能避免后续再次遗漏。
+- 将该要求写入约束文档后，后续版本发布可以复用同一口径，而不是每次靠临时记忆补充。
+
+### 文档更新
+
+- 更新了 [docs/PROJECT_CONSTRAINTS.md](E:/CodeBase/docs/PROJECT_CONSTRAINTS.md)，明确 GitHub Release 默认必须同时附带 `setup.exe` 与 `zh-CN.msi`。
+- 更新了 [docs/WORKLOG.md](E:/CodeBase/docs/WORKLOG.md)，记录本轮发布资产补齐与约束固化结果。
+
+### 实现记录
+
+- 核对了本地已生成的 Windows 安装包资产：
+- 更新了版本元数据来源：
+  - [package.json](E:/CodeBase/package.json)
+  - [Cargo.toml](E:/CodeBase/src-tauri/Cargo.toml)
+  - [tauri.conf.json](E:/CodeBase/src-tauri/tauri.conf.json)
+- 重新构建后生成了与发布版本一致的 Windows 安装包资产：
+  - [轻单_0.1.5_x64-setup.exe](E:/CodeBase/src-tauri/target/release/bundle/nsis/%E8%BD%BB%E5%8D%95_0.1.5_x64-setup.exe)
+  - [轻单_0.1.5_x64_zh-CN.msi](E:/CodeBase/src-tauri/target/release/bundle/msi/%E8%BD%BB%E5%8D%95_0.1.5_x64_zh-CN.msi)
+- 计划将上述两个安装包上传到 `v0.1.5` GitHub Release，补齐发布资产。
+
+### 下一步建议
+
+- 后续新版本发布前，应先确认 tag、release notes、安装包文件名三者版本一致。
+- 进入 `v0.20` 前，发布流程基线已补齐，可继续回到下一阶段规划与实现。

@@ -51,6 +51,10 @@
 - 涉及 Tauri 发布配置时，需显式配置产品名、窗口标题和 `bundle.icon`，避免发布产物继续依赖空数组或默认值。
 - 当 Windows MSI 需要承载中文产品名、安装目录和快捷方式名称时，需为 WiX 显式提供支持中文代码页的本地化配置。
 - Windows 发布版应使用 `windows_subsystem = "windows"`，避免安装版启动时弹出额外控制台窗口。
+- GitHub Release 发布时，默认应同时附带两类 Windows 安装产物：
+  - `轻单_<version>_x64-setup.exe`
+  - `轻单_<version>_x64_zh-CN.msi`
+- 如某次发布缺失上述任一安装产物，应视为发布内容不完整，而不是仅凭 tag 或 release notes 视为已完成发布。
 - 环境问题排查时应优先区分“系统依赖问题”和“项目配置问题”，避免混杂处理。
 - Windows 下首次执行 `tauri build` 打 MSI 时，可能需要额外下载 WiX 工具链；若下载受网络影响，需把“release 可执行文件已生成”和“安装包打包被外部依赖阻塞”分开记录。
 
@@ -97,6 +101,7 @@
 
 - `tauri build` 当前可完成前端生产构建和宿主层 release 编译。
 - 当前已可生成 MSI 与 NSIS 安装包，后续重点转为正式品牌图标与发布说明整理。
+- GitHub Release 的 Windows 交付基线当前明确为：同时上传 `setup.exe` 与 `zh-CN.msi` 两个安装包资产。
 
 ## 变更原则
 
