@@ -1360,7 +1360,6 @@
 - 更新了 [docs/PROJECT_CONSTRAINTS.md](E:/CodeBase/docs/PROJECT_CONSTRAINTS.md)，补充 `v0.20` 的实施边界与文档先行约束。
 
 ### 实现记录
-
 - 本轮先完成 `v0.20` 文档基线整理，不包含功能代码改动。
 
 ### 验证记录
