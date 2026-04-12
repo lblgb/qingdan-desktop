@@ -125,10 +125,10 @@
 
 ### 修复记录
 
-- 修复了 [src-tauri/Cargo.toml](E:/CodeBase/src-tauri/Cargo.toml) 的 TOML 损坏问题。
-- 修复了 [src-tauri/tauri.conf.json](E:/CodeBase/src-tauri/tauri.conf.json) 的 BOM 编码问题。
-- 新增了 [src-tauri/icons/icon.ico](E:/CodeBase/src-tauri/icons/icon.ico) 和 [src-tauri/icons/icon.png](E:/CodeBase/src-tauri/icons/icon.png) 作为当前可用图标资源。
-- 验证了 [src-tauri/target/debug/qingdan-desktop.exe](E:/CodeBase/src-tauri/target/debug/qingdan-desktop.exe) 可生成并运行。
+- 修复了 [src-tauri/Cargo.toml](src-tauri/Cargo.toml) 的 TOML 损坏问题。
+- 修复了 [src-tauri/tauri.conf.json](src-tauri/tauri.conf.json) 的 BOM 编码问题。
+- 新增了 [src-tauri/icons/icon.ico](src-tauri/icons/icon.ico) 和 [src-tauri/icons/icon.png](src-tauri/icons/icon.png) 作为当前可用图标资源。
+- 验证了 [src-tauri/target/debug/qingdan-desktop.exe](src-tauri/target/debug/qingdan-desktop.exe) 可生成并运行。
 
 ### 当前风险
 
@@ -162,10 +162,10 @@
 
 ### 改动记录
 
-- 重构了 [src/app/AppShell.tsx](E:/CodeBase/src/app/AppShell.tsx) 的首页信息架构，新增顶部品牌区、阶段说明、完成率/逾期提醒等概览信息，以及带数量的筛选侧栏。
-- 重构了 [src/components/TaskComposer.tsx](E:/CodeBase/src/components/TaskComposer.tsx) 的任务录入区域，优化文案、表单标签关联和录入提示。
-- 重构了 [src/components/TaskList.tsx](E:/CodeBase/src/components/TaskList.tsx) 的任务列表样式与空状态，强化“标记完成/删除”的操作可见性。
-- 重写了 [src/index.css](E:/CodeBase/src/index.css) 的全局样式，建立新的桌面工作台视觉基线，并补充了 `prefers-reduced-motion` 响应。
+- 重构了 [src/app/AppShell.tsx](src/app/AppShell.tsx) 的首页信息架构，新增顶部品牌区、阶段说明、完成率/逾期提醒等概览信息，以及带数量的筛选侧栏。
+- 重构了 [src/components/TaskComposer.tsx](src/components/TaskComposer.tsx) 的任务录入区域，优化文案、表单标签关联和录入提示。
+- 重构了 [src/components/TaskList.tsx](src/components/TaskList.tsx) 的任务列表样式与空状态，强化“标记完成/删除”的操作可见性。
+- 重写了 [src/index.css](src/index.css) 的全局样式，建立新的桌面工作台视觉基线，并补充了 `prefers-reduced-motion` 响应。
 
 ### 验证记录
 
@@ -205,19 +205,19 @@
 
 ### 文档更新
 
-- 更新了 [docs/ARCHITECTURE.md](E:/CodeBase/docs/ARCHITECTURE.md)，新增“真实数据层接入范围”，明确第一阶段目标、包含项、不包含项与验收基线。
-- 更新了 [docs/PROJECT_CONSTRAINTS.md](E:/CodeBase/docs/PROJECT_CONSTRAINTS.md)，补充当前阶段实现边界，要求先更新文档再推进功能实现。
+- 更新了 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)，新增“真实数据层接入范围”，明确第一阶段目标、包含项、不包含项与验收基线。
+- 更新了 [docs/PROJECT_CONSTRAINTS.md](docs/PROJECT_CONSTRAINTS.md)，补充当前阶段实现边界，要求先更新文档再推进功能实现。
 
 ### 实现记录
 
-- 在 [src-tauri/src/db/mod.rs](E:/CodeBase/src-tauri/src/db/mod.rs) 中实现了 SQLite 文件初始化、任务表建表与数据库连接能力。
-- 在 [src-tauri/src/models/mod.rs](E:/CodeBase/src-tauri/src/models/mod.rs) 中补充了 Rust 侧 `TaskItem` 与 `CreateTaskInput` 数据结构，并统一为前端友好的 camelCase 序列化语义。
-- 新增了 [src-tauri/src/commands/tasks.rs](E:/CodeBase/src-tauri/src/commands/tasks.rs)，提供 `list_tasks`、`create_task`、`toggle_task`、`delete_task` 四个任务命令。
-- 更新了 [src-tauri/src/lib.rs](E:/CodeBase/src-tauri/src/lib.rs)，在应用启动时初始化数据库并注册任务命令。
-- 更新了 [src/features/tasks/task.storage.ts](E:/CodeBase/src/features/tasks/task.storage.ts)，将任务数据访问切换为“桌面端走 Tauri 命令，浏览器环境回退 localStorage”的模式。
-- 更新了 [src/stores/taskStore.ts](E:/CodeBase/src/stores/taskStore.ts)，将任务仓库改为异步加载和异步变更。
-- 更新了 [src/app/AppShell.tsx](E:/CodeBase/src/app/AppShell.tsx)、[src/components/TaskComposer.tsx](E:/CodeBase/src/components/TaskComposer.tsx)、[src/components/TaskList.tsx](E:/CodeBase/src/components/TaskList.tsx)，联调异步加载后的界面行为。
-- 更新了 [src-tauri/Cargo.toml](E:/CodeBase/src-tauri/Cargo.toml)，补充 SQLite 与任务主键/时间戳所需的宿主层依赖。
+- 在 [src-tauri/src/db/mod.rs](src-tauri/src/db/mod.rs) 中实现了 SQLite 文件初始化、任务表建表与数据库连接能力。
+- 在 [src-tauri/src/models/mod.rs](src-tauri/src/models/mod.rs) 中补充了 Rust 侧 `TaskItem` 与 `CreateTaskInput` 数据结构，并统一为前端友好的 camelCase 序列化语义。
+- 新增了 [src-tauri/src/commands/tasks.rs](src-tauri/src/commands/tasks.rs)，提供 `list_tasks`、`create_task`、`toggle_task`、`delete_task` 四个任务命令。
+- 更新了 [src-tauri/src/lib.rs](src-tauri/src/lib.rs)，在应用启动时初始化数据库并注册任务命令。
+- 更新了 [src/features/tasks/task.storage.ts](src/features/tasks/task.storage.ts)，将任务数据访问切换为“桌面端走 Tauri 命令，浏览器环境回退 localStorage”的模式。
+- 更新了 [src/stores/taskStore.ts](src/stores/taskStore.ts)，将任务仓库改为异步加载和异步变更。
+- 更新了 [src/app/AppShell.tsx](src/app/AppShell.tsx)、[src/components/TaskComposer.tsx](src/components/TaskComposer.tsx)、[src/components/TaskList.tsx](src/components/TaskList.tsx)，联调异步加载后的界面行为。
+- 更新了 [src-tauri/Cargo.toml](src-tauri/Cargo.toml)，补充 SQLite 与任务主键/时间戳所需的宿主层依赖。
 
 ### 验证记录
 
@@ -257,7 +257,7 @@
 
 ### 文档更新
 
-- 更新了 [docs/ARCHITECTURE.md](E:/CodeBase/docs/ARCHITECTURE.md)，新增“任务排序与分组语义”章节，明确设计目标、默认展示口径、分组判定规则、责任边界和第二阶段验收基线。
+- 更新了 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)，新增“任务排序与分组语义”章节，明确设计目标、默认展示口径、分组判定规则、责任边界和第二阶段验收基线。
 
 ### 当前风险
 
@@ -290,16 +290,16 @@
 
 ### 实现记录
 
-- 更新了 [src-tauri/src/commands/tasks.rs](E:/CodeBase/src-tauri/src/commands/tasks.rs)，使 SQLite 查询顺序与文档中的默认排序口径一致。
-- 新增了 [src/features/tasks/task.grouping.ts](E:/CodeBase/src/features/tasks/task.grouping.ts)，统一封装任务分组规则与组元信息。
-- 更新了 [src/components/TaskList.tsx](E:/CodeBase/src/components/TaskList.tsx)，将列表渲染切换为按组展示。
-- 更新了 [src/index.css](E:/CodeBase/src/index.css)，补充分组标题、分组计数和分组列表的样式表现。
+- 更新了 [src-tauri/src/commands/tasks.rs](src-tauri/src/commands/tasks.rs)，使 SQLite 查询顺序与文档中的默认排序口径一致。
+- 新增了 [src/features/tasks/task.grouping.ts](src/features/tasks/task.grouping.ts)，统一封装任务分组规则与组元信息。
+- 更新了 [src/components/TaskList.tsx](src/components/TaskList.tsx)，将列表渲染切换为按组展示。
+- 更新了 [src/index.css](src/index.css)，补充分组标题、分组计数和分组列表的样式表现。
 
 ### 验证记录
 
 - 使用 `cmd /c node_modules\\.bin\\tsc.cmd -b` 验证前端 TypeScript 构建，通过。
 - 使用 `cargo check` 验证宿主层编译，通过。
-- 当前 [qingdan-desktop](E:/CodeBase/src-tauri/target/debug/qingdan-desktop.exe) 进程仍在运行，便于直接观察分组效果。
+- 当前 [qingdan-desktop](src-tauri/target/debug/qingdan-desktop.exe) 进程仍在运行，便于直接观察分组效果。
 
 ### 当前风险
 
@@ -332,7 +332,7 @@
 
 ### 文档更新
 
-- 更新了 [docs/ARCHITECTURE.md](E:/CodeBase/docs/ARCHITECTURE.md)，新增“任务编辑接入范围”章节，明确本轮目标、包含项、不包含项与交互基线。
+- 更新了 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)，新增“任务编辑接入范围”章节，明确本轮目标、包含项、不包含项与交互基线。
 
 ### 下一步建议
 
@@ -357,14 +357,14 @@
 
 ### 实现记录
 
-- 更新了 [src/features/tasks/task.types.ts](E:/CodeBase/src/features/tasks/task.types.ts)，新增前端 `UpdateTaskInput` 类型。
-- 更新了 [src-tauri/src/models/mod.rs](E:/CodeBase/src-tauri/src/models/mod.rs)，补充 Rust 侧编辑输入模型。
-- 更新了 [src-tauri/src/commands/tasks.rs](E:/CodeBase/src-tauri/src/commands/tasks.rs)，新增 `update_task` 命令。
-- 更新了 [src-tauri/src/lib.rs](E:/CodeBase/src-tauri/src/lib.rs)，注册任务编辑命令。
-- 更新了 [src/features/tasks/task.storage.ts](E:/CodeBase/src/features/tasks/task.storage.ts)，补充桌面端与浏览器回退环境下的编辑能力。
-- 更新了 [src/stores/taskStore.ts](E:/CodeBase/src/stores/taskStore.ts)，将编辑操作纳入异步状态仓库。
-- 更新了 [src/components/TaskList.tsx](E:/CodeBase/src/components/TaskList.tsx)，接入列表内联编辑交互。
-- 更新了 [src/index.css](E:/CodeBase/src/index.css)，补充编辑态所需样式。
+- 更新了 [src/features/tasks/task.types.ts](src/features/tasks/task.types.ts)，新增前端 `UpdateTaskInput` 类型。
+- 更新了 [src-tauri/src/models/mod.rs](src-tauri/src/models/mod.rs)，补充 Rust 侧编辑输入模型。
+- 更新了 [src-tauri/src/commands/tasks.rs](src-tauri/src/commands/tasks.rs)，新增 `update_task` 命令。
+- 更新了 [src-tauri/src/lib.rs](src-tauri/src/lib.rs)，注册任务编辑命令。
+- 更新了 [src/features/tasks/task.storage.ts](src/features/tasks/task.storage.ts)，补充桌面端与浏览器回退环境下的编辑能力。
+- 更新了 [src/stores/taskStore.ts](src/stores/taskStore.ts)，将编辑操作纳入异步状态仓库。
+- 更新了 [src/components/TaskList.tsx](src/components/TaskList.tsx)，接入列表内联编辑交互。
+- 更新了 [src/index.css](src/index.css)，补充编辑态所需样式。
 
 ### 验证记录
 
@@ -405,16 +405,16 @@
 
 ### 文档更新
 
-- 更新了 [docs/ARCHITECTURE.md](E:/CodeBase/docs/ARCHITECTURE.md)，新增“第一版收口范围”，明确本轮目标、包含项、非范围项与验收基线。
-- 重写并更新了 [docs/PROJECT_CONSTRAINTS.md](E:/CodeBase/docs/PROJECT_CONSTRAINTS.md)，补充第一版收口阶段约束，以及 Windows MSI 首次打包依赖 WiX 下载的说明。
+- 更新了 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)，新增“第一版收口范围”，明确本轮目标、包含项、非范围项与验收基线。
+- 重写并更新了 [docs/PROJECT_CONSTRAINTS.md](docs/PROJECT_CONSTRAINTS.md)，补充第一版收口阶段约束，以及 Windows MSI 首次打包依赖 WiX 下载的说明。
 
 ### 实现记录
 
-- 更新了 [src/stores/taskStore.ts](E:/CodeBase/src/stores/taskStore.ts)，补充异步动作态、加载态与统一反馈信息。
-- 更新了 [src/app/AppShell.tsx](E:/CodeBase/src/app/AppShell.tsx)，接入首页状态提示条和初始化失败后的重试入口。
-- 更新了 [src/components/TaskComposer.tsx](E:/CodeBase/src/components/TaskComposer.tsx)，补充新建任务的提交中反馈和禁用态。
-- 更新了 [src/components/TaskList.tsx](E:/CodeBase/src/components/TaskList.tsx)，补充编辑、完成、删除动作的过程提示。
-- 更新了 [src/index.css](E:/CodeBase/src/index.css)，补充状态提示条、内联反馈和禁用态样式。
+- 更新了 [src/stores/taskStore.ts](src/stores/taskStore.ts)，补充异步动作态、加载态与统一反馈信息。
+- 更新了 [src/app/AppShell.tsx](src/app/AppShell.tsx)，接入首页状态提示条和初始化失败后的重试入口。
+- 更新了 [src/components/TaskComposer.tsx](src/components/TaskComposer.tsx)，补充新建任务的提交中反馈和禁用态。
+- 更新了 [src/components/TaskList.tsx](src/components/TaskList.tsx)，补充编辑、完成、删除动作的过程提示。
+- 更新了 [src/index.css](src/index.css)，补充状态提示条、内联反馈和禁用态样式。
 
 ### 验证记录
 
@@ -454,12 +454,12 @@
 
 ### 文档更新
 
-- 更新了 [docs/ARCHITECTURE.md](E:/CodeBase/docs/ARCHITECTURE.md)，在第一版收口范围中补充发布配置显式化要求。
-- 更新了 [docs/PROJECT_CONSTRAINTS.md](E:/CodeBase/docs/PROJECT_CONSTRAINTS.md)，新增 Tauri 发布配置需显式配置产品名、窗口标题和 `bundle.icon` 的约束。
+- 更新了 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)，在第一版收口范围中补充发布配置显式化要求。
+- 更新了 [docs/PROJECT_CONSTRAINTS.md](docs/PROJECT_CONSTRAINTS.md)，新增 Tauri 发布配置需显式配置产品名、窗口标题和 `bundle.icon` 的约束。
 
 ### 实现记录
 
-- 重写了 [src-tauri/tauri.conf.json](E:/CodeBase/src-tauri/tauri.conf.json)，补齐发布配置中的产品名、窗口标题和图标引用。
+- 重写了 [src-tauri/tauri.conf.json](src-tauri/tauri.conf.json)，补齐发布配置中的产品名、窗口标题和图标引用。
 
 ### 验证记录
 
@@ -496,9 +496,9 @@
 
 ### 文档更新
 
-- 新增了 [docs/V1_ACCEPTANCE.md](E:/CodeBase/docs/V1_ACCEPTANCE.md)，作为第一版统一手工验收清单。
-- 更新了 [docs/ARCHITECTURE.md](E:/CodeBase/docs/ARCHITECTURE.md)，明确第一版手工验收以该清单为准。
-- 更新了 [docs/PROJECT_CONSTRAINTS.md](E:/CodeBase/docs/PROJECT_CONSTRAINTS.md)，补充“验收需落到统一清单”的约束。
+- 新增了 [docs/V1_ACCEPTANCE.md](docs/V1_ACCEPTANCE.md)，作为第一版统一手工验收清单。
+- 更新了 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)，明确第一版手工验收以该清单为准。
+- 更新了 [docs/PROJECT_CONSTRAINTS.md](docs/PROJECT_CONSTRAINTS.md)，补充“验收需落到统一清单”的约束。
 
 ### 验证记录
 
@@ -512,7 +512,7 @@
 
 ### 下一步建议
 
-- 直接按 [docs/V1_ACCEPTANCE.md](E:/CodeBase/docs/V1_ACCEPTANCE.md) 跑一轮手工验收。
+- 直接按 [docs/V1_ACCEPTANCE.md](docs/V1_ACCEPTANCE.md) 跑一轮手工验收。
 - 你边验边把看到的问题发我，我按清单项逐条收口。
 
 ## 2026-04-09 第 15 轮
@@ -534,7 +534,7 @@
 
 ### 文档更新
 
-- 更新了 [docs/V1_ACCEPTANCE.md](E:/CodeBase/docs/V1_ACCEPTANCE.md)，将“初次加载任务时可见加载反馈”标记为已验证，并补充说明该项通过临时延迟方式确认。
+- 更新了 [docs/V1_ACCEPTANCE.md](docs/V1_ACCEPTANCE.md)，将“初次加载任务时可见加载反馈”标记为已验证，并补充说明该项通过临时延迟方式确认。
 
 ### 验证记录
 
@@ -548,7 +548,7 @@
 
 ### 下一步建议
 
-- 继续按 [docs/V1_ACCEPTANCE.md](E:/CodeBase/docs/V1_ACCEPTANCE.md) 验收“新建保存中反馈”“编辑/完成/删除过程反馈”“成功/失败提示”等条目。
+- 继续按 [docs/V1_ACCEPTANCE.md](docs/V1_ACCEPTANCE.md) 验收“新建保存中反馈”“编辑/完成/删除过程反馈”“成功/失败提示”等条目。
 - 如你继续在窗口里验，我就按你的反馈逐条收口并同步文档。
 
 ## 2026-04-09 第 16 轮
@@ -570,7 +570,7 @@
 
 ### 文档更新
 
-- 更新了 [docs/V1_ACCEPTANCE.md](E:/CodeBase/docs/V1_ACCEPTANCE.md)，将除 MSI 打包外的验收项全部标记为通过。
+- 更新了 [docs/V1_ACCEPTANCE.md](docs/V1_ACCEPTANCE.md)，将除 MSI 打包外的验收项全部标记为通过。
 
 ### 当前风险
 
@@ -604,13 +604,13 @@
 
 ### 文档更新
 
-- 更新了 [docs/V1_ACCEPTANCE.md](E:/CodeBase/docs/V1_ACCEPTANCE.md)，将 `MSI` 打包项标记为通过。
-- 更新了 [docs/PROJECT_CONSTRAINTS.md](E:/CodeBase/docs/PROJECT_CONSTRAINTS.md)，补充“中文产品名需显式提供 WiX 中文本地化配置”的约束，并将发布状态更新为“已可生成 MSI 与 NSIS 安装包”。
+- 更新了 [docs/V1_ACCEPTANCE.md](docs/V1_ACCEPTANCE.md)，将 `MSI` 打包项标记为通过。
+- 更新了 [docs/PROJECT_CONSTRAINTS.md](docs/PROJECT_CONSTRAINTS.md)，补充“中文产品名需显式提供 WiX 中文本地化配置”的约束，并将发布状态更新为“已可生成 MSI 与 NSIS 安装包”。
 
 ### 实现记录
 
-- 新增了 [src-tauri/wix/zh-CN.wxl](E:/CodeBase/src-tauri/wix/zh-CN.wxl)，为 WiX 提供中文语言与代码页配置。
-- 更新了 [src-tauri/tauri.conf.json](E:/CodeBase/src-tauri/tauri.conf.json)，将 Windows WiX 语言配置切到 `zh-CN` 并引用自定义 `localePath`。
+- 新增了 [src-tauri/wix/zh-CN.wxl](src-tauri/wix/zh-CN.wxl)，为 WiX 提供中文语言与代码页配置。
+- 更新了 [src-tauri/tauri.conf.json](src-tauri/tauri.conf.json)，将 Windows WiX 语言配置切到 `zh-CN` 并引用自定义 `localePath`。
 
 ### 验证记录
 
@@ -647,11 +647,11 @@
 
 ### 文档更新
 
-- 更新了 [docs/PROJECT_CONSTRAINTS.md](E:/CodeBase/docs/PROJECT_CONSTRAINTS.md)，补充“Windows 发布版需使用 `windows_subsystem = \"windows\"`”和“开发版与安装版当前共享同一 AppData 数据目录”的约束说明。
+- 更新了 [docs/PROJECT_CONSTRAINTS.md](docs/PROJECT_CONSTRAINTS.md)，补充“Windows 发布版需使用 `windows_subsystem = \"windows\"`”和“开发版与安装版当前共享同一 AppData 数据目录”的约束说明。
 
 ### 实现记录
 
-- 更新了 [src-tauri/src/main.rs](E:/CodeBase/src-tauri/src/main.rs)，为非调试构建启用 `windows_subsystem = "windows"`。
+- 更新了 [src-tauri/src/main.rs](src-tauri/src/main.rs)，为非调试构建启用 `windows_subsystem = "windows"`。
 
 ### 下一步建议
 
@@ -741,8 +741,8 @@
 
 ### 文档更新
 
-- 更新了 [docs/ARCHITECTURE.md](E:/CodeBase/docs/ARCHITECTURE.md)，新增 `v0.1.5` 规划范围、数据模型、筛选语义、非范围项和验收基线。
-- 更新了 [docs/PROJECT_CONSTRAINTS.md](E:/CodeBase/docs/PROJECT_CONSTRAINTS.md)，将当前阶段重点切换到 `v0.1.5`，并补充任务组关系与双维度筛选约束。
+- 更新了 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)，新增 `v0.1.5` 规划范围、数据模型、筛选语义、非范围项和验收基线。
+- 更新了 [docs/PROJECT_CONSTRAINTS.md](docs/PROJECT_CONSTRAINTS.md)，将当前阶段重点切换到 `v0.1.5`，并补充任务组关系与双维度筛选约束。
 
 ### 当前风险
 
@@ -783,16 +783,16 @@
 
 ### 文档更新
 
-- 更新了 [docs/WORKLOG.md](E:/CodeBase/docs/WORKLOG.md)，记录本轮任务组数据层接入结果与当前边界。
+- 更新了 [docs/WORKLOG.md](docs/WORKLOG.md)，记录本轮任务组数据层接入结果与当前边界。
 
 ### 实现记录
 
-- 更新了 [src-tauri/src/db/mod.rs](E:/CodeBase/src-tauri/src/db/mod.rs)，新增 `task_groups` 表初始化、`tasks.group_id` 字段兼容检查和相关索引。
-- 更新了 [src-tauri/src/models/mod.rs](E:/CodeBase/src-tauri/src/models/mod.rs)，补充任务组模型、任务组输入结构，以及任务上的 `group_id` 字段。
-- 更新了 [src-tauri/src/commands/tasks.rs](E:/CodeBase/src-tauri/src/commands/tasks.rs)，新增任务组 CRUD 与任务归组命令，同时让现有任务创建/编辑链路支持 `group_id`。
-- 更新了 [src-tauri/src/lib.rs](E:/CodeBase/src-tauri/src/lib.rs)，注册新的任务组相关 Tauri 命令。
-- 更新了 [src/features/tasks/task.types.ts](E:/CodeBase/src/features/tasks/task.types.ts) 与 [src/features/tasks/task.storage.ts](E:/CodeBase/src/features/tasks/task.storage.ts)，同步前端任务组类型、任务 `groupId` 字段及本地回退访问接口。
-- 更新了 [src/features/tasks/task.mock.ts](E:/CodeBase/src/features/tasks/task.mock.ts)、[src/components/TaskComposer.tsx](E:/CodeBase/src/components/TaskComposer.tsx) 和 [src/components/TaskList.tsx](E:/CodeBase/src/components/TaskList.tsx)，补齐对新字段的兼容。
+- 更新了 [src-tauri/src/db/mod.rs](src-tauri/src/db/mod.rs)，新增 `task_groups` 表初始化、`tasks.group_id` 字段兼容检查和相关索引。
+- 更新了 [src-tauri/src/models/mod.rs](src-tauri/src/models/mod.rs)，补充任务组模型、任务组输入结构，以及任务上的 `group_id` 字段。
+- 更新了 [src-tauri/src/commands/tasks.rs](src-tauri/src/commands/tasks.rs)，新增任务组 CRUD 与任务归组命令，同时让现有任务创建/编辑链路支持 `group_id`。
+- 更新了 [src-tauri/src/lib.rs](src-tauri/src/lib.rs)，注册新的任务组相关 Tauri 命令。
+- 更新了 [src/features/tasks/task.types.ts](src/features/tasks/task.types.ts) 与 [src/features/tasks/task.storage.ts](src/features/tasks/task.storage.ts)，同步前端任务组类型、任务 `groupId` 字段及本地回退访问接口。
+- 更新了 [src/features/tasks/task.mock.ts](src/features/tasks/task.mock.ts)、[src/components/TaskComposer.tsx](src/components/TaskComposer.tsx) 和 [src/components/TaskList.tsx](src/components/TaskList.tsx)，补齐对新字段的兼容。
 
 ### 验证记录
 
@@ -835,14 +835,14 @@
 
 ### 文档更新
 
-- 更新了 [docs/WORKLOG.md](E:/CodeBase/docs/WORKLOG.md)，记录前端状态层接入任务组筛选与归组编辑的结果。
+- 更新了 [docs/WORKLOG.md](docs/WORKLOG.md)，记录前端状态层接入任务组筛选与归组编辑的结果。
 
 ### 实现记录
 
-- 更新了 [src/stores/taskStore.ts](E:/CodeBase/src/stores/taskStore.ts)，新增任务组列表、组筛选状态、双维度过滤逻辑，以及任务组相关动作封装。
-- 更新了 [src/app/AppShell.tsx](E:/CodeBase/src/app/AppShell.tsx)，新增任务组筛选侧栏，并在首页说明文案中同步当前第二版阶段状态。
-- 更新了 [src/components/TaskList.tsx](E:/CodeBase/src/components/TaskList.tsx)，在任务编辑态中新增所属任务组选择，并在列表元信息中展示当前组归属。
-- 更新了 [src/index.css](E:/CodeBase/src/index.css)，补齐 `select` 和任务组空状态卡片的基础样式。
+- 更新了 [src/stores/taskStore.ts](src/stores/taskStore.ts)，新增任务组列表、组筛选状态、双维度过滤逻辑，以及任务组相关动作封装。
+- 更新了 [src/app/AppShell.tsx](src/app/AppShell.tsx)，新增任务组筛选侧栏，并在首页说明文案中同步当前第二版阶段状态。
+- 更新了 [src/components/TaskList.tsx](src/components/TaskList.tsx)，在任务编辑态中新增所属任务组选择，并在列表元信息中展示当前组归属。
+- 更新了 [src/index.css](src/index.css)，补齐 `select` 和任务组空状态卡片的基础样式。
 
 ### 验证记录
 
@@ -886,12 +886,12 @@
 
 ### 文档更新
 
-- 更新了 [docs/WORKLOG.md](E:/CodeBase/docs/WORKLOG.md)，记录弹窗录入流与最小任务组创建入口的实现结果。
+- 更新了 [docs/WORKLOG.md](docs/WORKLOG.md)，记录弹窗录入流与最小任务组创建入口的实现结果。
 
 ### 实现记录
 
-- 重写了 [src/components/TaskComposer.tsx](E:/CodeBase/src/components/TaskComposer.tsx)，将原来的常驻录入区替换为“入口卡片 + 模态弹窗”结构。
-- 更新了 [src/index.css](E:/CodeBase/src/index.css)，新增入口卡片、模态遮罩、弹窗布局、任务组创建块及移动端适配样式。
+- 重写了 [src/components/TaskComposer.tsx](src/components/TaskComposer.tsx)，将原来的常驻录入区替换为“入口卡片 + 模态弹窗”结构。
+- 更新了 [src/index.css](src/index.css)，新增入口卡片、模态遮罩、弹窗布局、任务组创建块及移动端适配样式。
 
 ### 验证记录
 
@@ -935,13 +935,13 @@
 
 ### 文档更新
 
-- 更新了 [docs/WORKLOG.md](E:/CodeBase/docs/WORKLOG.md)，记录任务组管理面板的实现结果与当前边界。
+- 更新了 [docs/WORKLOG.md](docs/WORKLOG.md)，记录任务组管理面板的实现结果与当前边界。
 
 ### 实现记录
 
-- 新增了 [src/components/TaskGroupManager.tsx](E:/CodeBase/src/components/TaskGroupManager.tsx)，实现任务组列表、编辑和删除管理面板。
-- 更新了 [src/app/AppShell.tsx](E:/CodeBase/src/app/AppShell.tsx)，将任务组管理面板接入主内容区。
-- 更新了 [src/index.css](E:/CodeBase/src/index.css)，补齐任务组管理卡片、当前筛选高亮和空状态样式。
+- 新增了 [src/components/TaskGroupManager.tsx](src/components/TaskGroupManager.tsx)，实现任务组列表、编辑和删除管理面板。
+- 更新了 [src/app/AppShell.tsx](src/app/AppShell.tsx)，将任务组管理面板接入主内容区。
+- 更新了 [src/index.css](src/index.css)，补齐任务组管理卡片、当前筛选高亮和空状态样式。
 
 ### 验证记录
 
@@ -967,7 +967,7 @@
 
 ### 当前结论
 
-- 已新增第二版统一验收清单 [docs/V015_ACCEPTANCE.md](E:/CodeBase/docs/V015_ACCEPTANCE.md)。
+- 已新增第二版统一验收清单 [docs/V015_ACCEPTANCE.md](docs/V015_ACCEPTANCE.md)。
 - 当前清单覆盖六类内容：
   - 启动与数据初始化
   - 任务组基础链路
@@ -984,9 +984,9 @@
 
 ### 文档更新
 
-- 新增了 [docs/V015_ACCEPTANCE.md](E:/CodeBase/docs/V015_ACCEPTANCE.md)，作为第二版统一验收清单。
-- 更新了 [docs/ARCHITECTURE.md](E:/CodeBase/docs/ARCHITECTURE.md)，补充第二版手工验收应以统一清单执行。
-- 更新了 [docs/PROJECT_CONSTRAINTS.md](E:/CodeBase/docs/PROJECT_CONSTRAINTS.md)，补充第二版验收需落到统一清单中的约束。
+- 新增了 [docs/V015_ACCEPTANCE.md](docs/V015_ACCEPTANCE.md)，作为第二版统一验收清单。
+- 更新了 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)，补充第二版手工验收应以统一清单执行。
+- 更新了 [docs/PROJECT_CONSTRAINTS.md](docs/PROJECT_CONSTRAINTS.md)，补充第二版验收需落到统一清单中的约束。
 
 ### 当前风险
 
@@ -995,7 +995,7 @@
 
 ### 下一步建议
 
-- 直接按 [docs/V015_ACCEPTANCE.md](E:/CodeBase/docs/V015_ACCEPTANCE.md) 跑一轮第二版手工验收。
+- 直接按 [docs/V015_ACCEPTANCE.md](docs/V015_ACCEPTANCE.md) 跑一轮第二版手工验收。
 - 验收结束后，再决定是继续补少量体验项，还是正式将第二版收口。
 
 ## 2026-04-10 第 27 轮
@@ -1020,11 +1020,11 @@
 
 ### 文档更新
 
-- 更新了 [docs/WORKLOG.md](E:/CodeBase/docs/WORKLOG.md)，记录本次旧库兼容启动问题的根因与修复方式。
+- 更新了 [docs/WORKLOG.md](docs/WORKLOG.md)，记录本次旧库兼容启动问题的根因与修复方式。
 
 ### 实现记录
 
-- 更新了 [src-tauri/src/db/mod.rs](E:/CodeBase/src-tauri/src/db/mod.rs)，将 `tasks.group_id` 索引创建从批量初始化 SQL 中拆出，改为在补列完成后单独执行。
+- 更新了 [src-tauri/src/db/mod.rs](src-tauri/src/db/mod.rs)，将 `tasks.group_id` 索引创建从批量初始化 SQL 中拆出，改为在补列完成后单独执行。
 
 ### 验证记录
 
@@ -1034,7 +1034,7 @@
 ### 下一步建议
 
 - 重新执行 `npm run tauri:dev`，确认旧库环境下应用可以正常拉起。
-- 拉起后继续按 [docs/V015_ACCEPTANCE.md](E:/CodeBase/docs/V015_ACCEPTANCE.md) 进行第二版验收。
+- 拉起后继续按 [docs/V015_ACCEPTANCE.md](docs/V015_ACCEPTANCE.md) 进行第二版验收。
 
 ## 2026-04-11 第 28 轮
 
@@ -1058,8 +1058,8 @@
 
 ### 文档更新
 
-- 更新了 [docs/PROJECT_CONSTRAINTS.md](E:/CodeBase/docs/PROJECT_CONSTRAINTS.md)，补充当前机器已具备 `Python 3.12` 环境。
-- 更新了 [docs/WORKLOG.md](E:/CodeBase/docs/WORKLOG.md)，记录本轮 Python 环境修复结果。
+- 更新了 [docs/PROJECT_CONSTRAINTS.md](docs/PROJECT_CONSTRAINTS.md)，补充当前机器已具备 `Python 3.12` 环境。
+- 更新了 [docs/WORKLOG.md](docs/WORKLOG.md)，记录本轮 Python 环境修复结果。
 
 ### 实现记录
 
@@ -1107,13 +1107,13 @@
 
 ### 文档更新
 
-- 更新了 [docs/WORKLOG.md](E:/CodeBase/docs/WORKLOG.md)，记录这轮界面结构清理与动作入口重构结果。
+- 更新了 [docs/WORKLOG.md](docs/WORKLOG.md)，记录这轮界面结构清理与动作入口重构结果。
 
 ### 实现记录
 
-- 更新了 [src/app/AppShell.tsx](E:/CodeBase/src/app/AppShell.tsx)，移除了开发阶段说明区与顶部元信息区，并将顶部动作入口统一为单个组件。
-- 重写了 [src/components/TaskComposer.tsx](E:/CodeBase/src/components/TaskComposer.tsx)，将其改为“顶部动作菜单 + 两个独立弹窗”的结构。
-- 更新了 [src/index.css](E:/CodeBase/src/index.css)，移除原有英雄区视觉残留，并补齐顶部动作菜单和精简布局样式。
+- 更新了 [src/app/AppShell.tsx](src/app/AppShell.tsx)，移除了开发阶段说明区与顶部元信息区，并将顶部动作入口统一为单个组件。
+- 重写了 [src/components/TaskComposer.tsx](src/components/TaskComposer.tsx)，将其改为“顶部动作菜单 + 两个独立弹窗”的结构。
+- 更新了 [src/index.css](src/index.css)，移除原有英雄区视觉残留，并补齐顶部动作菜单和精简布局样式。
 
 ### 验证记录
 
@@ -1146,13 +1146,13 @@
 - 先落纯本地派生统计，再考虑更复杂的图表或趋势，是风险最低的第二版收口方式。
 ### 文档更新
 
-- 更新了 [docs/WORKLOG.md](E:/CodeBase/docs/WORKLOG.md)，记录本轮顶部概览入口与统计弹窗的实现结果。
+- 更新了 [docs/WORKLOG.md](docs/WORKLOG.md)，记录本轮顶部概览入口与统计弹窗的实现结果。
 ### 实现记录
 
-- 更新了 [src/app/AppShell.tsx](E:/CodeBase/src/app/AppShell.tsx)，将顶部动作区改为 `任务概览 + 新建` 并列结构。
-- 新增了 [src/components/TaskOverview.tsx](E:/CodeBase/src/components/TaskOverview.tsx)，实现概览按钮、弹窗和分层统计展示。
-- 新增了 [src/features/tasks/task.overview.ts](E:/CodeBase/src/features/tasks/task.overview.ts)，集中生成概览所需的派生统计数据。
-- 更新了 [src/index.css](E:/CodeBase/src/index.css)，补齐顶部动作区、概览弹窗和轻量条形图样式。
+- 更新了 [src/app/AppShell.tsx](src/app/AppShell.tsx)，将顶部动作区改为 `任务概览 + 新建` 并列结构。
+- 新增了 [src/components/TaskOverview.tsx](src/components/TaskOverview.tsx)，实现概览按钮、弹窗和分层统计展示。
+- 新增了 [src/features/tasks/task.overview.ts](src/features/tasks/task.overview.ts)，集中生成概览所需的派生统计数据。
+- 更新了 [src/index.css](src/index.css)，补齐顶部动作区、概览弹窗和轻量条形图样式。
 ### 验证记录
 
 - 使用 `cmd /c node_modules\\.bin\\tsc.cmd -b` 验证前端 TypeScript 构建，通过。
@@ -1180,12 +1180,12 @@
 - 当前软件的视觉问题不在于“完全推翻重做”，而在于阴影、渐变、模糊和块感略重；因此这轮优先做轻量级样式收束，而不是高风险的大改版。
 ### 文档更新
 
-- 更新了 [docs/WORKLOG.md](E:/CodeBase/docs/WORKLOG.md)，记录本轮布局拆分和样式收束结果。
+- 更新了 [docs/WORKLOG.md](docs/WORKLOG.md)，记录本轮布局拆分和样式收束结果。
 ### 实现记录
 
-- 更新了 [src/app/AppShell.tsx](E:/CodeBase/src/app/AppShell.tsx)，将任务组管理挪到主工作区上方的独立辅助面板。
-- 更新了 [src/components/TaskGroupManager.tsx](E:/CodeBase/src/components/TaskGroupManager.tsx)，让其作为独立面板使用，并调整了区块说明文案。
-- 更新了 [src/index.css](E:/CodeBase/src/index.css)，统一压低背景渐变、模糊和阴影，缩减圆角与浮层重量，整体收向更清爽的 flat 风格。
+- 更新了 [src/app/AppShell.tsx](src/app/AppShell.tsx)，将任务组管理挪到主工作区上方的独立辅助面板。
+- 更新了 [src/components/TaskGroupManager.tsx](src/components/TaskGroupManager.tsx)，让其作为独立面板使用，并调整了区块说明文案。
+- 更新了 [src/index.css](src/index.css)，统一压低背景渐变、模糊和阴影，缩减圆角与浮层重量，整体收向更清爽的 flat 风格。
 ### 验证记录
 
 - 使用 `cmd /c node_modules\\.bin\\tsc.cmd -b` 验证前端 TypeScript 构建，通过。
@@ -1212,10 +1212,10 @@
 - 先收配色，再讨论任务组入口和左侧扩展交互，能减少两个问题互相干扰判断。
 ### 文档更新
 
-- 更新了 [docs/WORKLOG.md](E:/CodeBase/docs/WORKLOG.md)，记录本轮配色收束的目的与结果。
+- 更新了 [docs/WORKLOG.md](docs/WORKLOG.md)，记录本轮配色收束的目的与结果。
 ### 实现记录
 
-- 更新了 [src/index.css](E:/CodeBase/src/index.css)，统一调整背景、主色、按钮、筛选态、概览图表和错误提示的颜色体系。
+- 更新了 [src/index.css](src/index.css)，统一调整背景、主色、按钮、筛选态、概览图表和错误提示的颜色体系。
 ### 验证记录
 
 - 使用 `cmd /c node_modules\\.bin\\tsc.cmd -b` 验证前端 TypeScript 构建，通过。
@@ -1248,13 +1248,13 @@
 - 清单分页能避免长列表一直向下滚动，也为后续继续扩优先级、更多附加条件后的列表浏览做准备。
 ### 文档更新
 
-- 更新了 [docs/WORKLOG.md](E:/CodeBase/docs/WORKLOG.md)，记录本轮筛选层级重构、任务组管理回收和分页补齐结果。
+- 更新了 [docs/WORKLOG.md](docs/WORKLOG.md)，记录本轮筛选层级重构、任务组管理回收和分页补齐结果。
 ### 实现记录
 
-- 更新了 [src/app/AppShell.tsx](E:/CodeBase/src/app/AppShell.tsx)，重构左侧为 `工作视图 + 更多条件`，并加入二级任务组筛选层级。
-- 重写了 [src/components/TaskGroupManager.tsx](E:/CodeBase/src/components/TaskGroupManager.tsx)，将其改为顶部独立弹窗入口。
-- 更新了 [src/components/TaskList.tsx](E:/CodeBase/src/components/TaskList.tsx)，加入前端分页和分页状态同步逻辑。
-- 更新了 [src/index.css](E:/CodeBase/src/index.css)，补齐更多条件二级菜单、任务组管理弹窗和分页样式。
+- 更新了 [src/app/AppShell.tsx](src/app/AppShell.tsx)，重构左侧为 `工作视图 + 更多条件`，并加入二级任务组筛选层级。
+- 重写了 [src/components/TaskGroupManager.tsx](src/components/TaskGroupManager.tsx)，将其改为顶部独立弹窗入口。
+- 更新了 [src/components/TaskList.tsx](src/components/TaskList.tsx)，加入前端分页和分页状态同步逻辑。
+- 更新了 [src/index.css](src/index.css)，补齐更多条件二级菜单、任务组管理弹窗和分页样式。
 ### 验证记录
 
 - 使用 `cmd /c node_modules\\.bin\\tsc.cmd -b` 验证前端 TypeScript 构建，通过。
@@ -1282,8 +1282,8 @@
 - 先把版本基线写清楚，再进入新阶段，能减少后续反复回看与口径漂移。
 ### 文档更新
 
-- 新增了 [docs/V015_CLOSEOUT.md](E:/CodeBase/docs/V015_CLOSEOUT.md)，作为 `v0.1.5` 的正式收口说明。
-- 更新了 [docs/WORKLOG.md](E:/CodeBase/docs/WORKLOG.md)，记录本轮版本收口结论。
+- 新增了 [docs/V015_CLOSEOUT.md](docs/V015_CLOSEOUT.md)，作为 `v0.1.5` 的正式收口说明。
+- 更新了 [docs/WORKLOG.md](docs/WORKLOG.md)，记录本轮版本收口结论。
 ### 实现记录
 
 - 本轮不新增功能代码，重点完成版本基线整理与文档留痕。
@@ -1317,19 +1317,19 @@
 
 ### 文档更新
 
-- 更新了 [docs/PROJECT_CONSTRAINTS.md](E:/CodeBase/docs/PROJECT_CONSTRAINTS.md)，明确 GitHub Release 默认必须同时附带 `setup.exe` 与 `zh-CN.msi`。
-- 更新了 [docs/WORKLOG.md](E:/CodeBase/docs/WORKLOG.md)，记录本轮发布资产补齐与约束固化结果。
+- 更新了 [docs/PROJECT_CONSTRAINTS.md](docs/PROJECT_CONSTRAINTS.md)，明确 GitHub Release 默认必须同时附带 `setup.exe` 与 `zh-CN.msi`。
+- 更新了 [docs/WORKLOG.md](docs/WORKLOG.md)，记录本轮发布资产补齐与约束固化结果。
 
 ### 实现记录
 
 - 核对了本地已生成的 Windows 安装包资产：
 - 更新了版本元数据来源：
-  - [package.json](E:/CodeBase/package.json)
-  - [Cargo.toml](E:/CodeBase/src-tauri/Cargo.toml)
-  - [tauri.conf.json](E:/CodeBase/src-tauri/tauri.conf.json)
+  - [package.json](package.json)
+  - [Cargo.toml](src-tauri/Cargo.toml)
+  - [tauri.conf.json](src-tauri/tauri.conf.json)
 - 重新构建后生成了与发布版本一致的 Windows 安装包资产：
-  - [轻单_0.1.5_x64-setup.exe](E:/CodeBase/src-tauri/target/release/bundle/nsis/%E8%BD%BB%E5%8D%95_0.1.5_x64-setup.exe)
-  - [轻单_0.1.5_x64_zh-CN.msi](E:/CodeBase/src-tauri/target/release/bundle/msi/%E8%BD%BB%E5%8D%95_0.1.5_x64_zh-CN.msi)
+  - [轻单_0.1.5_x64-setup.exe](src-tauri/target/release/bundle/nsis/%E8%BD%BB%E5%8D%95_0.1.5_x64-setup.exe)
+  - [轻单_0.1.5_x64_zh-CN.msi](src-tauri/target/release/bundle/msi/%E8%BD%BB%E5%8D%95_0.1.5_x64_zh-CN.msi)
 - 计划将上述两个安装包上传到 `v0.1.5` GitHub Release，补齐发布资产。
 
 ### 下一步建议
@@ -1355,9 +1355,9 @@
 
 ### 文档更新
 
-- 新增了 [docs/V020_ACCEPTANCE.md](E:/CodeBase/docs/V020_ACCEPTANCE.md)，作为 `v0.20` 统一验收清单。
-- 更新了 [docs/ARCHITECTURE.md](E:/CodeBase/docs/ARCHITECTURE.md)，补齐 `v0.20` 的版本目标、纳入范围、责任边界和验收基线。
-- 更新了 [docs/PROJECT_CONSTRAINTS.md](E:/CodeBase/docs/PROJECT_CONSTRAINTS.md)，补充 `v0.20` 的实施边界与文档先行约束。
+- 新增了 [docs/V020_ACCEPTANCE.md](docs/V020_ACCEPTANCE.md)，作为 `v0.20` 统一验收清单。
+- 更新了 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)，补齐 `v0.20` 的版本目标、纳入范围、责任边界和验收基线。
+- 更新了 [docs/PROJECT_CONSTRAINTS.md](docs/PROJECT_CONSTRAINTS.md)，补充 `v0.20` 的实施边界与文档先行约束。
 
 ### 实现记录
 - 本轮先完成 `v0.20` 文档基线整理，不包含功能代码改动。
