@@ -259,3 +259,35 @@
 ### 下一步建议
 
 - 进入最终收口，补 `V020_ACCEPTANCE`、架构文档与全量验证，再判断是否可以进入分支收尾。
+## 2026-04-14 第 43 轮
+### 讨论主题
+
+- 完成 `v0.20` 的最终文档收口、验收清单更新和全量验证。
+### 当前结论
+
+- `v0.20` 当前实现范围已与设计基线对齐，核心能力包括优先级、更多条件、轻量批量操作、概览增强和界面精修。
+- 任务行已补“点按优先级徽标直接切换优先级”的轻量路径，补齐了任务级快捷操作缺口。
+- 验收文档和架构文档都已同步到当前实现状态，不再停留在纯计划口径。
+### 决策原因
+
+- 在进入分支收尾前，必须先把代码、验收口径和架构基线对齐，否则后续 review 和合并会继续依赖过期文档。
+- 任务级优先级快速切换是 `v0.20` 设计里明确存在的轻量快捷路径，收口前必须补齐。
+### 文档更新
+
+- 更新了 [`docs/V020_ACCEPTANCE.md`](./V020_ACCEPTANCE.md)，同步当前版本的实现状态与验证命令。
+- 更新了 [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md)，补充当前实施落地要点。
+- 更新了 [`docs/WORKLOG.md`](./WORKLOG.md)，记录本轮最终收口动作。
+### 实现记录
+
+- 更新了 [src/components/TaskList.tsx](E:/CodeBase/.worktrees/v020/src/components/TaskList.tsx)，补任务行优先级就地切换路径。
+- 更新了 [src/index.css](E:/CodeBase/.worktrees/v020/src/index.css)，补优先级徽标按钮状态样式。
+### 验证记录
+
+- 使用 `cmd /c npx.cmd vitest run` 验证前端测试全集，通过。
+- 使用 `cmd /c node_modules\\.bin\\tsc.cmd -b` 验证前端 TypeScript 构建，通过。
+- 使用 `cargo check` 验证 Rust 编译，通过。
+- 使用 `cargo test query_tasks_filters_active_urgent_tasks_when_sorted_by_priority -- --nocapture` 验证查询与排序命令测试，通过。
+- 使用 `cargo test init_database_adds_priority_column_to_legacy_tasks_table -- --nocapture` 验证旧库迁移测试，通过。
+### 下一步建议
+
+- 进入分支收尾流程，评估最终 review、合并方式和后续版本切分。

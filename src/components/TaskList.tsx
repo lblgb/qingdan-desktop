@@ -27,6 +27,12 @@ const EMPTY_STATE_COPY = {
 
 const PAGE_SIZE = 10
 const BULK_UNGROUPED_VALUE = '__ungrouped__'
+const PRIORITY_SEQUENCE: TaskPriority[] = ['urgent', 'high', 'medium', 'low']
+
+function nextPriority(priority: TaskPriority) {
+  const currentIndex = PRIORITY_SEQUENCE.indexOf(priority)
+  return PRIORITY_SEQUENCE[(currentIndex + 1) % PRIORITY_SEQUENCE.length]
+}
 
 export function TaskList() {
   const tasks = useTaskStore((state) => state.tasks)
@@ -148,6 +154,17 @@ export function TaskList() {
     })
 
     handleCancelEdit()
+  }
+
+  async function handleCyclePriority(task: TaskItem) {
+    await updateTask({
+      id: task.id,
+      title: task.title,
+      description: task.description,
+      groupId: task.groupId,
+      dueAt: task.dueAt,
+      priority: nextPriority(task.priority),
+    })
   }
 
   async function handleApplyBulkPriority(priority: TaskPriority) {
@@ -451,7 +468,14 @@ export function TaskList() {
                             )}
 
                             <div className="task-tag-row">
-                              <span className={`priority-badge ${task.priority}`}>{TASK_PRIORITY_META[task.priority].label}</span>
+                              <button
+                                className={`priority-badge priority-badge-button ${task.priority}`}
+                                onClick={() => void handleCyclePriority(task)}
+                                type="button"
+                                disabled={isMutating}
+                              >
+                                {TASK_PRIORITY_META[task.priority].label}
+                              </button>
                               <span className={task.completed ? 'task-status done' : 'task-status'}>
                                 {task.completed ? '已完成' : '进行中'}
                               </span>

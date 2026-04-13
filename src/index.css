@@ -1266,6 +1266,10 @@ textarea {
   border: 1px solid transparent;
 }
 
+.priority-badge-button {
+  cursor: pointer;
+}
+
 .priority-badge.urgent {
   background: rgba(180, 84, 79, 0.12);
   border-color: rgba(180, 84, 79, 0.18);
