@@ -7,7 +7,7 @@ use crate::{
     db::{open_connection, DatabaseState},
     models::{
         BulkUpdateTasksInput, CreateTaskGroupInput, CreateTaskInput, TaskGroup, TaskItem,
-        TaskPriority, TaskQueryDateRange, TaskQueryInput, TaskQuerySortBy, TaskQueryStatus,
+        TaskPriority, TaskQueryInput, TaskQuerySortBy, TaskQueryStatus,
         UpdateTaskGroupInput, UpdateTaskInput,
     },
 };
@@ -24,24 +24,6 @@ fn task_row_to_item(row: &rusqlite::Row<'_>) -> Result<TaskItem, rusqlite::Error
         created_at: row.get(7)?,
         updated_at: row.get(8)?,
     })
-}
-
-fn current_date_string() -> Result<String, String> {
-    let format = time::format_description::parse("[year]-[month]-[day]")
-        .map_err(|error| format!("解析日期格式失败：{error}"))?;
-
-    OffsetDateTime::now_utc()
-        .format(&format)
-        .map_err(|error| format!("生成当前日期失败：{error}"))
-}
-
-fn date_string_after(days: i64) -> Result<String, String> {
-    let format = time::format_description::parse("[year]-[month]-[day]")
-        .map_err(|error| format!("解析日期格式失败：{error}"))?;
-
-    (OffsetDateTime::now_utc() + time::Duration::days(days))
-        .format(&format)
-        .map_err(|error| format!("生成偏移日期失败：{error}"))
 }
 
 fn task_sort_clause(sort_by: TaskQuerySortBy) -> &'static str {
@@ -87,28 +69,17 @@ fn build_task_query(query: &TaskQueryInput) -> Result<(String, Vec<Value>), Stri
         values.push(Value::Text(priority.as_db_value().to_string()));
     }
 
-    if let Some(date_range) = query.date_range {
-        match date_range {
-            TaskQueryDateRange::Today => {
-                predicates.push("due_at IS NOT NULL".to_string());
-                predicates.push("substr(due_at, 1, 10) = ?".to_string());
-                values.push(Value::Text(current_date_string()?));
-            }
-            TaskQueryDateRange::Upcoming => {
-                predicates.push("due_at IS NOT NULL".to_string());
-                predicates.push("substr(due_at, 1, 10) > ?".to_string());
-                predicates.push("substr(due_at, 1, 10) <= ?".to_string());
-                values.push(Value::Text(current_date_string()?));
-                values.push(Value::Text(date_string_after(7)?));
-            }
-            TaskQueryDateRange::Overdue => {
-                predicates.push("due_at IS NOT NULL".to_string());
-                predicates.push("substr(due_at, 1, 10) < ?".to_string());
-                values.push(Value::Text(current_date_string()?));
-            }
-            TaskQueryDateRange::NoDate => {
-                predicates.push("due_at IS NULL".to_string());
-            }
+    if let Some(date_range) = &query.date_range {
+        if let Some(start) = &date_range.start {
+            predicates.push("due_at IS NOT NULL".to_string());
+            predicates.push("substr(due_at, 1, 10) >= ?".to_string());
+            values.push(Value::Text(start.clone()));
+        }
+
+        if let Some(end) = &date_range.end {
+            predicates.push("due_at IS NOT NULL".to_string());
+            predicates.push("substr(due_at, 1, 10) <= ?".to_string());
+            values.push(Value::Text(end.clone()));
         }
     }
 

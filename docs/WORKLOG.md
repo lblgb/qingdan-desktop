@@ -18,6 +18,7 @@
   - [`2026-04-11 第 36 轮`](#2026-04-11-第-36-轮)
   - [`2026-04-11 第 37 轮`](#2026-04-11-第-37-轮)
   - [`2026-04-14 第 38 轮`](#2026-04-14-第-38-轮)
+  - [`2026-04-14 第 39 轮`](#2026-04-14-第-39-轮)
 - 近期关键节点：
   - `v0.1.5` 正式收口：见 [`docs/V015_CLOSEOUT.md`](./V015_CLOSEOUT.md)
   - `v0.1.5` 发布资产补齐：详见 [`docs/WORKLOG_ARCHIVE.md`](./WORKLOG_ARCHIVE.md)
@@ -135,3 +136,39 @@
 ### 下一步建议
 
 - 继续进入 Task 3，把 `priority` 接到任务查询输入、更多条件与排序方式，但仍保持不碰批量删除和复杂快捷键边界。
+
+## 2026-04-14 第 39 轮
+
+### 讨论主题
+
+- 完成 `v0.20` 的任务查询输入、更多条件后端语义与轻量批量更新命令。
+
+### 当前结论
+
+- 宿主层已新增统一的任务查询输入，当前可按 `status / group_id / priority / date_range / sort_by` 查询任务。
+- 排序方式已补入 `default / due-date / priority / updated` 四类后端口径。
+- 已新增轻量批量更新命令，只支持批量改优先级、批量归组和批量完成，不包含批量删除。
+
+### 决策原因
+
+- `Task 3` 的职责是先把更多条件和排序方式的命令层语义定稳，为后续前端筛选面板和批量模式接线。
+- 批量删除仍然明确排除在 `v0.20` 边界外，因此本轮只落最小批量整理能力。
+
+### 文档更新
+
+- 更新了 [`docs/WORKLOG.md`](./WORKLOG.md)，记录本轮查询与批量命令接入结果。
+
+### 实现记录
+
+- 更新了 [src-tauri/src/models/mod.rs](E:/CodeBase/.worktrees/v020/src-tauri/src/models/mod.rs)，补入 `TaskQueryInput`、`BulkUpdateTasksInput`、查询状态和排序方式模型。
+- 更新了 [src-tauri/src/commands/tasks.rs](E:/CodeBase/.worktrees/v020/src-tauri/src/commands/tasks.rs)，新增 `query_tasks`、`bulk_update_tasks` 和共享查询逻辑。
+- 更新了 [src-tauri/src/lib.rs](E:/CodeBase/.worktrees/v020/src-tauri/src/lib.rs)，注册 `query_tasks` 与 `bulk_update_tasks` 命令。
+
+### 验证记录
+
+- 使用 `cargo test query_tasks_filters_active_urgent_tasks_when_sorted_by_priority -- --nocapture` 验证查询过滤与排序场景，通过。
+- 使用 `cargo check` 验证宿主层 Rust 编译，通过。
+
+### 下一步建议
+
+- 继续进入 Task 4 和 Task 5，把前端筛选辅助模块、查询接口和 Zustand 查询状态接上这套后端语义。
