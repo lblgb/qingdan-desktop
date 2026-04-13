@@ -230,3 +230,32 @@
 ### 下一步建议
 
 - 继续进入 Task 8，补任务概览中的优先级分布、近 7 天趋势和本周摘要卡片。
+## 2026-04-14 第 42 轮
+### 讨论主题
+
+- 完成 `v0.20` 的任务概览增强，包括优先级分布、近 7 天趋势和本周摘要卡片。
+### 当前结论
+
+- 任务概览弹窗已支持展示 `总任务 / 进行中 / 已完成 / 逾期 / 今日到期` 汇总指标与完成率。
+- 已补优先级分布、近 7 天趋势，并支持从“仅完成”切换到“新增 / 完成”双线对比。
+- 已补本周摘要卡片，覆盖本周新增、本周完成、逾期变化和最高未完成优先级。
+### 决策原因
+
+- 概览增强继续保持工具化、轻量化，不额外引入图表库，先用派生统计和简单可视化把统计口径做稳。
+- 趋势默认只显示完成数，切换后再看新增/完成双线，符合前面确定的 `v0.20` 交互边界。
+### 文档更新
+
+- 更新了 [`docs/WORKLOG.md`](./WORKLOG.md)，记录本轮概览增强落地结果。
+### 实现记录
+
+- 更新了 [src/features/tasks/task.overview.ts](E:/CodeBase/.worktrees/v020/src/features/tasks/task.overview.ts)，补齐优先级分布、趋势和周摘要派生逻辑。
+- 更新了 [src/components/TaskOverview.tsx](E:/CodeBase/.worktrees/v020/src/components/TaskOverview.tsx)，重构概览弹窗的信息结构与趋势切换交互。
+- 新增了 [src/features/tasks/task.overview.test.ts](E:/CodeBase/.worktrees/v020/src/features/tasks/task.overview.test.ts)，覆盖优先级分布和周摘要基础口径。
+- 更新了 [src/index.css](E:/CodeBase/.worktrees/v020/src/index.css)，补齐概览分布卡、趋势条和周摘要卡片样式。
+### 验证记录
+
+- 使用 `cmd /c npx.cmd vitest run src/features/tasks/task.overview.test.ts` 验证概览派生测试，通过。
+- 使用 `cmd /c node_modules\\.bin\\tsc.cmd -b` 验证前端 TypeScript 构建，通过。
+### 下一步建议
+
+- 进入最终收口，补 `V020_ACCEPTANCE`、架构文档与全量验证，再判断是否可以进入分支收尾。
