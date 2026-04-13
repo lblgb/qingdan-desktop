@@ -330,7 +330,14 @@ textarea {
 .task-group-list,
 .task-list,
 .focus-list,
-.composer-form {
+.composer-form,
+.task-list-toolbar-main,
+.task-list-toolbar-actions,
+.bulk-toolbar,
+.bulk-toolbar-main,
+.bulk-toolbar-actions,
+.bulk-priority-actions,
+.bulk-group-actions {
   display: grid;
   gap: 14px;
 }
@@ -547,6 +554,73 @@ textarea {
   margin-top: 6px;
 }
 
+.task-list-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 16px 18px;
+  border-radius: 20px;
+  background: rgba(23, 53, 54, 0.035);
+  border: 1px solid rgba(23, 53, 54, 0.06);
+}
+
+.task-list-toolbar-main {
+  min-width: 0;
+  gap: 10px;
+}
+
+.task-list-toolbar-actions {
+  gap: 10px;
+}
+
+.filter-summary-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.55rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(31, 122, 122, 0.08);
+  color: var(--accent-strong);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.bulk-toolbar {
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(31, 122, 122, 0.06);
+  border: 1px solid rgba(31, 122, 122, 0.12);
+}
+
+.bulk-toolbar-main {
+  gap: 8px;
+}
+
+.bulk-toolbar-main strong {
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.bulk-toolbar-actions {
+  gap: 12px;
+}
+
+.bulk-priority-actions {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.bulk-group-actions {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.bulk-group-select {
+  min-width: 180px;
+}
+
 .composer-feedback {
   display: grid;
   gap: 6px;
@@ -591,7 +665,10 @@ textarea {
 .overview-layout,
 .overview-stat-grid,
 .overview-bars,
-.overview-group-list {
+.overview-group-list,
+.overview-priority-list,
+.overview-trend-list,
+.overview-weekly-grid {
   display: grid;
   gap: 16px;
 }
@@ -675,6 +752,97 @@ textarea {
 .overview-stat strong {
   font-size: clamp(1.6rem, 3vw, 2.2rem);
   line-height: 1;
+}
+
+.overview-toggle-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.overview-priority-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.overview-priority-item,
+.overview-weekly-item,
+.overview-trend-item {
+  display: grid;
+  gap: 10px;
+  padding: 16px 18px;
+  border-radius: 20px;
+  background: rgba(31, 122, 122, 0.04);
+  border: 1px solid rgba(31, 122, 122, 0.08);
+}
+
+.overview-priority-header,
+.overview-trend-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.overview-priority-header strong,
+.overview-weekly-item strong,
+.overview-trend-heading strong {
+  color: var(--text-primary);
+}
+
+.overview-priority-track,
+.overview-trend-track {
+  overflow: hidden;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(18, 52, 47, 0.08);
+}
+
+.overview-priority-fill,
+.overview-trend-bar {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.overview-priority-fill.urgent,
+.overview-trend-bar.completed {
+  background: linear-gradient(90deg, #b4544f, #d47d76);
+}
+
+.overview-priority-fill.high,
+.overview-trend-bar.created {
+  background: linear-gradient(90deg, #d17333, #e6a36f);
+}
+
+.overview-priority-fill.medium {
+  background: linear-gradient(90deg, #1f7a7a, #5aa5a7);
+}
+
+.overview-priority-fill.low {
+  background: linear-gradient(90deg, #7b8c8d, #adb9ba);
+}
+
+.overview-priority-item small,
+.overview-weekly-item span,
+.overview-trend-heading span {
+  color: var(--text-secondary);
+}
+
+.overview-trend-dual {
+  display: grid;
+  gap: 8px;
+}
+
+.overview-trend-track.single {
+  height: 12px;
+}
+
+.overview-weekly-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.overview-weekly-item span {
+  font-size: 0.92rem;
 }
 
 .overview-progress-block {
@@ -1050,6 +1218,11 @@ textarea {
   background: rgba(245, 248, 248, 0.96);
 }
 
+.task-item.selected {
+  border-color: rgba(31, 122, 122, 0.26);
+  box-shadow: inset 0 0 0 1px rgba(31, 122, 122, 0.12);
+}
+
 .task-body,
 .task-main {
   display: grid;
@@ -1071,6 +1244,54 @@ textarea {
 .task-status.done {
   background: rgba(22, 163, 74, 0.1);
   color: #166534;
+}
+
+.task-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.priority-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  border-radius: 999px;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.82rem;
+  line-height: 1;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.priority-badge-button {
+  cursor: pointer;
+}
+
+.priority-badge.urgent {
+  background: rgba(180, 84, 79, 0.12);
+  border-color: rgba(180, 84, 79, 0.18);
+  color: #a33f3a;
+}
+
+.priority-badge.high {
+  background: rgba(209, 115, 51, 0.12);
+  border-color: rgba(209, 115, 51, 0.18);
+  color: #b86424;
+}
+
+.priority-badge.medium {
+  background: rgba(31, 122, 122, 0.1);
+  border-color: rgba(31, 122, 122, 0.16);
+  color: var(--accent-strong);
+}
+
+.priority-badge.low {
+  background: rgba(95, 119, 120, 0.1);
+  border-color: rgba(95, 119, 120, 0.16);
+  color: #516667;
 }
 
 .task-meta {
@@ -1107,6 +1328,24 @@ textarea {
 .check-button.checked {
   background: rgba(22, 163, 74, 0.12);
   color: #166534;
+}
+
+.selection-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 0.55rem 0.95rem;
+  border-radius: 999px;
+  background: rgba(31, 122, 122, 0.08);
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.selection-toggle input {
+  width: auto;
+  margin: 0;
+  box-shadow: none;
 }
 
 .check-indicator {
@@ -1197,6 +1436,11 @@ select:disabled {
   .overview-stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .overview-priority-list,
+  .overview-weekly-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 720px) {
@@ -1220,6 +1464,7 @@ select:disabled {
   .nested-filter-toolbar,
   .composer-actions,
   .section-heading,
+  .task-list-toolbar,
   .task-main-row,
   .status-banner,
   .task-modal-header,
@@ -1228,7 +1473,9 @@ select:disabled {
   .task-modal-button-row,
   .overview-card-header,
   .overview-bar-header,
-  .overview-group-heading {
+  .overview-group-heading,
+  .overview-priority-header,
+  .overview-trend-heading {
     flex-direction: column;
     align-items: flex-start;
   }
@@ -1245,6 +1492,11 @@ select:disabled {
   .pagination-actions {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .bulk-priority-actions,
+  .bulk-group-actions {
+    grid-template-columns: 1fr;
   }
 
   .toolbar-menu {

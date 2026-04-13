@@ -14,11 +14,13 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::system::ping,
             commands::tasks::list_tasks,
+            commands::tasks::query_tasks,
             commands::tasks::list_task_groups,
             commands::tasks::create_task,
             commands::tasks::update_task,
             commands::tasks::toggle_task,
             commands::tasks::delete_task,
+            commands::tasks::bulk_update_tasks,
             commands::tasks::create_task_group,
             commands::tasks::update_task_group,
             commands::tasks::delete_task_group,

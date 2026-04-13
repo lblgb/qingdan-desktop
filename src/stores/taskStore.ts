@@ -1,31 +1,39 @@
 /**
- * 文件说明：统一管理任务状态和基本操作，当前阶段通过异步数据访问层衔接 Tauri 命令。
+ * 文件说明：统一管理任务状态、更多条件查询状态和批量模式。
  */
 import { create } from 'zustand'
+import { applyTaskQuery, DEFAULT_TASK_QUERY } from '../features/tasks/task.filters'
 import {
   assignTaskGroup,
+  bulkUpdateTasks,
   createTask,
   createTaskGroup,
   deleteTask,
   deleteTaskGroup,
   loadTaskGroups,
   loadTasks,
+  queryTasks,
   toggleTask,
   updateTask,
   updateTaskGroup,
 } from '../features/tasks/task.storage'
 import type {
+  BulkUpdateTasksInput,
   CreateTaskGroupInput,
   CreateTaskInput,
+  TaskDateRangeFilter,
   TaskFilter,
   TaskGroup,
   TaskGroupFilter,
   TaskItem,
+  TaskPriorityFilter,
+  TaskQueryInput,
+  TaskSortBy,
   UpdateTaskGroupInput,
   UpdateTaskInput,
 } from '../features/tasks/task.types'
 
-type TaskAction = 'hydrate' | 'create' | 'update' | 'toggle' | 'remove' | 'group'
+type TaskAction = 'hydrate' | 'create' | 'update' | 'toggle' | 'remove' | 'group' | 'bulk'
 type TaskFeedbackTone = 'success' | 'error'
 
 interface TaskFeedback {
@@ -38,7 +46,12 @@ interface TaskState {
   taskGroups: TaskGroup[]
   activeFilter: TaskFilter
   activeGroupFilter: TaskGroupFilter
+  activePriorityFilter: TaskPriorityFilter
+  activeDateRange: TaskDateRangeFilter
+  activeSortBy: TaskSortBy
   filteredTasks: TaskItem[]
+  isBulkMode: boolean
+  selectedTaskIds: string[]
   isHydrated: boolean
   isLoading: boolean
   isMutating: boolean
@@ -47,6 +60,9 @@ interface TaskState {
   hydrateTasks: () => Promise<void>
   setFilter: (filter: TaskFilter) => void
   setGroupFilter: (filter: TaskGroupFilter) => void
+  setPriorityFilter: (filter: TaskPriorityFilter) => void
+  setDateRange: (filter: TaskDateRangeFilter) => void
+  setSortBy: (sortBy: TaskSortBy) => void
   addTask: (input: CreateTaskInput) => Promise<void>
   updateTask: (input: UpdateTaskInput) => Promise<void>
   toggleTask: (taskId: string) => Promise<void>
@@ -55,35 +71,15 @@ interface TaskState {
   addTaskGroup: (input: CreateTaskGroupInput) => Promise<void>
   updateTaskGroup: (input: UpdateTaskGroupInput) => Promise<void>
   removeTaskGroup: (groupId: string) => Promise<void>
+  toggleBulkMode: () => void
+  toggleTaskSelection: (taskId: string) => void
+  clearTaskSelection: () => void
+  applyBulkUpdate: (input: BulkUpdateTasksInput) => Promise<void>
   dismissFeedback: () => void
 }
 
-function applyStatusFilter(tasks: TaskItem[], filter: TaskFilter) {
-  if (filter === 'active') {
-    return tasks.filter((task) => !task.completed)
-  }
-
-  if (filter === 'completed') {
-    return tasks.filter((task) => task.completed)
-  }
-
-  return tasks
-}
-
-function applyGroupFilter(tasks: TaskItem[], filter: TaskGroupFilter) {
-  if (filter === 'all-groups') {
-    return tasks
-  }
-
-  if (filter === 'ungrouped') {
-    return tasks.filter((task) => !task.groupId)
-  }
-
-  return tasks.filter((task) => task.groupId === filter)
-}
-
-function buildFilteredTasks(tasks: TaskItem[], statusFilter: TaskFilter, groupFilter: TaskGroupFilter) {
-  return applyGroupFilter(applyStatusFilter(tasks, statusFilter), groupFilter)
+function buildVisibleTasks(tasks: TaskItem[], query: TaskQueryInput) {
+  return applyTaskQuery(tasks, query)
 }
 
 function normalizeGroupFilter(taskGroups: TaskGroup[], activeGroupFilter: TaskGroupFilter): TaskGroupFilter {
@@ -94,15 +90,27 @@ function normalizeGroupFilter(taskGroups: TaskGroup[], activeGroupFilter: TaskGr
   return taskGroups.some((group) => group.id === activeGroupFilter) ? activeGroupFilter : 'all-groups'
 }
 
-/**
- * 任务状态仓库。
- */
+function buildQuery(state: Pick<TaskState, 'activeFilter' | 'activeGroupFilter' | 'activePriorityFilter' | 'activeDateRange' | 'activeSortBy'>): TaskQueryInput {
+  return {
+    status: state.activeFilter,
+    group: state.activeGroupFilter,
+    priority: state.activePriorityFilter,
+    dateRange: state.activeDateRange,
+    sortBy: state.activeSortBy,
+  }
+}
+
 export const useTaskStore = create<TaskState>((set, get) => ({
   tasks: [],
   taskGroups: [],
-  activeFilter: 'all',
-  activeGroupFilter: 'all-groups',
+  activeFilter: DEFAULT_TASK_QUERY.status,
+  activeGroupFilter: DEFAULT_TASK_QUERY.group,
+  activePriorityFilter: DEFAULT_TASK_QUERY.priority,
+  activeDateRange: DEFAULT_TASK_QUERY.dateRange,
+  activeSortBy: DEFAULT_TASK_QUERY.sortBy,
   filteredTasks: [],
+  isBulkMode: false,
+  selectedTaskIds: [],
   isHydrated: false,
   isLoading: false,
   isMutating: false,
@@ -116,20 +124,24 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     set({ isLoading: true, activeAction: 'hydrate', feedback: null })
 
     try {
-      const [tasks, taskGroups] = await Promise.all([loadTasks(), loadTaskGroups()])
-      set((state) => ({
-        tasks,
-        taskGroups,
-        activeGroupFilter: normalizeGroupFilter(taskGroups, state.activeGroupFilter),
-        filteredTasks: buildFilteredTasks(
+      const [taskGroups, tasks] = await Promise.all([loadTaskGroups(), queryTasks(buildQuery(get()))])
+      set((state) => {
+        const activeGroupFilter = normalizeGroupFilter(taskGroups, state.activeGroupFilter)
+        const nextQuery = buildQuery({
+          ...state,
+          activeGroupFilter,
+        })
+
+        return {
           tasks,
-          state.activeFilter,
-          normalizeGroupFilter(taskGroups, state.activeGroupFilter),
-        ),
-        isHydrated: true,
-        isLoading: false,
-        activeAction: null,
-      }))
+          taskGroups,
+          activeGroupFilter,
+          filteredTasks: buildVisibleTasks(tasks, nextQuery),
+          isHydrated: true,
+          isLoading: false,
+          activeAction: null,
+        }
+      })
     } catch (error) {
       set({
         isLoading: false,
@@ -144,16 +156,42 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   setFilter: (filter) =>
     set((state) => ({
       activeFilter: filter,
-      filteredTasks: buildFilteredTasks(state.tasks, filter, state.activeGroupFilter),
+      filteredTasks: buildVisibleTasks(state.tasks, {
+        ...buildQuery(state),
+        status: filter,
+      }),
     })),
   setGroupFilter: (filter) =>
     set((state) => ({
       activeGroupFilter: normalizeGroupFilter(state.taskGroups, filter),
-      filteredTasks: buildFilteredTasks(
-        state.tasks,
-        state.activeFilter,
-        normalizeGroupFilter(state.taskGroups, filter),
-      ),
+      filteredTasks: buildVisibleTasks(state.tasks, {
+        ...buildQuery(state),
+        group: normalizeGroupFilter(state.taskGroups, filter),
+      }),
+    })),
+  setPriorityFilter: (filter) =>
+    set((state) => ({
+      activePriorityFilter: filter,
+      filteredTasks: buildVisibleTasks(state.tasks, {
+        ...buildQuery(state),
+        priority: filter,
+      }),
+    })),
+  setDateRange: (filter) =>
+    set((state) => ({
+      activeDateRange: filter,
+      filteredTasks: buildVisibleTasks(state.tasks, {
+        ...buildQuery(state),
+        dateRange: filter,
+      }),
+    })),
+  setSortBy: (sortBy) =>
+    set((state) => ({
+      activeSortBy: sortBy,
+      filteredTasks: buildVisibleTasks(state.tasks, {
+        ...buildQuery(state),
+        sortBy,
+      }),
     })),
   addTask: async (input) => {
     set({ isMutating: true, activeAction: 'create', feedback: null })
@@ -161,7 +199,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       const tasks = await createTask(input)
       set((state) => ({
         tasks,
-        filteredTasks: buildFilteredTasks(tasks, state.activeFilter, state.activeGroupFilter),
+        filteredTasks: buildVisibleTasks(tasks, buildQuery(state)),
         isHydrated: true,
         activeAction: null,
         feedback: {
@@ -187,7 +225,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       const tasks = await updateTask(input)
       set((state) => ({
         tasks,
-        filteredTasks: buildFilteredTasks(tasks, state.activeFilter, state.activeGroupFilter),
+        filteredTasks: buildVisibleTasks(tasks, buildQuery(state)),
         isHydrated: true,
         activeAction: null,
         feedback: {
@@ -214,7 +252,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       const tasks = await toggleTask(taskId)
       set((state) => ({
         tasks,
-        filteredTasks: buildFilteredTasks(tasks, state.activeFilter, state.activeGroupFilter),
+        filteredTasks: buildVisibleTasks(tasks, buildQuery(state)),
         isHydrated: true,
         activeAction: null,
         feedback: {
@@ -240,7 +278,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       const tasks = await deleteTask(taskId)
       set((state) => ({
         tasks,
-        filteredTasks: buildFilteredTasks(tasks, state.activeFilter, state.activeGroupFilter),
+        filteredTasks: buildVisibleTasks(tasks, buildQuery(state)),
         isHydrated: true,
         activeAction: null,
         feedback: {
@@ -266,7 +304,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       const tasks = await assignTaskGroup(taskId, groupId)
       set((state) => ({
         tasks,
-        filteredTasks: buildFilteredTasks(tasks, state.activeFilter, state.activeGroupFilter),
+        filteredTasks: buildVisibleTasks(tasks, buildQuery(state)),
         isHydrated: true,
         activeAction: null,
         feedback: {
@@ -290,20 +328,22 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     set({ isMutating: true, activeAction: 'group', feedback: null })
     try {
       const taskGroups = await createTaskGroup(input)
-      set((state) => ({
-        taskGroups,
-        activeGroupFilter: normalizeGroupFilter(taskGroups, state.activeGroupFilter),
-        filteredTasks: buildFilteredTasks(
-          state.tasks,
-          state.activeFilter,
-          normalizeGroupFilter(taskGroups, state.activeGroupFilter),
-        ),
-        activeAction: null,
-        feedback: {
-          tone: 'success',
-          message: '任务组已创建。',
-        },
-      }))
+      set((state) => {
+        const activeGroupFilter = normalizeGroupFilter(taskGroups, state.activeGroupFilter)
+        return {
+          taskGroups,
+          activeGroupFilter,
+          filteredTasks: buildVisibleTasks(state.tasks, {
+            ...buildQuery(state),
+            group: activeGroupFilter,
+          }),
+          activeAction: null,
+          feedback: {
+            tone: 'success',
+            message: '任务组已创建。',
+          },
+        }
+      })
     } catch (error) {
       set({
         activeAction: null,
@@ -320,20 +360,22 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     set({ isMutating: true, activeAction: 'group', feedback: null })
     try {
       const taskGroups = await updateTaskGroup(input)
-      set((state) => ({
-        taskGroups,
-        activeGroupFilter: normalizeGroupFilter(taskGroups, state.activeGroupFilter),
-        filteredTasks: buildFilteredTasks(
-          state.tasks,
-          state.activeFilter,
-          normalizeGroupFilter(taskGroups, state.activeGroupFilter),
-        ),
-        activeAction: null,
-        feedback: {
-          tone: 'success',
-          message: '任务组已更新。',
-        },
-      }))
+      set((state) => {
+        const activeGroupFilter = normalizeGroupFilter(taskGroups, state.activeGroupFilter)
+        return {
+          taskGroups,
+          activeGroupFilter,
+          filteredTasks: buildVisibleTasks(state.tasks, {
+            ...buildQuery(state),
+            group: activeGroupFilter,
+          }),
+          activeAction: null,
+          feedback: {
+            tone: 'success',
+            message: '任务组已更新。',
+          },
+        }
+      })
     } catch (error) {
       set({
         activeAction: null,
@@ -351,13 +393,15 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     try {
       const [taskGroups, tasks] = await Promise.all([deleteTaskGroup(groupId), loadTasks()])
       set((state) => {
-        const nextGroupFilter = normalizeGroupFilter(taskGroups, state.activeGroupFilter)
-
+        const activeGroupFilter = normalizeGroupFilter(taskGroups, state.activeGroupFilter)
         return {
           taskGroups,
           tasks,
-          activeGroupFilter: nextGroupFilter,
-          filteredTasks: buildFilteredTasks(tasks, state.activeFilter, nextGroupFilter),
+          activeGroupFilter,
+          filteredTasks: buildVisibleTasks(tasks, {
+            ...buildQuery(state),
+            group: activeGroupFilter,
+          }),
           activeAction: null,
           feedback: {
             tone: 'success',
@@ -371,6 +415,45 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         feedback: {
           tone: 'error',
           message: getErrorMessage(error, '删除任务组失败，请稍后再试。'),
+        },
+      })
+    } finally {
+      set({ isMutating: false })
+    }
+  },
+  toggleBulkMode: () =>
+    set((state) => ({
+      isBulkMode: !state.isBulkMode,
+      selectedTaskIds: state.isBulkMode ? [] : state.selectedTaskIds,
+    })),
+  toggleTaskSelection: (taskId) =>
+    set((state) => ({
+      selectedTaskIds: state.selectedTaskIds.includes(taskId)
+        ? state.selectedTaskIds.filter((id) => id !== taskId)
+        : [...state.selectedTaskIds, taskId],
+    })),
+  clearTaskSelection: () => set({ selectedTaskIds: [] }),
+  applyBulkUpdate: async (input) => {
+    set({ isMutating: true, activeAction: 'bulk', feedback: null })
+    try {
+      const tasks = await bulkUpdateTasks(input)
+      set((state) => ({
+        tasks,
+        filteredTasks: buildVisibleTasks(tasks, buildQuery(state)),
+        isBulkMode: false,
+        selectedTaskIds: [],
+        activeAction: null,
+        feedback: {
+          tone: 'success',
+          message: '批量操作已完成。',
+        },
+      }))
+    } catch (error) {
+      set({
+        activeAction: null,
+        feedback: {
+          tone: 'error',
+          message: getErrorMessage(error, '批量操作失败，请稍后再试。'),
         },
       })
     } finally {

@@ -37,6 +37,7 @@ pub fn init_database(db_path: &PathBuf) -> Result<(), String> {
                 title TEXT NOT NULL,
                 description TEXT NOT NULL,
                 completed INTEGER NOT NULL DEFAULT 0,
+                priority TEXT NOT NULL DEFAULT 'medium',
                 group_id TEXT NULL,
                 due_at TEXT NULL,
                 created_at TEXT NOT NULL,
@@ -52,11 +53,15 @@ pub fn init_database(db_path: &PathBuf) -> Result<(), String> {
         )
         .map_err(|error| format!("初始化任务表失败：{error}"))?;
 
+    ensure_tasks_priority_column(&connection)?;
     ensure_tasks_group_column(&connection)?;
     ensure_tasks_group_index(&connection)?;
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests;
 
 /// 打开数据库连接。
 pub fn open_connection(db_path: &PathBuf) -> Result<Connection, String> {
@@ -82,6 +87,33 @@ fn ensure_tasks_group_column(connection: &Connection) -> Result<(), String> {
         connection
             .execute("ALTER TABLE tasks ADD COLUMN group_id TEXT NULL", [])
             .map_err(|error| format!("为 tasks 表补充 group_id 字段失败：{error}"))?;
+    }
+
+    Ok(())
+}
+
+fn ensure_tasks_priority_column(connection: &Connection) -> Result<(), String> {
+    let mut statement = connection
+        .prepare("PRAGMA table_info(tasks)")
+        .map_err(|error| format!("读取 tasks 表结构失败：{error}"))?;
+
+    let columns = statement
+        .query_map([], |row| row.get::<_, String>(1))
+        .map_err(|error| format!("查询 tasks 表字段失败：{error}"))?;
+
+    let has_priority = columns
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|error| format!("读取 tasks 表字段结果失败：{error}"))?
+        .iter()
+        .any(|column| column == "priority");
+
+    if !has_priority {
+        connection
+            .execute(
+                "ALTER TABLE tasks ADD COLUMN priority TEXT NOT NULL DEFAULT 'medium'",
+                [],
+            )
+            .map_err(|error| format!("为 tasks 表补充 priority 字段失败：{error}"))?;
     }
 
     Ok(())

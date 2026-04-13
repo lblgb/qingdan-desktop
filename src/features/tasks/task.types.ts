@@ -5,6 +5,14 @@ export type TaskFilter = 'all' | 'active' | 'completed'
 
 export type TaskGroupFilter = 'all-groups' | 'ungrouped' | string
 
+export type TaskPriority = 'urgent' | 'high' | 'medium' | 'low'
+
+export type TaskPriorityFilter = 'all-priorities' | TaskPriority
+
+export type TaskDateRangeFilter = 'all-time' | 'today' | 'upcoming' | 'overdue' | 'no-date'
+
+export type TaskSortBy = 'default' | 'due-date' | 'priority' | 'updated'
+
 /**
  * 任务实体。
  */
@@ -15,6 +23,7 @@ export interface TaskItem {
   completed: boolean
   groupId: string | null
   dueAt: string | null
+  priority: TaskPriority
   createdAt: string
   updatedAt: string
 }
@@ -38,6 +47,7 @@ export interface CreateTaskInput {
   description: string
   groupId: string | null
   dueAt: string | null
+  priority: TaskPriority
 }
 
 /**
@@ -49,6 +59,7 @@ export interface UpdateTaskInput {
   description: string
   groupId: string | null
   dueAt: string | null
+  priority: TaskPriority
 }
 
 /**
@@ -66,4 +77,19 @@ export interface UpdateTaskGroupInput {
   id: string
   name: string
   description: string
+}
+
+export interface TaskQueryInput {
+  status: TaskFilter
+  group: TaskGroupFilter
+  priority: TaskPriorityFilter
+  dateRange: TaskDateRangeFilter
+  sortBy: TaskSortBy
+}
+
+export interface BulkUpdateTasksInput {
+  taskIds: string[]
+  priority?: TaskPriority
+  groupId?: string | null
+  markCompleted?: boolean
 }
