@@ -17,6 +17,7 @@
 - 活跃轮次：
   - [`2026-04-11 第 36 轮`](#2026-04-11-第-36-轮)
   - [`2026-04-11 第 37 轮`](#2026-04-11-第-37-轮)
+  - [`2026-04-14 第 38 轮`](#2026-04-14-第-38-轮)
 - 近期关键节点：
   - `v0.1.5` 正式收口：见 [`docs/V015_CLOSEOUT.md`](./V015_CLOSEOUT.md)
   - `v0.1.5` 发布资产补齐：详见 [`docs/WORKLOG_ARCHIVE.md`](./WORKLOG_ARCHIVE.md)
@@ -94,3 +95,43 @@
 ### 下一步建议
 
 - 文档结构债清理完成后，再进入 `v0.20` 的功能实现，不再把历史说明继续回填到活跃文档中。
+
+## 2026-04-14 第 38 轮
+
+### 讨论主题
+
+- 进入 `v0.20` 的第一段实现，先落任务优先级模型与 SQLite 兼容迁移。
+
+### 当前结论
+
+- 任务模型已正式补入 `priority`，固定为 `urgent / high / medium / low`。
+- 旧 SQLite 数据库升级时，若 `tasks` 表缺少 `priority`，会安全补列，并以 `medium` 作为默认值。
+- 当前轮只打通优先级字段的模型、持久化和基础读写链路，不提前扩到复杂查询和批量接口。
+
+### 决策原因
+
+- `priority` 是后续更多条件、排序方式、批量操作和概览统计的共享基础字段，必须先把数据语义与兼容迁移做稳。
+- 先完成最小闭环，可以避免在 Task 3 之前把查询条件和 UI 交互一起耦合进来。
+
+### 文档更新
+
+- 更新了 [`docs/WORKLOG.md`](./WORKLOG.md)，记录本轮优先级模型与数据库迁移落地结果。
+
+### 实现记录
+
+- 更新了 [src-tauri/src/models/mod.rs](E:/CodeBase/.worktrees/v020/src-tauri/src/models/mod.rs)，新增 Rust 侧 `TaskPriority` 枚举，并为任务创建/编辑输入接入 `priority`。
+- 更新了 [src-tauri/src/db/mod.rs](E:/CodeBase/.worktrees/v020/src-tauri/src/db/mod.rs)，为旧库补充 `tasks.priority` 字段兼容迁移。
+- 新增了 [src-tauri/src/db/tests.rs](E:/CodeBase/.worktrees/v020/src-tauri/src/db/tests.rs)，覆盖旧库补 `priority` 列与默认值回填。
+- 更新了 [src-tauri/src/commands/tasks.rs](E:/CodeBase/.worktrees/v020/src-tauri/src/commands/tasks.rs)，让 `list_tasks / create_task / update_task` 接上 `priority` 的读写。
+- 更新了 [src/features/tasks/task.types.ts](E:/CodeBase/.worktrees/v020/src/features/tasks/task.types.ts) 与 [src/features/tasks/task.storage.ts](E:/CodeBase/.worktrees/v020/src/features/tasks/task.storage.ts)，补齐前端共享类型和本地兜底存储链路。
+- 更新了 [src/features/tasks/task.mock.ts](E:/CodeBase/.worktrees/v020/src/features/tasks/task.mock.ts)、[src/components/TaskComposer.tsx](E:/CodeBase/.worktrees/v020/src/components/TaskComposer.tsx) 和 [src/components/TaskList.tsx](E:/CodeBase/.worktrees/v020/src/components/TaskList.tsx)，做最小编译适配，不提前展开优先级 UI。
+
+### 验证记录
+
+- 使用 `cargo test init_database_adds_priority_column_to_legacy_tasks_table -- --nocapture` 验证旧库迁移测试，通过。
+- 使用 `cargo check` 验证宿主层 Rust 编译，通过。
+- 使用 `tsc -b` 验证前端 TypeScript 构建，通过。
+
+### 下一步建议
+
+- 继续进入 Task 3，把 `priority` 接到任务查询输入、更多条件与排序方式，但仍保持不碰批量删除和复杂快捷键边界。
