@@ -2,7 +2,11 @@
  * 文件说明：顶部动作组件，统一提供“新建任务”和“新建任务组”入口，并承载对应弹窗。
  */
 import { useEffect, useRef, useState } from 'react'
+import { TASK_PRIORITY_META } from '../features/tasks/task.priority'
+import type { TaskPriority } from '../features/tasks/task.types'
 import { useTaskStore } from '../stores/taskStore'
+
+const PRIORITY_OPTIONS: TaskPriority[] = ['urgent', 'high', 'medium', 'low']
 
 /**
  * 顶部动作组件。
@@ -22,6 +26,7 @@ export function TaskComposer() {
   const [description, setDescription] = useState('')
   const [dueAt, setDueAt] = useState('')
   const [groupId, setGroupId] = useState('')
+  const [priority, setPriority] = useState<TaskPriority>('medium')
 
   const [groupName, setGroupName] = useState('')
   const [groupDescription, setGroupDescription] = useState('')
@@ -81,6 +86,7 @@ export function TaskComposer() {
     setDescription('')
     setDueAt('')
     setGroupId('')
+    setPriority('medium')
   }
 
   function closeGroupModal() {
@@ -102,7 +108,7 @@ export function TaskComposer() {
       description: description.trim(),
       groupId: groupId || null,
       dueAt: dueAt || null,
-      priority: 'medium',
+      priority,
     })
 
     closeTaskModal()
@@ -139,7 +145,7 @@ export function TaskComposer() {
           <div className="toolbar-menu">
             <button className="toolbar-menu-button" onClick={openTaskModal} type="button">
               <strong>新建任务</strong>
-              <span>录入标题、备注、日期和所属组</span>
+              <span>录入标题、备注、日期、优先级和所属组</span>
             </button>
             <button className="toolbar-menu-button" onClick={openGroupModal} type="button">
               <strong>新建任务组</strong>
@@ -224,6 +230,22 @@ export function TaskComposer() {
                     ))}
                   </select>
                 </label>
+
+                <label htmlFor="task-priority">
+                  <span>优先级</span>
+                  <select
+                    id="task-priority"
+                    value={priority}
+                    onChange={(event) => setPriority(event.target.value as TaskPriority)}
+                    disabled={isSubmittingTask}
+                  >
+                    {PRIORITY_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {TASK_PRIORITY_META[option].label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
 
               <div className="composer-actions task-modal-actions">
@@ -285,7 +307,7 @@ export function TaskComposer() {
                   id="group-description"
                   value={groupDescription}
                   onChange={(event) => setGroupDescription(event.target.value)}
-                  placeholder="说明这一组主要装什么任务"
+                  placeholder="说明这一组任务主要装什么任务"
                   rows={3}
                   disabled={isSubmittingGroup}
                 />

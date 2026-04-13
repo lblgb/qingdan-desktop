@@ -201,3 +201,32 @@
 ### 下一步建议
 
 - 继续进入 Task 6 和 Task 7，把更多条件面板、列表工具条、优先级展示和轻量批量操作真正接到界面上。
+## 2026-04-14 第 41 轮
+### 讨论主题
+
+- 完成 `v0.20` 的更多条件界面、列表工具条、任务优先级展示与轻量批量操作接线。
+### 当前结论
+
+- 左侧“更多条件”已扩成 `任务组 / 优先级 / 时间范围 / 排序方式` 四类面板，并直接接到统一查询状态。
+- 列表区域已补筛选摘要、批量入口、优先级徽标和多选模式下的批量改优先级、批量归组、批量完成。
+- 顶部“新建任务”弹窗已支持直接选择优先级，避免优先级语义只存在于列表层。
+### 决策原因
+
+- 先把 `Task 6 / Task 7` 一起收住，可以保证更多条件、优先级和批量操作共享同一套列表语义，不会出现一边展示、一边不能编辑或批量修改的断层。
+- 新建弹窗补优先级是必要收口，否则列表虽然能按优先级工作，但入口仍会把所有新任务固定写成 `medium`。
+### 文档更新
+
+- 更新了 [`docs/WORKLOG.md`](./WORKLOG.md)，记录本轮列表与批量交互落地结果。
+### 实现记录
+
+- 更新了 [src/app/AppShell.tsx](E:/CodeBase/.worktrees/v020/src/app/AppShell.tsx)，把左侧“更多条件”扩成四类条件面板，并接入统一查询状态。
+- 更新了 [src/components/TaskComposer.tsx](E:/CodeBase/.worktrees/v020/src/components/TaskComposer.tsx)，让新建任务可直接选择优先级。
+- 更新了 [src/components/TaskList.tsx](E:/CodeBase/.worktrees/v020/src/components/TaskList.tsx)，补列表工具条、优先级徽标、批量模式和批量动作入口。
+- 更新了 [src/index.css](E:/CodeBase/.worktrees/v020/src/index.css)，补更多条件层级、工具条、批量栏、选择态与优先级徽标样式。
+### 验证记录
+
+- 使用 `cmd /c node_modules\\.bin\\tsc.cmd -b` 验证前端 TypeScript 构建，通过。
+- 使用 `cmd /c npx.cmd vitest run src/features/tasks/task.filters.test.ts` 回归前端筛选纯函数测试，通过。
+### 下一步建议
+
+- 继续进入 Task 8，补任务概览中的优先级分布、近 7 天趋势和本周摘要卡片。
