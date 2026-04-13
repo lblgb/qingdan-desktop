@@ -7,6 +7,12 @@ export type TaskGroupFilter = 'all-groups' | 'ungrouped' | string
 
 export type TaskPriority = 'urgent' | 'high' | 'medium' | 'low'
 
+export type TaskPriorityFilter = 'all-priorities' | TaskPriority
+
+export type TaskDateRangeFilter = 'all-time' | 'today' | 'upcoming' | 'overdue' | 'no-date'
+
+export type TaskSortBy = 'default' | 'due-date' | 'priority' | 'updated'
+
 /**
  * 任务实体。
  */
@@ -71,4 +77,19 @@ export interface UpdateTaskGroupInput {
   id: string
   name: string
   description: string
+}
+
+export interface TaskQueryInput {
+  status: TaskFilter
+  group: TaskGroupFilter
+  priority: TaskPriorityFilter
+  dateRange: TaskDateRangeFilter
+  sortBy: TaskSortBy
+}
+
+export interface BulkUpdateTasksInput {
+  taskIds: string[]
+  priority?: TaskPriority
+  groupId?: string | null
+  markCompleted?: boolean
 }

@@ -3,12 +3,15 @@
  */
 import { invoke } from '@tauri-apps/api/core'
 import { z } from 'zod'
+import { applyTaskQuery } from './task.filters'
 import { defaultTasks } from './task.mock'
 import type {
+  BulkUpdateTasksInput,
   CreateTaskGroupInput,
   CreateTaskInput,
   TaskGroup,
   TaskItem,
+  TaskQueryInput,
   UpdateTaskGroupInput,
   UpdateTaskInput,
 } from './task.types'
@@ -88,6 +91,33 @@ export async function loadTasks(): Promise<TaskItem[]> {
   }
 
   return loadLocalTasks()
+}
+
+/**
+ * 按统一查询输入读取任务列表。
+ */
+export async function queryTasks(input: TaskQueryInput): Promise<TaskItem[]> {
+  if (isTauriRuntime()) {
+    if (input.dateRange === 'no-date') {
+      const tasks = await invoke<TaskItem[]>('list_tasks')
+      return applyTaskQuery(tasks, input)
+    }
+
+    return invoke<TaskItem[]>('query_tasks', {
+      input: {
+        status: input.status === 'all' ? null : input.status,
+        groupId: input.group === 'all-groups' ? null : input.group,
+        priority: input.priority === 'all-priorities' ? null : input.priority,
+        dateRange:
+          input.dateRange === 'all-time'
+            ? null
+            : buildDateRangePayload(input.dateRange),
+        sortBy: input.sortBy,
+      },
+    })
+  }
+
+  return applyTaskQuery(loadLocalTasks(), input)
 }
 
 /**
@@ -171,6 +201,39 @@ export async function deleteTask(taskId: string): Promise<TaskItem[]> {
   }
 
   const nextTasks = loadLocalTasks().filter((task) => task.id !== taskId)
+  saveLocalTasks(nextTasks)
+  return nextTasks
+}
+
+/**
+ * 批量更新任务。
+ */
+export async function bulkUpdateTasks(input: BulkUpdateTasksInput): Promise<TaskItem[]> {
+  if (isTauriRuntime()) {
+    return invoke<TaskItem[]>('bulk_update_tasks', {
+      input: {
+        taskIds: input.taskIds,
+        priority: input.priority ?? null,
+        groupId: Object.prototype.hasOwnProperty.call(input, 'groupId') ? input.groupId ?? null : undefined,
+        markCompleted: input.markCompleted ?? null,
+      },
+    })
+  }
+
+  const nextTasks = loadLocalTasks().map((task) => {
+    if (!input.taskIds.includes(task.id)) {
+      return task
+    }
+
+    return {
+      ...task,
+      priority: input.priority ?? task.priority,
+      groupId: Object.prototype.hasOwnProperty.call(input, 'groupId') ? (input.groupId ?? null) : task.groupId,
+      completed: input.markCompleted ?? task.completed,
+      updatedAt: new Date().toISOString(),
+    }
+  })
+
   saveLocalTasks(nextTasks)
   return nextTasks
 }
@@ -265,4 +328,35 @@ export async function assignTaskGroup(taskId: string, groupId: string | null): P
 
   saveLocalTasks(nextTasks)
   return nextTasks
+}
+
+function buildDateRangePayload(dateRange: TaskQueryInput['dateRange']) {
+  const today = new Date()
+  const todayValue = today.toISOString().slice(0, 10)
+
+  if (dateRange === 'today') {
+    return {
+      start: todayValue,
+      end: todayValue,
+    }
+  }
+
+  if (dateRange === 'upcoming') {
+    const nextWeek = new Date(today)
+    nextWeek.setDate(nextWeek.getDate() + 7)
+    return {
+      start: todayValue,
+      end: nextWeek.toISOString().slice(0, 10),
+    }
+  }
+
+  if (dateRange === 'overdue') {
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+    return {
+      end: yesterday.toISOString().slice(0, 10),
+    }
+  }
+
+  return null
 }

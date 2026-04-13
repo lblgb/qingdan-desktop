@@ -172,3 +172,32 @@
 ### 下一步建议
 
 - 继续进入 Task 4 和 Task 5，把前端筛选辅助模块、查询接口和 Zustand 查询状态接上这套后端语义。
+## 2026-04-14 第 40 轮
+### 讨论主题
+
+- 完成 `v0.20` 的前端筛选工具、查询适配层与 Zustand 查询状态扩展，为后续列表界面接线做准备。
+### 当前结论
+
+- 前端已补齐统一的 `TaskQueryInput`、优先级元信息、更多条件筛选纯函数和批量操作输入辅助。
+- Zustand 任务仓库已扩成“主筛选 + 任务组 + 优先级 + 时间范围 + 排序方式 + 批量模式”的统一查询状态。
+- `no-date` 在 Tauri 运行时先走 `list_tasks` 再做前端过滤，避免当前后端日期区间结构无法直接表达“无日期”语义。
+### 决策原因
+
+- 先把前端查询层、纯函数和状态层收稳，后续列表界面与概览界面才能复用同一套筛选语义。
+- `no-date` 先做前端兜底，比现在贸然扩后端日期模型更稳，也不改变既有命令层边界。
+### 文档更新
+
+- 更新了 [`docs/WORKLOG.md`](./WORKLOG.md)，记录本轮前端查询与状态层落地结果。
+### 实现记录
+
+- 新增了 [src/features/tasks/task.priority.ts](E:/CodeBase/.worktrees/v020/src/features/tasks/task.priority.ts)、[src/features/tasks/task.filters.ts](E:/CodeBase/.worktrees/v020/src/features/tasks/task.filters.ts) 和 [src/features/tasks/task.bulk.ts](E:/CodeBase/.worktrees/v020/src/features/tasks/task.bulk.ts)，集中维护优先级元信息、更多条件组合逻辑和批量输入辅助。
+- 新增了 [src/features/tasks/task.filters.test.ts](E:/CodeBase/.worktrees/v020/src/features/tasks/task.filters.test.ts)，覆盖筛选摘要与多条件交集逻辑。
+- 更新了 [src/features/tasks/task.types.ts](E:/CodeBase/.worktrees/v020/src/features/tasks/task.types.ts)、[src/features/tasks/task.storage.ts](E:/CodeBase/.worktrees/v020/src/features/tasks/task.storage.ts) 和 [src/stores/taskStore.ts](E:/CodeBase/.worktrees/v020/src/stores/taskStore.ts)，补齐统一查询输入、Tauri 查询适配和批量模式状态。
+- 更新了 [package.json](E:/CodeBase/.worktrees/v020/package.json)，补充 `vitest` 测试脚本与依赖。
+### 验证记录
+
+- 使用 `cmd /c npx.cmd vitest run src/features/tasks/task.filters.test.ts` 验证前端筛选纯函数测试，通过。
+- 使用 `cmd /c node_modules\\.bin\\tsc.cmd -b` 验证前端 TypeScript 构建，通过。
+### 下一步建议
+
+- 继续进入 Task 6 和 Task 7，把更多条件面板、列表工具条、优先级展示和轻量批量操作真正接到界面上。
