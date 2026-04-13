@@ -84,12 +84,15 @@ export function TaskList() {
       return
     }
 
+    const currentTask = filteredTasks.find((task) => task.id === taskId)
+
     await updateTask({
       id: taskId,
       title: nextTitle,
       description: editingDescription.trim(),
       groupId: editingGroupId || null,
       dueAt: editingDueAt || null,
+      priority: currentTask?.priority ?? 'medium',
     })
 
     handleCancelEdit()

@@ -102,6 +102,7 @@ export function TaskComposer() {
       description: description.trim(),
       groupId: groupId || null,
       dueAt: dueAt || null,
+      priority: 'medium',
     })
 
     closeTaskModal()

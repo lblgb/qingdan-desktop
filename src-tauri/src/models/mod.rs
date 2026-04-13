@@ -2,6 +2,36 @@
 
 use serde::{Deserialize, Serialize};
 
+/// 任务优先级枚举。
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum TaskPriority {
+    Urgent,
+    High,
+    Medium,
+    Low,
+}
+
+impl TaskPriority {
+    pub fn as_db_value(self) -> &'static str {
+        match self {
+            TaskPriority::Urgent => "urgent",
+            TaskPriority::High => "high",
+            TaskPriority::Medium => "medium",
+            TaskPriority::Low => "low",
+        }
+    }
+
+    pub fn from_db_value(value: &str) -> Self {
+        match value {
+            "urgent" => TaskPriority::Urgent,
+            "high" => TaskPriority::High,
+            "low" => TaskPriority::Low,
+            _ => TaskPriority::Medium,
+        }
+    }
+}
+
 /// 任务实体模型。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -12,6 +42,7 @@ pub struct TaskItem {
     pub completed: bool,
     pub group_id: Option<String>,
     pub due_at: Option<String>,
+    pub priority: TaskPriority,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -35,6 +66,7 @@ pub struct CreateTaskInput {
     pub description: String,
     pub group_id: Option<String>,
     pub due_at: Option<String>,
+    pub priority: TaskPriority,
 }
 
 /// 编辑任务输入。
@@ -46,6 +78,7 @@ pub struct UpdateTaskInput {
     pub description: String,
     pub group_id: Option<String>,
     pub due_at: Option<String>,
+    pub priority: TaskPriority,
 }
 
 /// 新建任务组输入。

@@ -5,6 +5,8 @@ export type TaskFilter = 'all' | 'active' | 'completed'
 
 export type TaskGroupFilter = 'all-groups' | 'ungrouped' | string
 
+export type TaskPriority = 'urgent' | 'high' | 'medium' | 'low'
+
 /**
  * 任务实体。
  */
@@ -15,6 +17,7 @@ export interface TaskItem {
   completed: boolean
   groupId: string | null
   dueAt: string | null
+  priority: TaskPriority
   createdAt: string
   updatedAt: string
 }
@@ -38,6 +41,7 @@ export interface CreateTaskInput {
   description: string
   groupId: string | null
   dueAt: string | null
+  priority: TaskPriority
 }
 
 /**
@@ -49,6 +53,7 @@ export interface UpdateTaskInput {
   description: string
   groupId: string | null
   dueAt: string | null
+  priority: TaskPriority
 }
 
 /**

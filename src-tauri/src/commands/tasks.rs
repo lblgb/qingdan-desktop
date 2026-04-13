@@ -8,8 +8,8 @@ use uuid::Uuid;
 use crate::{
     db::{open_connection, DatabaseState},
     models::{
-        CreateTaskGroupInput, CreateTaskInput, TaskGroup, TaskItem, UpdateTaskGroupInput,
-        UpdateTaskInput,
+        CreateTaskGroupInput, CreateTaskInput, TaskGroup, TaskItem, TaskPriority,
+        UpdateTaskGroupInput, UpdateTaskInput,
     },
 };
 
@@ -18,7 +18,7 @@ fn list_tasks_inner(state: &DatabaseState) -> Result<Vec<TaskItem>, String> {
     let mut statement = connection
         .prepare(
             "
-            SELECT id, title, description, completed, group_id, due_at, created_at, updated_at
+            SELECT id, title, description, completed, priority, group_id, due_at, created_at, updated_at
             FROM tasks
             ORDER BY
                 completed ASC,
@@ -36,10 +36,11 @@ fn list_tasks_inner(state: &DatabaseState) -> Result<Vec<TaskItem>, String> {
                 title: row.get(1)?,
                 description: row.get(2)?,
                 completed: row.get::<_, i64>(3)? != 0,
-                group_id: row.get(4)?,
-                due_at: row.get(5)?,
-                created_at: row.get(6)?,
-                updated_at: row.get(7)?,
+                priority: TaskPriority::from_db_value(&row.get::<_, String>(4)?),
+                group_id: row.get(5)?,
+                due_at: row.get(6)?,
+                created_at: row.get(7)?,
+                updated_at: row.get(8)?,
             })
         })
         .map_err(|error| format!("映射任务列表失败：{error}"))?;
@@ -111,13 +112,14 @@ pub fn create_task(
     connection
         .execute(
             "
-            INSERT INTO tasks (id, title, description, completed, group_id, due_at, created_at, updated_at)
-            VALUES (?1, ?2, ?3, 0, ?4, ?5, ?6, ?7)
+            INSERT INTO tasks (id, title, description, completed, priority, group_id, due_at, created_at, updated_at)
+            VALUES (?1, ?2, ?3, 0, ?4, ?5, ?6, ?7, ?8)
             ",
             params![
                 Uuid::new_v4().to_string(),
                 title,
                 input.description.trim(),
+                input.priority.as_db_value(),
                 input.group_id,
                 input.due_at,
                 timestamp,
@@ -148,15 +150,17 @@ pub fn update_task(
             UPDATE tasks
             SET title = ?2,
                 description = ?3,
-                due_at = ?4,
-                group_id = ?5,
-                updated_at = ?6
+                priority = ?4,
+                due_at = ?5,
+                group_id = ?6,
+                updated_at = ?7
             WHERE id = ?1
             ",
             params![
                 input.id,
                 title,
                 input.description.trim(),
+                input.priority.as_db_value(),
                 input.due_at,
                 input.group_id,
                 now_iso_string()?

@@ -23,6 +23,7 @@ const taskSchema = z.object({
   completed: z.boolean(),
   groupId: z.string().nullable(),
   dueAt: z.string().nullable(),
+  priority: z.enum(['urgent', 'high', 'medium', 'low']).catch('medium'),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
@@ -106,6 +107,7 @@ export async function createTask(input: CreateTaskInput): Promise<TaskItem[]> {
       completed: false,
       groupId: input.groupId,
       dueAt: input.dueAt,
+      priority: input.priority,
       createdAt: timestamp,
       updatedAt: timestamp,
     },
@@ -132,6 +134,7 @@ export async function updateTask(input: UpdateTaskInput): Promise<TaskItem[]> {
           description: input.description.trim(),
           groupId: input.groupId,
           dueAt: input.dueAt,
+          priority: input.priority,
           updatedAt: new Date().toISOString(),
         }
       : task,
