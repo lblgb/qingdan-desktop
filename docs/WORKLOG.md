@@ -291,3 +291,30 @@
 ### 下一步建议
 
 - 进入分支收尾流程，评估最终 review、合并方式和后续版本切分。
+## 2026-04-14 第 44 轮
+### 讨论主题
+
+- 完成 `v0.20` 的版本号对齐、安装包构建与 GitHub 发布收口。
+### 当前结论
+
+- 由于 Tauri 配置要求严格 semver，当前桌面应用发布版本统一对齐为 `0.20.0`。
+- 已成功生成 `setup.exe` 与 `zh-CN.msi` 两类 Windows 安装产物，满足既有发布约束。
+- 本轮将在源码版本、安装包版本与 GitHub Release 资产之间保持同一口径。
+### 决策原因
+
+- 如果继续保留 `0.20` 两段式版本号，Tauri 无法通过配置校验，也无法生成正式安装包。
+- 安装包文件名、应用内部版本号与 GitHub 发布页如果不一致，后续验收和追踪会持续产生歧义。
+### 文档更新
+
+- 更新了 [`docs/WORKLOG.md`](./WORKLOG.md)，记录本轮版本号对齐与安装包构建结果。
+### 实现记录
+
+- 更新了 [package.json](E:/CodeBase/package.json)、[src-tauri/Cargo.toml](E:/CodeBase/src-tauri/Cargo.toml) 和 [src-tauri/tauri.conf.json](E:/CodeBase/src-tauri/tauri.conf.json)，把版本号统一改为 `0.20.0`。
+- 更新了 [src-tauri/Cargo.lock](E:/CodeBase/src-tauri/Cargo.lock)，同步 Rust 侧锁文件中的版本信息。
+- 生成了 [轻单_0.20.0_x64-setup.exe](E:/CodeBase/src-tauri/target/release/bundle/nsis/%E8%BD%BB%E5%8D%95_0.20.0_x64-setup.exe) 与 [轻单_0.20.0_x64_zh-CN.msi](E:/CodeBase/src-tauri/target/release/bundle/msi/%E8%BD%BB%E5%8D%95_0.20.0_x64_zh-CN.msi)。
+### 验证记录
+
+- 使用 `cmd /c npm.cmd run tauri:build` 验证正式打包流程，通过。
+### 下一步建议
+
+- 将 `0.20.0` 版本提交并推送后，创建对应 GitHub Release 并上传安装包资产。
