@@ -7,6 +7,10 @@ export type TaskGroupFilter = 'all-groups' | 'ungrouped' | string
 
 export type TaskPriority = 'urgent' | 'high' | 'medium' | 'low'
 
+export type ReminderPriorityThreshold = 'urgent' | 'high' | 'medium'
+
+export type ReminderOffsetPreset = 'at-time' | '10-minutes' | '1-hour' | '1-day' | 'custom'
+
 export type TaskPriorityFilter = 'all-priorities' | TaskPriority
 
 export type TaskDateRangeFilter = 'all-time' | 'today' | 'upcoming' | 'overdue' | 'no-date'
@@ -85,6 +89,20 @@ export interface TaskQueryInput {
   priority: TaskPriorityFilter
   dateRange: TaskDateRangeFilter
   sortBy: TaskSortBy
+}
+
+export interface ReminderPreferences {
+  enableInApp: boolean
+  enableDesktop: boolean
+  priorityThreshold: ReminderPriorityThreshold
+  offsetPreset: ReminderOffsetPreset
+  customOffsetMinutes: number
+}
+
+export interface ReminderItem {
+  task: TaskItem
+  reason: 'upcoming' | 'overdue' | 'focus-without-date' | 'recently-reminded'
+  dueLabel: string
 }
 
 export interface BulkUpdateTasksInput {

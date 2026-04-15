@@ -22,6 +22,10 @@ export const DEFAULT_TASK_QUERY: TaskQueryInput = {
   sortBy: 'default',
 }
 
+export function resetTaskQuery(): TaskQueryInput {
+  return { ...DEFAULT_TASK_QUERY }
+}
+
 function priorityWeight(priority: TaskItem['priority']) {
   return TASK_PRIORITY_META[priority].weight
 }

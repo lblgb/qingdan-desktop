@@ -4,11 +4,13 @@
 import { invoke } from '@tauri-apps/api/core'
 import { z } from 'zod'
 import { applyTaskQuery } from './task.filters'
+import { DEFAULT_REMINDER_PREFERENCES } from './task.reminders'
 import { defaultTasks } from './task.mock'
 import type {
   BulkUpdateTasksInput,
   CreateTaskGroupInput,
   CreateTaskInput,
+  ReminderPreferences,
   TaskGroup,
   TaskItem,
   TaskQueryInput,
@@ -18,6 +20,7 @@ import type {
 
 const STORAGE_KEY = 'qingdan.tasks'
 const GROUP_STORAGE_KEY = 'qingdan.task-groups'
+const REMINDER_PREFERENCES_STORAGE_KEY = 'qingdan.reminder-preferences'
 
 const taskSchema = z.object({
   id: z.string(),
@@ -37,6 +40,14 @@ const taskGroupSchema = z.object({
   description: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
+})
+
+const reminderPreferencesSchema = z.object({
+  enableInApp: z.boolean(),
+  enableDesktop: z.boolean(),
+  priorityThreshold: z.enum(['urgent', 'high', 'medium']).catch('high'),
+  offsetPreset: z.enum(['at-time', '10-minutes', '1-hour', '1-day', 'custom']).catch('1-hour'),
+  customOffsetMinutes: z.number().int().nonnegative().catch(60),
 })
 
 const taskListSchema = z.array(taskSchema)
@@ -80,6 +91,26 @@ function loadLocalTaskGroups(): TaskGroup[] {
 
 function saveLocalTaskGroups(groups: TaskGroup[]) {
   window.localStorage.setItem(GROUP_STORAGE_KEY, JSON.stringify(groups))
+}
+
+function loadLocalReminderPreferences(): ReminderPreferences {
+  const rawValue = window.localStorage.getItem(REMINDER_PREFERENCES_STORAGE_KEY)
+  if (!rawValue) {
+    return DEFAULT_REMINDER_PREFERENCES
+  }
+
+  try {
+    const parsedValue = JSON.parse(rawValue)
+    const result = reminderPreferencesSchema.safeParse(parsedValue)
+
+    return result.success ? result.data : DEFAULT_REMINDER_PREFERENCES
+  } catch {
+    return DEFAULT_REMINDER_PREFERENCES
+  }
+}
+
+function saveLocalReminderPreferences(preferences: ReminderPreferences) {
+  window.localStorage.setItem(REMINDER_PREFERENCES_STORAGE_KEY, JSON.stringify(preferences))
 }
 
 /**
@@ -247,6 +278,31 @@ export async function loadTaskGroups(): Promise<TaskGroup[]> {
   }
 
   return loadLocalTaskGroups()
+}
+
+/**
+ * 读取提醒偏好。
+ */
+export async function loadReminderPreferences(): Promise<ReminderPreferences> {
+  if (isTauriRuntime() || typeof window === 'undefined') {
+    return DEFAULT_REMINDER_PREFERENCES
+  }
+
+  return loadLocalReminderPreferences()
+}
+
+/**
+ * 保存提醒偏好。
+ */
+export async function saveReminderPreferences(
+  preferences: ReminderPreferences,
+): Promise<ReminderPreferences> {
+  if (isTauriRuntime() || typeof window === 'undefined') {
+    return preferences
+  }
+
+  saveLocalReminderPreferences(preferences)
+  return preferences
 }
 
 /**
