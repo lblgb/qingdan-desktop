@@ -47,7 +47,7 @@ const reminderPreferencesSchema = z.object({
   enableDesktop: z.boolean(),
   priorityThreshold: z.enum(['urgent', 'high', 'medium']).catch('high'),
   offsetPreset: z.enum(['at-time', '10-minutes', '1-hour', '1-day', 'custom']).catch('1-hour'),
-  customOffsetMinutes: z.number().int().nonnegative().catch(60),
+  customOffsetMinutes: z.number().int().nonnegative().catch(120),
 })
 
 const taskListSchema = z.array(taskSchema)
@@ -284,7 +284,7 @@ export async function loadTaskGroups(): Promise<TaskGroup[]> {
  * 读取提醒偏好。
  */
 export async function loadReminderPreferences(): Promise<ReminderPreferences> {
-  if (isTauriRuntime() || typeof window === 'undefined') {
+  if (typeof window === 'undefined') {
     return DEFAULT_REMINDER_PREFERENCES
   }
 
@@ -297,7 +297,7 @@ export async function loadReminderPreferences(): Promise<ReminderPreferences> {
 export async function saveReminderPreferences(
   preferences: ReminderPreferences,
 ): Promise<ReminderPreferences> {
-  if (isTauriRuntime() || typeof window === 'undefined') {
+  if (typeof window === 'undefined') {
     return preferences
   }
 

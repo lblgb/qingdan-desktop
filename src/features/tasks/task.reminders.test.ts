@@ -31,3 +31,9 @@ describe('deriveReminderBuckets', () => {
     expect(result.focusWithoutDate.map((item) => item.task.id)).toEqual(['focus-high'])
   })
 })
+
+describe('DEFAULT_REMINDER_PREFERENCES', () => {
+  it('uses 120 minutes as the custom reminder offset default', () => {
+    expect(DEFAULT_REMINDER_PREFERENCES.customOffsetMinutes).toBe(120)
+  })
+})

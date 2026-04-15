@@ -6,7 +6,7 @@ export const DEFAULT_REMINDER_PREFERENCES: ReminderPreferences = {
   enableDesktop: false,
   priorityThreshold: 'high',
   offsetPreset: '1-hour',
-  customOffsetMinutes: 60,
+  customOffsetMinutes: 120,
 }
 
 const PRIORITY_WEIGHT: Record<TaskItem['priority'], number> = {
