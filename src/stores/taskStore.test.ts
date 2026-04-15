@@ -1,0 +1,156 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { DEFAULT_TASK_QUERY } from '../features/tasks/task.filters'
+import type { TaskGroup, TaskItem } from '../features/tasks/task.types'
+
+const mockLoadTaskGroups = vi.fn()
+const mockQueryTasks = vi.fn()
+const mockCreateTask = vi.fn()
+const mockUpdateTask = vi.fn()
+const mockToggleTask = vi.fn()
+const mockDeleteTask = vi.fn()
+const mockAssignTaskGroup = vi.fn()
+const mockCreateTaskGroup = vi.fn()
+const mockUpdateTaskGroup = vi.fn()
+const mockDeleteTaskGroup = vi.fn()
+const mockLoadTasks = vi.fn()
+const mockBulkUpdateTasks = vi.fn()
+
+vi.mock('../features/tasks/task.storage', () => ({
+  loadTaskGroups: mockLoadTaskGroups,
+  queryTasks: mockQueryTasks,
+  createTask: mockCreateTask,
+  updateTask: mockUpdateTask,
+  toggleTask: mockToggleTask,
+  deleteTask: mockDeleteTask,
+  assignTaskGroup: mockAssignTaskGroup,
+  createTaskGroup: mockCreateTaskGroup,
+  updateTaskGroup: mockUpdateTaskGroup,
+  deleteTaskGroup: mockDeleteTaskGroup,
+  loadTasks: mockLoadTasks,
+  bulkUpdateTasks: mockBulkUpdateTasks,
+}))
+
+function buildTask(overrides: Partial<TaskItem> = {}): TaskItem {
+  return {
+    id: 'task-1',
+    title: '测试任务',
+    description: '',
+    completed: false,
+    groupId: null,
+    dueAt: null,
+    priority: 'medium',
+    createdAt: '2026-04-16T00:00:00.000Z',
+    updatedAt: '2026-04-16T00:00:00.000Z',
+    ...overrides,
+  }
+}
+
+function buildGroup(overrides: Partial<TaskGroup> = {}): TaskGroup {
+  return {
+    id: 'group-1',
+    name: '测试分组',
+    description: '',
+    createdAt: '2026-04-16T00:00:00.000Z',
+    updatedAt: '2026-04-16T00:00:00.000Z',
+    ...overrides,
+  }
+}
+
+async function loadStore() {
+  vi.resetModules()
+  return import('./taskStore')
+}
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  mockLoadTaskGroups.mockResolvedValue([])
+  mockQueryTasks.mockResolvedValue([])
+  mockCreateTask.mockResolvedValue([])
+  mockUpdateTask.mockResolvedValue([])
+  mockToggleTask.mockResolvedValue([])
+  mockDeleteTask.mockResolvedValue([])
+  mockAssignTaskGroup.mockResolvedValue([])
+  mockCreateTaskGroup.mockResolvedValue([])
+  mockUpdateTaskGroup.mockResolvedValue([])
+  mockDeleteTaskGroup.mockResolvedValue([])
+  mockLoadTasks.mockResolvedValue([])
+  mockBulkUpdateTasks.mockResolvedValue([])
+})
+
+describe('taskStore reset and feedback', () => {
+  it('resets filters to the default query and rebuilds visible tasks from current tasks', async () => {
+    const { useTaskStore } = await loadStore()
+    const taskA = buildTask({ id: 'task-a', priority: 'high' })
+    const taskB = buildTask({ id: 'task-b', completed: true, priority: 'low' })
+
+    useTaskStore.setState({
+      tasks: [taskA, taskB],
+      taskGroups: [buildGroup()],
+      activeFilter: 'completed',
+      activeGroupFilter: 'ungrouped',
+      activePriorityFilter: 'high',
+      activeDateRange: 'today',
+      activeSortBy: 'updated',
+      filteredTasks: [taskB],
+    })
+
+    useTaskStore.getState().resetFilters()
+
+    const state = useTaskStore.getState()
+    expect(state.activeFilter).toBe(DEFAULT_TASK_QUERY.status)
+    expect(state.activeGroupFilter).toBe(DEFAULT_TASK_QUERY.group)
+    expect(state.activePriorityFilter).toBe(DEFAULT_TASK_QUERY.priority)
+    expect(state.activeDateRange).toBe(DEFAULT_TASK_QUERY.dateRange)
+    expect(state.activeSortBy).toBe(DEFAULT_TASK_QUERY.sortBy)
+    expect(state.filteredTasks).toHaveLength(2)
+    expect(state.filteredTasks.map((task) => task.id)).toEqual(['task-a', 'task-b'])
+  })
+
+  it('stores success toast state for successful task creation', async () => {
+    const nextTasks = [buildTask({ id: 'task-created' })]
+    mockCreateTask.mockResolvedValue(nextTasks)
+
+    const { useTaskStore } = await loadStore()
+
+    await useTaskStore.getState().addTask({
+      title: '新建任务',
+      description: '',
+      priority: 'medium',
+      dueAt: null,
+      groupId: null,
+    })
+
+    const state = useTaskStore.getState()
+    expect(state.tasks).toEqual(nextTasks)
+    expect(state.successToast).toEqual({
+      tone: 'success',
+      message: '任务已保存到本地清单。',
+      source: 'create',
+    })
+    expect(state.errorDialog).toBeNull()
+    expect(state.feedback).toBeNull()
+  })
+
+  it('stores error dialog state for failed task creation', async () => {
+    mockCreateTask.mockRejectedValue(new Error('保存失败'))
+
+    const { useTaskStore } = await loadStore()
+
+    await useTaskStore.getState().addTask({
+      title: '新建任务',
+      description: '',
+      priority: 'medium',
+      dueAt: null,
+      groupId: null,
+    })
+
+    const state = useTaskStore.getState()
+    expect(state.successToast).toBeNull()
+    expect(state.errorDialog).toEqual({
+      title: '任务创建失败',
+      message: '保存失败',
+      source: 'create',
+    })
+    expect(state.feedback).toBeNull()
+  })
+})

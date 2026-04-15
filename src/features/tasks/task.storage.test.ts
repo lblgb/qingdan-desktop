@@ -25,7 +25,7 @@ const originalWindow = globalThis.window
 
 afterEach(() => {
   if (originalWindow === undefined) {
-    delete (globalThis as typeof globalThis & { window?: unknown }).window
+    Reflect.deleteProperty(globalThis, 'window')
     return
   }
 
