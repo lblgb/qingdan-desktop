@@ -153,4 +153,49 @@ describe('taskStore reset and feedback', () => {
     })
     expect(state.feedback).toBeNull()
   })
+
+  it('stores success toast state for successful task update', async () => {
+    const nextTasks = [buildTask({ id: 'task-updated', title: '已更新任务' })]
+    mockUpdateTask.mockResolvedValue(nextTasks)
+
+    const { useTaskStore } = await loadStore()
+
+    await useTaskStore.getState().updateTask({
+      id: 'task-updated',
+      title: '已更新任务',
+      description: '',
+      priority: 'high',
+      dueAt: null,
+      groupId: null,
+    })
+
+    const state = useTaskStore.getState()
+    expect(state.tasks).toEqual(nextTasks)
+    expect(state.successToast).toEqual({
+      tone: 'success',
+      message: '任务修改已保存。',
+      source: 'update',
+    })
+    expect(state.errorDialog).toBeNull()
+    expect(state.feedback).toBeNull()
+  })
+
+  it('stores hydrate failures in the error dialog', async () => {
+    mockLoadTaskGroups.mockRejectedValueOnce(new Error('加载失败'))
+
+    const { useTaskStore } = await loadStore()
+
+    await useTaskStore.getState().hydrateTasks()
+
+    const state = useTaskStore.getState()
+    expect(state.isLoading).toBe(false)
+    expect(state.activeAction).toBeNull()
+    expect(state.successToast).toBeNull()
+    expect(state.errorDialog).toEqual({
+      title: '任务列表读取失败',
+      message: '加载失败',
+      source: 'hydrate',
+    })
+    expect(state.feedback).toBeNull()
+  })
 })

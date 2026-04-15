@@ -73,6 +73,11 @@ interface TaskState {
   isLoading: boolean
   isMutating: boolean
   activeAction: TaskAction | null
+  /**
+   * Legacy compatibility only.
+   * Current UI consumers still read `feedback` / call `dismissFeedback`, but new
+   * mutation results must use `successToast` and `errorDialog` as the source of truth.
+   */
   feedback: TaskFeedback | null
   successToast: TaskSuccessToast | null
   errorDialog: TaskErrorDialog | null
@@ -96,6 +101,7 @@ interface TaskState {
   toggleTaskSelection: (taskId: string) => void
   clearTaskSelection: () => void
   applyBulkUpdate: (input: BulkUpdateTasksInput) => Promise<void>
+  /** Legacy compatibility no-op for current UI consumers. */
   dismissFeedback: () => void
   queueReminderNavigation: (taskId: string) => void
   clearReminderNavigation: () => void
