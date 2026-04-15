@@ -348,6 +348,11 @@ textarea {
   gap: 12px;
 }
 
+.nested-filter-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .nested-filter-panel {
   padding: 14px;
   border-radius: 18px;
@@ -542,11 +547,95 @@ textarea {
   font-size: 0.9rem;
 }
 
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0.72rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(23, 53, 54, 0.08);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.icon-button-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: rgba(31, 122, 122, 0.1);
+  color: var(--accent-strong);
+  font-size: 0.82rem;
+}
+
+.icon-button-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding-inline: 0.4rem;
+  border-radius: 999px;
+  background: rgba(180, 84, 79, 0.12);
+  color: var(--danger);
+  font-size: 0.78rem;
+}
+
 .composer-form label {
   display: grid;
   gap: 8px;
   color: var(--text-primary);
   font-weight: 600;
+}
+
+.task-settings-form,
+.task-reminder-group-list,
+.task-reminder-item-list {
+  display: grid;
+  gap: 16px;
+}
+
+.task-settings-toggle {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: rgba(31, 122, 122, 0.05);
+  border: 1px solid rgba(31, 122, 122, 0.08);
+}
+
+.task-settings-toggle input {
+  width: auto;
+  margin-top: 0.2rem;
+  box-shadow: none;
+}
+
+.task-settings-toggle strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-primary);
+}
+
+.task-settings-toggle span,
+.task-settings-note p,
+.task-reminder-center-summary p,
+.task-reminder-group-header p,
+.task-reminder-item p,
+.reminder-strip p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.task-settings-note {
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: rgba(23, 53, 54, 0.04);
 }
 
 .composer-actions {
@@ -1127,6 +1216,103 @@ textarea {
   color: var(--danger);
 }
 
+.reminder-strip {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  padding: 16px 18px;
+  border-radius: 20px;
+  background: rgba(31, 122, 122, 0.06);
+  border: 1px solid rgba(31, 122, 122, 0.12);
+}
+
+.reminder-strip strong,
+.task-reminder-center-summary strong,
+.task-reminder-item strong,
+.task-reminder-group h3 {
+  color: var(--text-primary);
+}
+
+.task-reminder-center-modal {
+  width: min(780px, 100%);
+}
+
+.task-reminder-center-summary,
+.task-reminder-group,
+.task-reminder-empty,
+.task-error-dialog-body {
+  display: grid;
+  gap: 12px;
+}
+
+.task-reminder-center-summary,
+.task-reminder-empty {
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(23, 53, 54, 0.04);
+  border: 1px solid rgba(23, 53, 54, 0.06);
+}
+
+.task-reminder-group {
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(250, 252, 252, 0.96);
+  border: 1px solid rgba(18, 52, 47, 0.08);
+}
+
+.task-reminder-group-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.task-reminder-group h3 {
+  margin: 0 0 4px;
+}
+
+.task-reminder-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: rgba(31, 122, 122, 0.04);
+  border: 1px solid rgba(31, 122, 122, 0.08);
+}
+
+.task-reminder-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.task-feedback-toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 40;
+  display: grid;
+  gap: 4px;
+  min-width: 240px;
+  max-width: min(360px, calc(100vw - 32px));
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(22, 163, 74, 0.96);
+  color: #f6fffa;
+  box-shadow: 0 16px 36px rgba(16, 78, 39, 0.2);
+}
+
+.task-feedback-toast strong {
+  font-size: 0.92rem;
+}
+
+.task-error-dialog .section-tag {
+  color: var(--danger);
+}
+
 .task-group {
   display: grid;
   gap: 14px;
@@ -1475,7 +1661,9 @@ select:disabled {
   .overview-bar-header,
   .overview-group-heading,
   .overview-priority-header,
-  .overview-trend-heading {
+  .overview-trend-heading,
+  .reminder-strip,
+  .task-reminder-group-header {
     flex-direction: column;
     align-items: flex-start;
   }
@@ -1503,5 +1691,13 @@ select:disabled {
     left: 0;
     right: auto;
     min-width: min(280px, calc(100vw - 32px));
+  }
+
+  .task-reminder-item {
+    grid-template-columns: 1fr;
+  }
+
+  .task-reminder-item-meta {
+    justify-content: flex-start;
   }
 }
