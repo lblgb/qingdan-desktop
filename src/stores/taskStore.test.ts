@@ -237,19 +237,35 @@ describe('taskStore reset and feedback', () => {
 
     const { useTaskStore } = await loadStore()
 
-    await useTaskStore.getState().saveReminderPreferences({
+    const result = await useTaskStore.getState().saveReminderPreferences({
       ...DEFAULT_REMINDER_PREFERENCES,
       offsetPreset: 'custom',
       customOffsetMinutes: 45,
     })
 
     const state = useTaskStore.getState()
+    expect(result).toBe(false)
     expect(state.errorDialog).toEqual({
       title: '提醒设置保存失败',
       message: '提醒设置保存失败',
       source: 'reminder',
     })
     expect(state.isSavingReminderPreferences).toBe(false)
+  })
+
+  it('returns success when reminder preferences save completes', async () => {
+    const { useTaskStore } = await loadStore()
+
+    const result = await useTaskStore.getState().saveReminderPreferences({
+      ...DEFAULT_REMINDER_PREFERENCES,
+      offsetPreset: 'custom',
+      customOffsetMinutes: 30,
+    })
+
+    const state = useTaskStore.getState()
+    expect(result).toBe(true)
+    expect(state.reminderPreferences.customOffsetMinutes).toBe(30)
+    expect(state.errorDialog).toBeNull()
   })
 
   it('refreshes reminder buckets when time advances without task mutations', async () => {

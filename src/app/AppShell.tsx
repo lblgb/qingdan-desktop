@@ -238,8 +238,11 @@ export function AppShell() {
   }
 
   async function handleSaveReminderPreferences() {
-    await saveReminderPreferences(draftReminderPreferences)
-    setIsSettingsOpen(false)
+    const isSaved = await saveReminderPreferences(draftReminderPreferences)
+
+    if (isSaved) {
+      setIsSettingsOpen(false)
+    }
   }
 
   return (

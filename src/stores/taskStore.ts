@@ -98,7 +98,7 @@ interface TaskState {
   reminderNavigation: ReminderNavigationState | null
   hydrateTasks: () => Promise<void>
   hydrateReminderPreferences: (nowIso?: string) => Promise<void>
-  saveReminderPreferences: (input: ReminderPreferences, nowIso?: string) => Promise<void>
+  saveReminderPreferences: (input: ReminderPreferences, nowIso?: string) => Promise<boolean>
   refreshReminderBuckets: (nowIso?: string) => void
   startReminderAutoRefresh: () => void
   stopReminderAutoRefresh: () => void
@@ -280,6 +280,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         },
         ...buildReminderState(state.tasks, reminderPreferences, nowIso),
       }))
+      return true
     } catch (error) {
       set({
         isSavingReminderPreferences: false,
@@ -290,6 +291,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           source: 'reminder',
         },
       })
+      return false
     }
   },
   refreshReminderBuckets: (nowIso) =>
