@@ -2,13 +2,14 @@ import { useTaskStore } from '../stores/taskStore'
 
 export function TaskErrorDialog() {
   const errorDialog = useTaskStore((state) => state.errorDialog)
+  const closeErrorDialog = useTaskStore((state) => state.closeErrorDialog)
 
   if (!errorDialog) {
     return null
   }
 
   return (
-    <div className="modal-backdrop" onClick={() => useTaskStore.setState({ errorDialog: null })} role="presentation">
+    <div className="modal-backdrop" onClick={closeErrorDialog} role="presentation">
       <section
         aria-labelledby="task-error-dialog-title"
         aria-modal="true"
@@ -23,7 +24,7 @@ export function TaskErrorDialog() {
           </div>
           <button
             className="secondary-button modal-close-button"
-            onClick={() => useTaskStore.setState({ errorDialog: null })}
+            onClick={closeErrorDialog}
             type="button"
           >
             关闭
@@ -35,7 +36,7 @@ export function TaskErrorDialog() {
           <div className="task-modal-button-row">
             <button
               className="primary-button"
-              onClick={() => useTaskStore.setState({ errorDialog: null })}
+              onClick={closeErrorDialog}
               type="button"
             >
               知道了

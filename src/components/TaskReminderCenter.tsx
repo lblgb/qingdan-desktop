@@ -1,6 +1,4 @@
-import type { deriveReminderBuckets } from '../features/tasks/task.reminders'
-
-type ReminderBuckets = ReturnType<typeof deriveReminderBuckets>
+import type { ReminderBuckets } from '../features/tasks/task.reminders'
 
 const GROUP_META: Array<{
   key: keyof ReminderBuckets

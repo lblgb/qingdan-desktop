@@ -5,6 +5,7 @@ const TOAST_DURATION_MS = 2400
 
 export function TaskFeedbackToast() {
   const successToast = useTaskStore((state) => state.successToast)
+  const dismissSuccessToast = useTaskStore((state) => state.dismissSuccessToast)
 
   useEffect(() => {
     if (!successToast) {
@@ -12,11 +13,11 @@ export function TaskFeedbackToast() {
     }
 
     const timer = window.setTimeout(() => {
-      useTaskStore.setState({ successToast: null })
+      dismissSuccessToast()
     }, TOAST_DURATION_MS)
 
     return () => window.clearTimeout(timer)
-  }, [successToast])
+  }, [dismissSuccessToast, successToast])
 
   if (!successToast) {
     return null

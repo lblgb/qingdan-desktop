@@ -1,8 +1,14 @@
 /**
- * 文件说明：统一管理任务状态、查询状态和批量模式。
+ * 文件说明：统一管理任务状态、筛选状态、提醒偏好和全局反馈。
  */
 import { create } from 'zustand'
 import { applyTaskQuery, DEFAULT_TASK_QUERY } from '../features/tasks/task.filters'
+import {
+  DEFAULT_REMINDER_PREFERENCES,
+  deriveReminderBuckets,
+  EMPTY_REMINDER_BUCKETS,
+  type ReminderBuckets,
+} from '../features/tasks/task.reminders'
 import {
   assignTaskGroup,
   bulkUpdateTasks,
@@ -10,9 +16,11 @@ import {
   createTaskGroup,
   deleteTask,
   deleteTaskGroup,
+  loadReminderPreferences,
   loadTaskGroups,
   loadTasks,
   queryTasks,
+  saveReminderPreferences as persistReminderPreferences,
   toggleTask,
   updateTask,
   updateTaskGroup,
@@ -21,6 +29,7 @@ import type {
   BulkUpdateTasksInput,
   CreateTaskGroupInput,
   CreateTaskInput,
+  ReminderPreferences,
   TaskDateRangeFilter,
   TaskFilter,
   TaskGroup,
@@ -33,7 +42,7 @@ import type {
   UpdateTaskInput,
 } from '../features/tasks/task.types'
 
-type TaskAction = 'hydrate' | 'create' | 'update' | 'toggle' | 'remove' | 'group' | 'bulk'
+type TaskAction = 'hydrate' | 'create' | 'update' | 'toggle' | 'remove' | 'group' | 'bulk' | 'reminder'
 type TaskFeedbackTone = 'success' | 'error'
 
 interface TaskFeedback {
@@ -67,6 +76,11 @@ interface TaskState {
   activeDateRange: TaskDateRangeFilter
   activeSortBy: TaskSortBy
   filteredTasks: TaskItem[]
+  reminderPreferences: ReminderPreferences
+  reminderBuckets: ReminderBuckets
+  reminderSnapshotAt: string | null
+  isReminderPreferencesLoading: boolean
+  isSavingReminderPreferences: boolean
   isBulkMode: boolean
   selectedTaskIds: string[]
   isHydrated: boolean
@@ -83,6 +97,13 @@ interface TaskState {
   errorDialog: TaskErrorDialog | null
   reminderNavigation: ReminderNavigationState | null
   hydrateTasks: () => Promise<void>
+  hydrateReminderPreferences: (nowIso?: string) => Promise<void>
+  saveReminderPreferences: (input: ReminderPreferences, nowIso?: string) => Promise<void>
+  refreshReminderBuckets: (nowIso?: string) => void
+  startReminderAutoRefresh: () => void
+  stopReminderAutoRefresh: () => void
+  dismissSuccessToast: () => void
+  closeErrorDialog: () => void
   setFilter: (filter: TaskFilter) => void
   setGroupFilter: (filter: TaskGroupFilter) => void
   setPriorityFilter: (filter: TaskPriorityFilter) => void
@@ -106,6 +127,8 @@ interface TaskState {
   queueReminderNavigation: (taskId: string) => void
   clearReminderNavigation: () => void
 }
+
+let reminderAutoRefreshTimer: ReturnType<typeof setInterval> | null = null
 
 function buildVisibleTasks(tasks: TaskItem[], query: TaskQueryInput) {
   return applyTaskQuery(tasks, query)
@@ -131,6 +154,18 @@ function buildQuery(
   }
 }
 
+function getNowIso(nowIso?: string) {
+  return nowIso ?? new Date().toISOString()
+}
+
+function buildReminderState(tasks: TaskItem[], preferences: ReminderPreferences, nowIso?: string) {
+  const snapshotAt = getNowIso(nowIso)
+  return {
+    reminderSnapshotAt: snapshotAt,
+    reminderBuckets: deriveReminderBuckets(tasks, preferences, snapshotAt),
+  }
+}
+
 export const useTaskStore = create<TaskState>((set, get) => ({
   tasks: [],
   taskGroups: [],
@@ -140,6 +175,11 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   activeDateRange: DEFAULT_TASK_QUERY.dateRange,
   activeSortBy: DEFAULT_TASK_QUERY.sortBy,
   filteredTasks: [],
+  reminderPreferences: DEFAULT_REMINDER_PREFERENCES,
+  reminderBuckets: EMPTY_REMINDER_BUCKETS,
+  reminderSnapshotAt: null,
+  isReminderPreferencesLoading: false,
+  isSavingReminderPreferences: false,
   isBulkMode: false,
   selectedTaskIds: [],
   isHydrated: false,
@@ -180,6 +220,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           isHydrated: true,
           isLoading: false,
           activeAction: null,
+          ...buildReminderState(tasks, state.reminderPreferences),
         }
       })
     } catch (error) {
@@ -194,6 +235,87 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       })
     }
   },
+  hydrateReminderPreferences: async (nowIso) => {
+    set({
+      isReminderPreferencesLoading: true,
+    })
+
+    try {
+      const reminderPreferences = await loadReminderPreferences()
+      set((state) => ({
+        reminderPreferences,
+        isReminderPreferencesLoading: false,
+        ...buildReminderState(state.tasks, reminderPreferences, nowIso),
+      }))
+    } catch (error) {
+      set((state) => ({
+        isReminderPreferencesLoading: false,
+        errorDialog: {
+          title: '提醒设置读取失败',
+          message: getErrorMessage(error, '读取提醒设置失败，请稍后重试。'),
+          source: 'reminder',
+        },
+        reminderBuckets: deriveReminderBuckets(state.tasks, state.reminderPreferences, getNowIso(nowIso)),
+      }))
+    }
+  },
+  saveReminderPreferences: async (input, nowIso) => {
+    set({
+      isSavingReminderPreferences: true,
+      activeAction: 'reminder',
+      errorDialog: null,
+      successToast: null,
+    })
+
+    try {
+      const reminderPreferences = await persistReminderPreferences(input)
+      set((state) => ({
+        reminderPreferences,
+        isSavingReminderPreferences: false,
+        activeAction: null,
+        successToast: {
+          tone: 'success',
+          message: '提醒设置已保存。',
+          source: 'reminder',
+        },
+        ...buildReminderState(state.tasks, reminderPreferences, nowIso),
+      }))
+    } catch (error) {
+      set({
+        isSavingReminderPreferences: false,
+        activeAction: null,
+        errorDialog: {
+          title: '提醒设置保存失败',
+          message: getErrorMessage(error, '保存提醒设置失败，请稍后重试。'),
+          source: 'reminder',
+        },
+      })
+    }
+  },
+  refreshReminderBuckets: (nowIso) =>
+    set((state) => ({
+      ...buildReminderState(state.tasks, state.reminderPreferences, nowIso),
+    })),
+  startReminderAutoRefresh: () => {
+    if (reminderAutoRefreshTimer) {
+      return
+    }
+
+    get().refreshReminderBuckets()
+    reminderAutoRefreshTimer = setInterval(() => {
+      get().refreshReminderBuckets()
+    }, 60_000)
+  },
+  stopReminderAutoRefresh: () => {
+    if (!reminderAutoRefreshTimer) {
+      return
+    }
+
+    clearInterval(reminderAutoRefreshTimer)
+    reminderAutoRefreshTimer = null
+  },
+  dismissSuccessToast: () => set({ successToast: null }),
+  closeErrorDialog: () => set({ errorDialog: null }),
   setFilter: (filter) =>
     set((state) => ({
       activeFilter: filter,
@@ -264,6 +386,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           message: '任务已保存到本地清单。',
           source: 'create',
         },
+        ...buildReminderState(tasks, state.reminderPreferences),
       }))
     } catch (error) {
       set({
@@ -299,6 +422,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           message: '任务修改已保存。',
           source: 'update',
         },
+        ...buildReminderState(tasks, state.reminderPreferences),
       }))
     } catch (error) {
       set({
@@ -335,6 +459,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           message: targetTask?.completed ? '任务已恢复为进行中。' : '任务已标记为完成。',
           source: 'toggle',
         },
+        ...buildReminderState(tasks, state.reminderPreferences),
       }))
     } catch (error) {
       set({
@@ -370,6 +495,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           message: '任务已删除。',
           source: 'remove',
         },
+        ...buildReminderState(tasks, state.reminderPreferences),
       }))
     } catch (error) {
       set({
@@ -405,6 +531,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           message: groupId ? '任务已调整到新的任务组。' : '任务已移回未分组。',
           source: 'group',
         },
+        ...buildReminderState(tasks, state.reminderPreferences),
       }))
     } catch (error) {
       set({
@@ -528,6 +655,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
             message: '任务组已删除，组内任务已移回未分组。',
             source: 'group',
           },
+          ...buildReminderState(tasks, state.reminderPreferences),
         }
       })
     } catch (error) {
@@ -577,6 +705,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           message: '批量操作已完成。',
           source: 'bulk',
         },
+        ...buildReminderState(tasks, state.reminderPreferences),
       }))
     } catch (error) {
       set({

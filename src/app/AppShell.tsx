@@ -12,10 +12,8 @@ import { TaskReminderCenter } from '../components/TaskReminderCenter'
 import { TaskSettings } from '../components/TaskSettings'
 import { DEFAULT_TASK_QUERY, applyTaskQuery, summarizeFilters } from '../features/tasks/task.filters'
 import { TASK_PRIORITY_META } from '../features/tasks/task.priority'
-import { DEFAULT_REMINDER_PREFERENCES, deriveReminderBuckets } from '../features/tasks/task.reminders'
-import { loadReminderPreferences, saveReminderPreferences } from '../features/tasks/task.storage'
+import type { ReminderBuckets } from '../features/tasks/task.reminders'
 import type {
-  ReminderPreferences,
   TaskDateRangeFilter,
   TaskFilter,
   TaskGroupFilter,
@@ -63,7 +61,7 @@ function sortLabel(sortBy: TaskSortBy) {
   return SORT_OPTIONS.find((option) => option.key === sortBy)?.label ?? '默认推荐'
 }
 
-function buildReminderStripSummary(reminderCount: number, buckets: ReturnType<typeof deriveReminderBuckets>) {
+function buildReminderStripSummary(reminderCount: number, buckets: ReminderBuckets) {
   const fragments: string[] = []
 
   if (buckets.overdue.length > 0) {
@@ -95,7 +93,14 @@ export function AppShell() {
   const activeSortBy = useTaskStore((state) => state.activeSortBy)
   const activeAction = useTaskStore((state) => state.activeAction)
   const feedback = useTaskStore((state) => state.feedback)
+  const reminderPreferences = useTaskStore((state) => state.reminderPreferences)
+  const reminderBuckets = useTaskStore((state) => state.reminderBuckets)
+  const isSavingReminderPreferences = useTaskStore((state) => state.isSavingReminderPreferences)
   const hydrateTasks = useTaskStore((state) => state.hydrateTasks)
+  const hydrateReminderPreferences = useTaskStore((state) => state.hydrateReminderPreferences)
+  const saveReminderPreferences = useTaskStore((state) => state.saveReminderPreferences)
+  const startReminderAutoRefresh = useTaskStore((state) => state.startReminderAutoRefresh)
+  const stopReminderAutoRefresh = useTaskStore((state) => state.stopReminderAutoRefresh)
   const setFilter = useTaskStore((state) => state.setFilter)
   const setGroupFilter = useTaskStore((state) => state.setGroupFilter)
   const setPriorityFilter = useTaskStore((state) => state.setPriorityFilter)
@@ -108,31 +113,17 @@ export function AppShell() {
   const [activeConditionPanel, setActiveConditionPanel] = useState<ConditionPanel>('root')
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isReminderCenterOpen, setIsReminderCenterOpen] = useState(false)
-  const [isSavingReminderPreferences, setIsSavingReminderPreferences] = useState(false)
-  const [reminderPreferences, setReminderPreferences] = useState<ReminderPreferences>(DEFAULT_REMINDER_PREFERENCES)
-  const [draftReminderPreferences, setDraftReminderPreferences] =
-    useState<ReminderPreferences>(DEFAULT_REMINDER_PREFERENCES)
+  const [draftReminderPreferences, setDraftReminderPreferences] = useState(reminderPreferences)
 
   useEffect(() => {
     void hydrateTasks()
-  }, [hydrateTasks])
-
-  useEffect(() => {
-    let isMounted = true
-
-    void loadReminderPreferences().then((preferences) => {
-      if (!isMounted) {
-        return
-      }
-
-      setReminderPreferences(preferences)
-      setDraftReminderPreferences(preferences)
-    })
+    void hydrateReminderPreferences()
+    startReminderAutoRefresh()
 
     return () => {
-      isMounted = false
+      stopReminderAutoRefresh()
     }
-  }, [])
+  }, [hydrateReminderPreferences, hydrateTasks, startReminderAutoRefresh, stopReminderAutoRefresh])
 
   useEffect(() => {
     if (!isSettingsOpen) {
@@ -195,11 +186,6 @@ export function AppShell() {
   const statusNotice =
     activeAction === 'hydrate' ? { tone: 'info' as const, message: '正在读取本地任务数据...' } : feedback
 
-  const reminderBuckets = useMemo(
-    () => deriveReminderBuckets(tasks, reminderPreferences, new Date().toISOString()),
-    [reminderPreferences, tasks],
-  )
-
   const reminderCount =
     reminderBuckets.overdue.length +
     reminderBuckets.upcoming.length +
@@ -252,15 +238,8 @@ export function AppShell() {
   }
 
   async function handleSaveReminderPreferences() {
-    setIsSavingReminderPreferences(true)
-
-    try {
-      const nextPreferences = await saveReminderPreferences(draftReminderPreferences)
-      setReminderPreferences(nextPreferences)
-      setIsSettingsOpen(false)
-    } finally {
-      setIsSavingReminderPreferences(false)
-    }
+    await saveReminderPreferences(draftReminderPreferences)
+    setIsSettingsOpen(false)
   }
 
   return (

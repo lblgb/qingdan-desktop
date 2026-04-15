@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { DEFAULT_REMINDER_PREFERENCES } from '../features/tasks/task.reminders'
 import { DEFAULT_TASK_QUERY } from '../features/tasks/task.filters'
-import type { TaskGroup, TaskItem } from '../features/tasks/task.types'
+import type { ReminderPreferences, TaskGroup, TaskItem } from '../features/tasks/task.types'
 
 const mockLoadTaskGroups = vi.fn()
 const mockQueryTasks = vi.fn()
@@ -14,6 +15,8 @@ const mockUpdateTaskGroup = vi.fn()
 const mockDeleteTaskGroup = vi.fn()
 const mockLoadTasks = vi.fn()
 const mockBulkUpdateTasks = vi.fn()
+const mockLoadReminderPreferences = vi.fn()
+const mockSaveReminderPreferences = vi.fn()
 
 vi.mock('../features/tasks/task.storage', () => ({
   loadTaskGroups: mockLoadTaskGroups,
@@ -28,6 +31,8 @@ vi.mock('../features/tasks/task.storage', () => ({
   deleteTaskGroup: mockDeleteTaskGroup,
   loadTasks: mockLoadTasks,
   bulkUpdateTasks: mockBulkUpdateTasks,
+  loadReminderPreferences: mockLoadReminderPreferences,
+  saveReminderPreferences: mockSaveReminderPreferences,
 }))
 
 function buildTask(overrides: Partial<TaskItem> = {}): TaskItem {
@@ -75,6 +80,8 @@ beforeEach(() => {
   mockDeleteTaskGroup.mockResolvedValue([])
   mockLoadTasks.mockResolvedValue([])
   mockBulkUpdateTasks.mockResolvedValue([])
+  mockLoadReminderPreferences.mockResolvedValue(DEFAULT_REMINDER_PREFERENCES)
+  mockSaveReminderPreferences.mockImplementation(async (input: ReminderPreferences) => input)
 })
 
 describe('taskStore reset and feedback', () => {
@@ -197,5 +204,96 @@ describe('taskStore reset and feedback', () => {
       source: 'hydrate',
     })
     expect(state.feedback).toBeNull()
+  })
+
+  it('hydrates reminder preferences and derives reminder buckets in shared state', async () => {
+    const preferences: ReminderPreferences = {
+      ...DEFAULT_REMINDER_PREFERENCES,
+      priorityThreshold: 'medium',
+    }
+    const overdueTask = buildTask({
+      id: 'task-overdue',
+      priority: 'medium',
+      dueAt: '2026-04-15T08:00:00.000Z',
+    })
+    mockLoadReminderPreferences.mockResolvedValue(preferences)
+
+    const { useTaskStore } = await loadStore()
+
+    useTaskStore.setState({
+      tasks: [overdueTask],
+    })
+
+    await useTaskStore.getState().hydrateReminderPreferences('2026-04-16T08:30:00.000Z')
+
+    const state = useTaskStore.getState()
+    expect(state.reminderPreferences).toEqual(preferences)
+    expect(state.reminderBuckets.overdue.map((item) => item.task.id)).toEqual(['task-overdue'])
+    expect(state.reminderSnapshotAt).toBe('2026-04-16T08:30:00.000Z')
+  })
+
+  it('surfaces reminder preference save failures through the error dialog', async () => {
+    mockSaveReminderPreferences.mockRejectedValue(new Error('提醒设置保存失败'))
+
+    const { useTaskStore } = await loadStore()
+
+    await useTaskStore.getState().saveReminderPreferences({
+      ...DEFAULT_REMINDER_PREFERENCES,
+      offsetPreset: 'custom',
+      customOffsetMinutes: 45,
+    })
+
+    const state = useTaskStore.getState()
+    expect(state.errorDialog).toEqual({
+      title: '提醒设置保存失败',
+      message: '提醒设置保存失败',
+      source: 'reminder',
+    })
+    expect(state.isSavingReminderPreferences).toBe(false)
+  })
+
+  it('refreshes reminder buckets when time advances without task mutations', async () => {
+    const futureDueTask = buildTask({
+      id: 'task-future',
+      priority: 'urgent',
+      dueAt: '2026-04-16T09:00:00.000Z',
+    })
+
+    const { useTaskStore } = await loadStore()
+
+    useTaskStore.setState({
+      tasks: [futureDueTask],
+      reminderPreferences: DEFAULT_REMINDER_PREFERENCES,
+    })
+
+    useTaskStore.getState().refreshReminderBuckets('2026-04-16T08:00:00.000Z')
+    expect(useTaskStore.getState().reminderBuckets.overdue).toHaveLength(0)
+
+    useTaskStore.getState().refreshReminderBuckets('2026-04-16T09:30:00.000Z')
+    expect(useTaskStore.getState().reminderBuckets.overdue.map((item) => item.task.id)).toEqual(['task-future'])
+  })
+
+  it('clears success toast and error dialog through explicit actions', async () => {
+    const { useTaskStore } = await loadStore()
+
+    useTaskStore.setState({
+      successToast: {
+        tone: 'success',
+        message: '已保存',
+        source: 'update',
+      },
+      errorDialog: {
+        title: '保存失败',
+        message: '请稍后重试',
+        source: 'update',
+      },
+    })
+
+    useTaskStore.getState().dismissSuccessToast()
+    useTaskStore.getState().closeErrorDialog()
+
+    const state = useTaskStore.getState()
+    expect(state.successToast).toBeNull()
+    expect(state.errorDialog).toBeNull()
   })
 })

@@ -1,12 +1,26 @@
 import dayjs from 'dayjs'
 import type { ReminderItem, ReminderPreferences, TaskItem } from './task.types'
 
+export interface ReminderBuckets {
+  overdue: ReminderItem[]
+  upcoming: ReminderItem[]
+  focusWithoutDate: ReminderItem[]
+  recentlyReminded: ReminderItem[]
+}
+
 export const DEFAULT_REMINDER_PREFERENCES: ReminderPreferences = {
   enableInApp: true,
   enableDesktop: false,
   priorityThreshold: 'high',
   offsetPreset: '1-hour',
   customOffsetMinutes: 120,
+}
+
+export const EMPTY_REMINDER_BUCKETS: ReminderBuckets = {
+  overdue: [],
+  upcoming: [],
+  focusWithoutDate: [],
+  recentlyReminded: [],
 }
 
 const PRIORITY_WEIGHT: Record<TaskItem['priority'], number> = {
@@ -43,19 +57,9 @@ export function deriveReminderBuckets(
   tasks: TaskItem[],
   preferences: ReminderPreferences,
   nowIso: string,
-): {
-  overdue: ReminderItem[]
-  upcoming: ReminderItem[]
-  focusWithoutDate: ReminderItem[]
-  recentlyReminded: ReminderItem[]
-} {
+): ReminderBuckets {
   if (!preferences.enableInApp) {
-    return {
-      overdue: [],
-      upcoming: [],
-      focusWithoutDate: [],
-      recentlyReminded: [],
-    }
+    return EMPTY_REMINDER_BUCKETS
   }
 
   const now = dayjs(nowIso)
