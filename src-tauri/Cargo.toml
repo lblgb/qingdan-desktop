@@ -2,7 +2,7 @@
 
 [package]
 name = "qingdan-desktop"
-version = "0.20.0"
+version = "0.30.0"
 description = "轻单桌面待办应用"
 authors = ["Codex"]
 edition = "2021"
