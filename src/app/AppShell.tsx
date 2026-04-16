@@ -1,13 +1,18 @@
 /**
- * 文件说明：应用主界面，负责组织顶部动作、工作视图筛选和任务清单。
+ * 文件说明：应用主界面，负责组织顶部动作、筛选侧栏、提醒入口和任务列表。
  */
 import { useEffect, useMemo, useState } from 'react'
 import { TaskComposer } from '../components/TaskComposer'
+import { TaskErrorDialog } from '../components/TaskErrorDialog'
+import { TaskFeedbackToast } from '../components/TaskFeedbackToast'
 import { TaskGroupManager } from '../components/TaskGroupManager'
 import { TaskList } from '../components/TaskList'
 import { TaskOverview } from '../components/TaskOverview'
+import { TaskReminderCenter } from '../components/TaskReminderCenter'
+import { TaskSettings } from '../components/TaskSettings'
 import { DEFAULT_TASK_QUERY, applyTaskQuery, summarizeFilters } from '../features/tasks/task.filters'
 import { TASK_PRIORITY_META } from '../features/tasks/task.priority'
+import type { ReminderBuckets } from '../features/tasks/task.reminders'
 import type {
   TaskDateRangeFilter,
   TaskFilter,
@@ -36,7 +41,7 @@ const DATE_RANGE_OPTIONS: Array<{ key: TaskDateRangeFilter; label: string; hint:
   { key: 'today', label: '今天', hint: '只看今天到期的任务' },
   { key: 'upcoming', label: '未来 7 天', hint: '只看接下来一周内到期的任务' },
   { key: 'overdue', label: '已逾期', hint: '优先查看已经超期的任务' },
-  { key: 'no-date', label: '无日期', hint: '只看还未设置日期的任务' },
+  { key: 'no-date', label: '无日期', hint: '只看尚未设置日期的任务' },
 ]
 
 const SORT_OPTIONS: Array<{ key: TaskSortBy; label: string; hint: string; shortLabel: string }> = [
@@ -56,31 +61,77 @@ function sortLabel(sortBy: TaskSortBy) {
   return SORT_OPTIONS.find((option) => option.key === sortBy)?.label ?? '默认推荐'
 }
 
+function buildReminderStripSummary(reminderCount: number, buckets: ReminderBuckets) {
+  const fragments: string[] = []
+
+  if (buckets.overdue.length > 0) {
+    fragments.push(`${buckets.overdue.length} 条已逾期`)
+  }
+
+  if (buckets.upcoming.length > 0) {
+    fragments.push(`${buckets.upcoming.length} 条即将到期`)
+  }
+
+  if (buckets.focusWithoutDate.length > 0) {
+    fragments.push(`${buckets.focusWithoutDate.length} 条高优先级未排期`)
+  }
+
+  if (buckets.recentlyReminded.length > 0) {
+    fragments.push(`${buckets.recentlyReminded.length} 条最近已提醒`)
+  }
+
+  return reminderCount > 0 ? fragments.join('，') : ''
+}
+
 export function AppShell() {
   const tasks = useTaskStore((state) => state.tasks)
+  const filteredTasks = useTaskStore((state) => state.filteredTasks)
   const taskGroups = useTaskStore((state) => state.taskGroups)
   const activeFilter = useTaskStore((state) => state.activeFilter)
   const activeGroupFilter = useTaskStore((state) => state.activeGroupFilter)
   const activePriorityFilter = useTaskStore((state) => state.activePriorityFilter)
   const activeDateRange = useTaskStore((state) => state.activeDateRange)
   const activeSortBy = useTaskStore((state) => state.activeSortBy)
-  const isHydrated = useTaskStore((state) => state.isHydrated)
   const activeAction = useTaskStore((state) => state.activeAction)
   const feedback = useTaskStore((state) => state.feedback)
+  const reminderPreferences = useTaskStore((state) => state.reminderPreferences)
+  const reminderBuckets = useTaskStore((state) => state.reminderBuckets)
+  const isSavingReminderPreferences = useTaskStore((state) => state.isSavingReminderPreferences)
   const hydrateTasks = useTaskStore((state) => state.hydrateTasks)
+  const hydrateReminderPreferences = useTaskStore((state) => state.hydrateReminderPreferences)
+  const saveReminderPreferences = useTaskStore((state) => state.saveReminderPreferences)
+  const startReminderAutoRefresh = useTaskStore((state) => state.startReminderAutoRefresh)
+  const stopReminderAutoRefresh = useTaskStore((state) => state.stopReminderAutoRefresh)
   const setFilter = useTaskStore((state) => state.setFilter)
   const setGroupFilter = useTaskStore((state) => state.setGroupFilter)
   const setPriorityFilter = useTaskStore((state) => state.setPriorityFilter)
   const setDateRange = useTaskStore((state) => state.setDateRange)
   const setSortBy = useTaskStore((state) => state.setSortBy)
+  const resetFilters = useTaskStore((state) => state.resetFilters)
   const dismissFeedback = useTaskStore((state) => state.dismissFeedback)
+  const queueReminderNavigation = useTaskStore((state) => state.queueReminderNavigation)
 
   const [isMoreFiltersOpen, setIsMoreFiltersOpen] = useState(false)
   const [activeConditionPanel, setActiveConditionPanel] = useState<ConditionPanel>('root')
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isReminderCenterOpen, setIsReminderCenterOpen] = useState(false)
+  const [draftReminderPreferences, setDraftReminderPreferences] = useState(reminderPreferences)
 
   useEffect(() => {
     void hydrateTasks()
-  }, [hydrateTasks])
+    void hydrateReminderPreferences()
+    startReminderAutoRefresh()
+
+    return () => {
+      stopReminderAutoRefresh()
+    }
+  }, [hydrateReminderPreferences, hydrateTasks, startReminderAutoRefresh, stopReminderAutoRefresh])
+
+  useEffect(() => {
+    if (!isSettingsOpen) {
+      setDraftReminderPreferences(reminderPreferences)
+    }
+  }, [isSettingsOpen, reminderPreferences])
 
   const currentQuery = useMemo(
     () => ({
@@ -115,15 +166,13 @@ export function AppShell() {
 
   const activeGroupFilterLabel =
     activeGroupFilter === 'all-groups'
-      ? '全部组'
+      ? '全部任务组'
       : activeGroupFilter === 'ungrouped'
         ? '未分组'
         : dynamicGroupOptions.find((group) => group.key === activeGroupFilter)?.label ?? '任务组'
 
   const activePriorityLabel =
-    activePriorityFilter === 'all-priorities'
-      ? '全部优先级'
-      : TASK_PRIORITY_META[activePriorityFilter].label
+    activePriorityFilter === 'all-priorities' ? '全部优先级' : TASK_PRIORITY_META[activePriorityFilter].label
 
   const activeDateRangeLabel = dateRangeLabel(activeDateRange)
   const activeSortLabel = sortLabel(activeSortBy)
@@ -137,9 +186,15 @@ export function AppShell() {
   const moreConditionsSummary = summarizeFilters(currentQuery, taskGroups)
 
   const statusNotice =
-    activeAction === 'hydrate'
-      ? { tone: 'info' as const, message: '正在读取本地任务数据...' }
-      : feedback
+    activeAction === 'hydrate' ? { tone: 'info' as const, message: '正在读取本地任务数据...' } : feedback
+
+  const reminderCount =
+    reminderBuckets.overdue.length +
+    reminderBuckets.upcoming.length +
+    reminderBuckets.focusWithoutDate.length +
+    reminderBuckets.recentlyReminded.length
+
+  const reminderStripSummary = buildReminderStripSummary(reminderCount, reminderBuckets)
 
   function handleToggleMoreFilters() {
     setIsMoreFiltersOpen((current) => {
@@ -184,6 +239,14 @@ export function AppShell() {
     setActiveConditionPanel('root')
   }
 
+  async function handleSaveReminderPreferences() {
+    const isSaved = await saveReminderPreferences(draftReminderPreferences)
+
+    if (isSaved) {
+      setIsSettingsOpen(false)
+    }
+  }
+
   return (
     <main className="app-shell">
       <section className="topbar topbar-compact">
@@ -199,6 +262,26 @@ export function AppShell() {
 
         <div className="topbar-actions">
           <TaskOverview />
+          <TaskSettings
+            isOpen={isSettingsOpen}
+            isSaving={isSavingReminderPreferences}
+            onOpenChange={setIsSettingsOpen}
+            onPreferencesChange={setDraftReminderPreferences}
+            onSave={handleSaveReminderPreferences}
+            preferences={draftReminderPreferences}
+          />
+          <TaskReminderCenter
+            buckets={reminderBuckets}
+            isOpen={isReminderCenterOpen}
+            onOpenChange={setIsReminderCenterOpen}
+            onSelectTask={(taskId) => {
+              if (!filteredTasks.some((task) => task.id === taskId)) {
+                resetFilters()
+              }
+              queueReminderNavigation(taskId)
+              setIsReminderCenterOpen(false)
+            }}
+          />
           <TaskGroupManager />
           <TaskComposer />
         </div>
@@ -266,6 +349,17 @@ export function AppShell() {
                         <small>切换默认推荐、截止日期、优先级或最近更新</small>
                         <strong>{activeSortLabel}</strong>
                       </button>
+
+                      <div className="nested-filter-footer">
+                        <button
+                          className="secondary-button"
+                          disabled={!hasExtraFilters && activeFilter === DEFAULT_TASK_QUERY.status}
+                          onClick={resetFilters}
+                          type="button"
+                        >
+                          恢复默认筛选
+                        </button>
+                      </div>
                     </div>
                   ) : null}
 
@@ -283,7 +377,7 @@ export function AppShell() {
                         onClick={() => handleSelectGroupFilter('all-groups')}
                         type="button"
                       >
-                        <span>全部组</span>
+                        <span>全部任务组</span>
                         <small>不过滤任务归属</small>
                         <strong>{countTasksWith({ group: 'all-groups' })}</strong>
                       </button>
@@ -294,7 +388,7 @@ export function AppShell() {
                         type="button"
                       >
                         <span>未分组</span>
-                        <small>只看还未归组的任务</small>
+                        <small>只看尚未归组的任务</small>
                         <strong>{countTasksWith({ group: 'ungrouped' })}</strong>
                       </button>
 
@@ -402,11 +496,7 @@ export function AppShell() {
             {statusNotice ? (
               <div className={`status-banner ${statusNotice.tone}`}>
                 <p>{statusNotice.message}</p>
-                {statusNotice.tone === 'error' && !isHydrated ? (
-                  <button className="secondary-button" onClick={() => void hydrateTasks()} type="button">
-                    重试读取
-                  </button>
-                ) : feedback ? (
+                {feedback ? (
                   <button className="secondary-button" onClick={dismissFeedback} type="button">
                     知道了
                   </button>
@@ -414,10 +504,26 @@ export function AppShell() {
               </div>
             ) : null}
 
+            {reminderCount > 0 ? (
+              <section aria-label="提醒关注条" className="reminder-strip">
+                <div>
+                  <p className="section-tag">关注提醒</p>
+                  <strong>{reminderCount} 条待关注事项</strong>
+                  <p>{reminderStripSummary}</p>
+                </div>
+                <button className="secondary-button" onClick={() => setIsReminderCenterOpen(true)} type="button">
+                  查看提醒中心
+                </button>
+              </section>
+            ) : null}
+
             <TaskList />
           </div>
         </section>
       </section>
+
+      <TaskFeedbackToast />
+      <TaskErrorDialog />
     </main>
   )
 }

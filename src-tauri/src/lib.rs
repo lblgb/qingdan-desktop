@@ -10,6 +10,7 @@ use tauri::path::BaseDirectory;
 /// 启动 Tauri 应用。
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_sql::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
             commands::system::ping,

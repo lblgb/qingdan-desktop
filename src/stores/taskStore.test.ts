@@ -1,0 +1,457 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { DEFAULT_REMINDER_PREFERENCES } from '../features/tasks/task.reminders'
+import { DEFAULT_TASK_QUERY } from '../features/tasks/task.filters'
+import type { ReminderPreferences, TaskGroup, TaskItem } from '../features/tasks/task.types'
+
+const mockLoadTaskGroups = vi.fn()
+const mockQueryTasks = vi.fn()
+const mockCreateTask = vi.fn()
+const mockUpdateTask = vi.fn()
+const mockToggleTask = vi.fn()
+const mockDeleteTask = vi.fn()
+const mockAssignTaskGroup = vi.fn()
+const mockCreateTaskGroup = vi.fn()
+const mockUpdateTaskGroup = vi.fn()
+const mockDeleteTaskGroup = vi.fn()
+const mockLoadTasks = vi.fn()
+const mockBulkUpdateTasks = vi.fn()
+const mockLoadReminderPreferences = vi.fn()
+const mockSaveReminderPreferences = vi.fn()
+const mockIsPermissionGranted = vi.fn()
+const mockRequestPermission = vi.fn()
+const mockSendNotification = vi.fn()
+
+vi.mock('../features/tasks/task.storage', () => ({
+  loadTaskGroups: mockLoadTaskGroups,
+  queryTasks: mockQueryTasks,
+  createTask: mockCreateTask,
+  updateTask: mockUpdateTask,
+  toggleTask: mockToggleTask,
+  deleteTask: mockDeleteTask,
+  assignTaskGroup: mockAssignTaskGroup,
+  createTaskGroup: mockCreateTaskGroup,
+  updateTaskGroup: mockUpdateTaskGroup,
+  deleteTaskGroup: mockDeleteTaskGroup,
+  loadTasks: mockLoadTasks,
+  bulkUpdateTasks: mockBulkUpdateTasks,
+  loadReminderPreferences: mockLoadReminderPreferences,
+  saveReminderPreferences: mockSaveReminderPreferences,
+}))
+
+vi.mock('@tauri-apps/plugin-notification', () => ({
+  isPermissionGranted: mockIsPermissionGranted,
+  requestPermission: mockRequestPermission,
+  sendNotification: mockSendNotification,
+}))
+
+function buildTask(overrides: Partial<TaskItem> = {}): TaskItem {
+  return {
+    id: 'task-1',
+    title: '测试任务',
+    description: '',
+    completed: false,
+    groupId: null,
+    dueAt: null,
+    priority: 'medium',
+    createdAt: '2026-04-16T00:00:00.000Z',
+    updatedAt: '2026-04-16T00:00:00.000Z',
+    ...overrides,
+  }
+}
+
+function buildGroup(overrides: Partial<TaskGroup> = {}): TaskGroup {
+  return {
+    id: 'group-1',
+    name: '测试分组',
+    description: '',
+    createdAt: '2026-04-16T00:00:00.000Z',
+    updatedAt: '2026-04-16T00:00:00.000Z',
+    ...overrides,
+  }
+}
+
+async function loadStore() {
+  vi.resetModules()
+  return import('./taskStore')
+}
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  mockLoadTaskGroups.mockResolvedValue([])
+  mockQueryTasks.mockResolvedValue([])
+  mockCreateTask.mockResolvedValue([])
+  mockUpdateTask.mockResolvedValue([])
+  mockToggleTask.mockResolvedValue([])
+  mockDeleteTask.mockResolvedValue([])
+  mockAssignTaskGroup.mockResolvedValue([])
+  mockCreateTaskGroup.mockResolvedValue([])
+  mockUpdateTaskGroup.mockResolvedValue([])
+  mockDeleteTaskGroup.mockResolvedValue([])
+  mockLoadTasks.mockResolvedValue([])
+  mockBulkUpdateTasks.mockResolvedValue([])
+  mockLoadReminderPreferences.mockResolvedValue(DEFAULT_REMINDER_PREFERENCES)
+  mockSaveReminderPreferences.mockImplementation(async (input: ReminderPreferences) => input)
+  mockIsPermissionGranted.mockResolvedValue(true)
+  mockRequestPermission.mockResolvedValue('granted')
+  mockSendNotification.mockResolvedValue(undefined)
+})
+
+describe('taskStore reset and feedback', () => {
+  it('resets filters to the default query and rebuilds visible tasks from current tasks', async () => {
+    const { useTaskStore } = await loadStore()
+    const taskA = buildTask({ id: 'task-a', priority: 'high' })
+    const taskB = buildTask({ id: 'task-b', completed: true, priority: 'low' })
+
+    useTaskStore.setState({
+      tasks: [taskA, taskB],
+      taskGroups: [buildGroup()],
+      activeFilter: 'completed',
+      activeGroupFilter: 'ungrouped',
+      activePriorityFilter: 'high',
+      activeDateRange: 'today',
+      activeSortBy: 'updated',
+      filteredTasks: [taskB],
+    })
+
+    useTaskStore.getState().resetFilters()
+
+    const state = useTaskStore.getState()
+    expect(state.activeFilter).toBe(DEFAULT_TASK_QUERY.status)
+    expect(state.activeGroupFilter).toBe(DEFAULT_TASK_QUERY.group)
+    expect(state.activePriorityFilter).toBe(DEFAULT_TASK_QUERY.priority)
+    expect(state.activeDateRange).toBe(DEFAULT_TASK_QUERY.dateRange)
+    expect(state.activeSortBy).toBe(DEFAULT_TASK_QUERY.sortBy)
+    expect(state.filteredTasks).toHaveLength(2)
+    expect(state.filteredTasks.map((task) => task.id)).toEqual(['task-a', 'task-b'])
+  })
+
+  it('stores success toast state for successful task creation', async () => {
+    const nextTasks = [buildTask({ id: 'task-created' })]
+    mockCreateTask.mockResolvedValue(nextTasks)
+
+    const { useTaskStore } = await loadStore()
+
+    await useTaskStore.getState().addTask({
+      title: '新建任务',
+      description: '',
+      priority: 'medium',
+      dueAt: null,
+      groupId: null,
+    })
+
+    const state = useTaskStore.getState()
+    expect(state.tasks).toEqual(nextTasks)
+    expect(state.successToast).toEqual({
+      tone: 'success',
+      message: '任务已保存到本地清单。',
+      source: 'create',
+    })
+    expect(state.errorDialog).toBeNull()
+    expect(state.feedback).toBeNull()
+  })
+
+  it('stores error dialog state for failed task creation', async () => {
+    mockCreateTask.mockRejectedValue(new Error('保存失败'))
+
+    const { useTaskStore } = await loadStore()
+
+    await useTaskStore.getState().addTask({
+      title: '新建任务',
+      description: '',
+      priority: 'medium',
+      dueAt: null,
+      groupId: null,
+    })
+
+    const state = useTaskStore.getState()
+    expect(state.successToast).toBeNull()
+    expect(state.errorDialog).toEqual({
+      title: '任务创建失败',
+      message: '保存失败',
+      source: 'create',
+    })
+    expect(state.feedback).toBeNull()
+  })
+
+  it('stores success toast state for successful task update', async () => {
+    const nextTasks = [buildTask({ id: 'task-updated', title: '已更新任务' })]
+    mockUpdateTask.mockResolvedValue(nextTasks)
+
+    const { useTaskStore } = await loadStore()
+
+    await useTaskStore.getState().updateTask({
+      id: 'task-updated',
+      title: '已更新任务',
+      description: '',
+      priority: 'high',
+      dueAt: null,
+      groupId: null,
+    })
+
+    const state = useTaskStore.getState()
+    expect(state.tasks).toEqual(nextTasks)
+    expect(state.successToast).toEqual({
+      tone: 'success',
+      message: '任务修改已保存。',
+      source: 'update',
+    })
+    expect(state.errorDialog).toBeNull()
+    expect(state.feedback).toBeNull()
+  })
+
+  it('stores hydrate failures in the error dialog', async () => {
+    mockLoadTaskGroups.mockRejectedValueOnce(new Error('加载失败'))
+
+    const { useTaskStore } = await loadStore()
+
+    await useTaskStore.getState().hydrateTasks()
+
+    const state = useTaskStore.getState()
+    expect(state.isLoading).toBe(false)
+    expect(state.activeAction).toBeNull()
+    expect(state.successToast).toBeNull()
+    expect(state.errorDialog).toEqual({
+      title: '任务列表读取失败',
+      message: '加载失败',
+      source: 'hydrate',
+    })
+    expect(state.feedback).toBeNull()
+  })
+
+  it('hydrates reminder preferences and derives reminder buckets in shared state', async () => {
+    const preferences: ReminderPreferences = {
+      ...DEFAULT_REMINDER_PREFERENCES,
+      priorityThreshold: 'medium',
+    }
+    const overdueTask = buildTask({
+      id: 'task-overdue',
+      priority: 'medium',
+      dueAt: '2026-04-15T08:00:00.000Z',
+    })
+    mockLoadReminderPreferences.mockResolvedValue(preferences)
+
+    const { useTaskStore } = await loadStore()
+
+    useTaskStore.setState({
+      tasks: [overdueTask],
+    })
+
+    await useTaskStore.getState().hydrateReminderPreferences('2026-04-16T08:30:00.000Z')
+
+    const state = useTaskStore.getState()
+    expect(state.reminderPreferences).toEqual(preferences)
+    expect(state.reminderBuckets.overdue.map((item) => item.task.id)).toEqual(['task-overdue'])
+    expect(state.reminderSnapshotAt).toBe('2026-04-16T08:30:00.000Z')
+  })
+
+  it('surfaces reminder preference save failures through the error dialog', async () => {
+    mockSaveReminderPreferences.mockRejectedValue(new Error('提醒设置保存失败'))
+
+    const { useTaskStore } = await loadStore()
+
+    const result = await useTaskStore.getState().saveReminderPreferences({
+      ...DEFAULT_REMINDER_PREFERENCES,
+      offsetPreset: 'custom',
+      customOffsetMinutes: 45,
+    })
+
+    const state = useTaskStore.getState()
+    expect(result).toBe(false)
+    expect(state.errorDialog).toEqual({
+      title: '提醒设置保存失败',
+      message: '提醒设置保存失败',
+      source: 'reminder',
+    })
+    expect(state.isSavingReminderPreferences).toBe(false)
+  })
+
+  it('returns success when reminder preferences save completes', async () => {
+    const { useTaskStore } = await loadStore()
+
+    const result = await useTaskStore.getState().saveReminderPreferences({
+      ...DEFAULT_REMINDER_PREFERENCES,
+      offsetPreset: 'custom',
+      customOffsetMinutes: 30,
+    })
+
+    const state = useTaskStore.getState()
+    expect(result).toBe(true)
+    expect(state.reminderPreferences.customOffsetMinutes).toBe(30)
+    expect(state.errorDialog).toBeNull()
+  })
+
+  it('refreshes reminder buckets when time advances without task mutations', async () => {
+    const futureDueTask = buildTask({
+      id: 'task-future',
+      priority: 'urgent',
+      dueAt: '2026-04-16T09:00:00.000Z',
+    })
+
+    const { useTaskStore } = await loadStore()
+
+    useTaskStore.setState({
+      tasks: [futureDueTask],
+      reminderPreferences: DEFAULT_REMINDER_PREFERENCES,
+    })
+
+    useTaskStore.getState().refreshReminderBuckets('2026-04-16T08:00:00.000Z')
+    expect(useTaskStore.getState().reminderBuckets.overdue).toHaveLength(0)
+
+    useTaskStore.getState().refreshReminderBuckets('2026-04-16T09:30:00.000Z')
+    expect(useTaskStore.getState().reminderBuckets.overdue.map((item) => item.task.id)).toEqual(['task-future'])
+  })
+
+  it('sends runtime desktop notifications once per reminder item when desktop reminders are enabled', async () => {
+    const dueSoonTask = buildTask({
+      id: 'task-due-soon',
+      title: '即将到期任务',
+      priority: 'urgent',
+      dueAt: '2026-04-16T09:00:00.000Z',
+    })
+
+    const { useTaskStore } = await loadStore()
+
+    useTaskStore.setState({
+      tasks: [dueSoonTask],
+      filteredTasks: [dueSoonTask],
+      reminderPreferences: {
+        ...DEFAULT_REMINDER_PREFERENCES,
+        enableDesktop: true,
+      },
+    })
+
+    useTaskStore.getState().refreshReminderBuckets('2026-04-16T08:30:00.000Z')
+    await vi.waitFor(() => {
+      expect(mockSendNotification).toHaveBeenCalledTimes(1)
+    })
+
+    useTaskStore.getState().refreshReminderBuckets('2026-04-16T08:31:00.000Z')
+    await Promise.resolve()
+
+    expect(mockSendNotification).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not send desktop notifications for undated reminder items', async () => {
+    const focusTask = buildTask({
+      id: 'task-focus',
+      title: '未排期高优任务',
+      priority: 'high',
+      dueAt: null,
+    })
+
+    const { useTaskStore } = await loadStore()
+
+    useTaskStore.setState({
+      tasks: [focusTask],
+      filteredTasks: [focusTask],
+      reminderPreferences: {
+        ...DEFAULT_REMINDER_PREFERENCES,
+        enableDesktop: true,
+      },
+    })
+
+    useTaskStore.getState().refreshReminderBuckets('2026-04-16T08:30:00.000Z')
+    await Promise.resolve()
+
+    expect(mockSendNotification).not.toHaveBeenCalled()
+  })
+
+  it('rechecks system permission after a prior desktop permission denial', async () => {
+    const dueSoonTask = buildTask({
+      id: 'task-due-soon',
+      title: '即将到期任务',
+      priority: 'urgent',
+      dueAt: '2026-04-16T09:00:00.000Z',
+    })
+
+    mockIsPermissionGranted.mockResolvedValueOnce(false).mockResolvedValueOnce(true)
+    mockRequestPermission.mockResolvedValueOnce('denied')
+
+    const { useTaskStore } = await loadStore()
+
+    useTaskStore.setState({
+      tasks: [dueSoonTask],
+      filteredTasks: [dueSoonTask],
+      reminderPreferences: {
+        ...DEFAULT_REMINDER_PREFERENCES,
+        enableDesktop: true,
+      },
+    })
+
+    useTaskStore.getState().refreshReminderBuckets('2026-04-16T08:30:00.000Z')
+    await vi.waitFor(() => {
+      expect(mockRequestPermission).toHaveBeenCalledTimes(1)
+    })
+    expect(mockSendNotification).not.toHaveBeenCalled()
+
+    useTaskStore.getState().refreshReminderBuckets('2026-04-16T08:31:00.000Z')
+    await vi.waitFor(() => {
+      expect(mockSendNotification).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  it('does not double-send the same desktop reminder while a prior notification is still in flight', async () => {
+    const dueSoonTask = buildTask({
+      id: 'task-due-soon',
+      title: '即将到期任务',
+      priority: 'urgent',
+      dueAt: '2026-04-16T09:00:00.000Z',
+    })
+
+    let resolveNotification: (() => void) | null = null
+    mockSendNotification.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveNotification = resolve
+        }),
+    )
+
+    const { useTaskStore } = await loadStore()
+
+    useTaskStore.setState({
+      tasks: [dueSoonTask],
+      filteredTasks: [dueSoonTask],
+      reminderPreferences: {
+        ...DEFAULT_REMINDER_PREFERENCES,
+        enableDesktop: true,
+      },
+    })
+
+    useTaskStore.getState().refreshReminderBuckets('2026-04-16T08:30:00.000Z')
+    useTaskStore.getState().refreshReminderBuckets('2026-04-16T08:30:30.000Z')
+
+    await vi.waitFor(() => {
+      expect(mockSendNotification).toHaveBeenCalledTimes(1)
+    })
+
+    const completeNotification = resolveNotification as (() => void) | null
+    if (completeNotification) {
+      completeNotification()
+    }
+    await Promise.resolve()
+  })
+
+  it('clears success toast and error dialog through explicit actions', async () => {
+    const { useTaskStore } = await loadStore()
+
+    useTaskStore.setState({
+      successToast: {
+        tone: 'success',
+        message: '已保存',
+        source: 'update',
+      },
+      errorDialog: {
+        title: '保存失败',
+        message: '请稍后重试',
+        source: 'update',
+      },
+    })
+
+    useTaskStore.getState().dismissSuccessToast()
+    useTaskStore.getState().closeErrorDialog()
+
+    const state = useTaskStore.getState()
+    expect(state.successToast).toBeNull()
+    expect(state.errorDialog).toBeNull()
+  })
+})
