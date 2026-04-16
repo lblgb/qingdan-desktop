@@ -7,9 +7,9 @@
 
 ## 当前活跃基线
 
-- 当前活跃版本：`v0.20`
+- 当前活跃版本：`v0.30.0`
 - 当前架构基线：[`docs/ARCHITECTURE.md`](./ARCHITECTURE.md)
-- 当前验收清单：[`docs/V020_ACCEPTANCE.md`](./V020_ACCEPTANCE.md)
+- 当前验收清单：[`docs/V030_ACCEPTANCE.md`](./V030_ACCEPTANCE.md)
 - 历史日志归档：[`docs/WORKLOG_ARCHIVE.md`](./WORKLOG_ARCHIVE.md)
 
 ## 版本索引
@@ -318,3 +318,52 @@
 ### 下一步建议
 
 - 将 `0.20.0` 版本提交并推送后，创建对应 GitHub Release 并上传安装包资产。
+## 2026-04-16 第 45 轮
+
+### 讨论主题
+
+- 完成 `v0.30.0` 的运行时提醒、提醒定位闭环、提醒设置接线与文档基线落地。
+
+### 当前结论
+
+- `更多条件` 面板内的 `恢复默认筛选` 维持为系统默认重置入口，不做“保存当前视图为默认”。
+- 成功反馈继续统一走右下角轻提示，失败反馈继续统一走错误弹窗，不再回写到任务列表内容区。
+- `v0.30.0` 已补齐最小可用提醒系统：
+  - 应用内提醒
+  - 铃铛提醒中心
+  - 首页关注条
+  - 运行时桌面通知
+  - 提醒点击后自动定位并高亮任务
+- 当提醒任务被当前筛选排除时，点击提醒会先恢复默认筛选，再进入定位流程，避免提醒入口失效或残留脏队列。
+- 桌面通知已补充两层保护：
+  - 权限拒绝后仍会在后续刷新中重新探测系统权限
+  - 同一提醒项在发送未完成前不会因重复刷新而重复发送
+
+### 决策原因
+
+- 提醒中心是全局入口，点击后如果不能稳定带用户回到任务，会直接破坏提醒系统价值。
+- 桌面通知是运行时能力，必须把权限恢复和并发去重一起收住，否则真实使用中会出现“拒绝后永不恢复”或“短时间重复弹多次”的问题。
+
+### 文档更新
+
+- 更新了 [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md)，将活跃基线切到 `v0.30.0`，并补齐当前实施口径。
+- 新增了 [`docs/V030_ACCEPTANCE.md`](./V030_ACCEPTANCE.md)，作为 `v0.30.0` 当前唯一有效的手工验收清单。
+- 更新了 [`docs/WORKLOG.md`](./WORKLOG.md)，记录本轮提醒系统与 review 修复结果。
+
+### 实现记录
+
+- 更新了 [src/features/tasks/task.reminders.ts](E:/CodeBase/.worktrees/v030/src/features/tasks/task.reminders.ts)，补齐 `upcoming` 派生和桌面通知候选派生。
+- 更新了 [src/stores/taskStore.ts](E:/CodeBase/.worktrees/v030/src/stores/taskStore.ts)，接入运行时桌面通知、权限探测和并发去重。
+- 更新了 [src/components/TaskReminderCenter.tsx](E:/CodeBase/.worktrees/v030/src/components/TaskReminderCenter.tsx)、[src/app/AppShell.tsx](E:/CodeBase/.worktrees/v030/src/app/AppShell.tsx) 与 [src/components/TaskList.tsx](E:/CodeBase/.worktrees/v030/src/components/TaskList.tsx)，补齐提醒点击定位、高亮和默认筛选兜底。
+- 新增或更新了 [src/app/AppShell.test.tsx](E:/CodeBase/.worktrees/v030/src/app/AppShell.test.tsx)、[src/components/TaskList.test.tsx](E:/CodeBase/.worktrees/v030/src/components/TaskList.test.tsx)、[src/components/TaskReminderCenter.test.tsx](E:/CodeBase/.worktrees/v030/src/components/TaskReminderCenter.test.tsx) 与 [src/stores/taskStore.test.ts](E:/CodeBase/.worktrees/v030/src/stores/taskStore.test.ts)，覆盖 review 指出的回归路径。
+- 更新了 [package.json](E:/CodeBase/.worktrees/v030/package.json)、[src-tauri/Cargo.toml](E:/CodeBase/.worktrees/v030/src-tauri/Cargo.toml) 和 [src-tauri/src/lib.rs](E:/CodeBase/.worktrees/v030/src-tauri/src/lib.rs)，接入 Tauri Notification Plugin。
+
+### 验证记录
+
+- 使用 `cmd /c npx.cmd vitest run` 验证前端测试全集，通过。
+- 使用 `cmd /c npx.cmd tsc -b` 验证 TypeScript 构建，通过。
+- 使用 `cargo check` 验证 Rust 编译，通过。
+
+### 下一步建议
+
+- 进入 `v0.30.0` 分支收口，按既定流程提交、推送并准备后续合并或发布判断。

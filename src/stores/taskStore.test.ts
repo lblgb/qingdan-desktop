@@ -17,6 +17,9 @@ const mockLoadTasks = vi.fn()
 const mockBulkUpdateTasks = vi.fn()
 const mockLoadReminderPreferences = vi.fn()
 const mockSaveReminderPreferences = vi.fn()
+const mockIsPermissionGranted = vi.fn()
+const mockRequestPermission = vi.fn()
+const mockSendNotification = vi.fn()
 
 vi.mock('../features/tasks/task.storage', () => ({
   loadTaskGroups: mockLoadTaskGroups,
@@ -33,6 +36,12 @@ vi.mock('../features/tasks/task.storage', () => ({
   bulkUpdateTasks: mockBulkUpdateTasks,
   loadReminderPreferences: mockLoadReminderPreferences,
   saveReminderPreferences: mockSaveReminderPreferences,
+}))
+
+vi.mock('@tauri-apps/plugin-notification', () => ({
+  isPermissionGranted: mockIsPermissionGranted,
+  requestPermission: mockRequestPermission,
+  sendNotification: mockSendNotification,
 }))
 
 function buildTask(overrides: Partial<TaskItem> = {}): TaskItem {
@@ -82,6 +91,9 @@ beforeEach(() => {
   mockBulkUpdateTasks.mockResolvedValue([])
   mockLoadReminderPreferences.mockResolvedValue(DEFAULT_REMINDER_PREFERENCES)
   mockSaveReminderPreferences.mockImplementation(async (input: ReminderPreferences) => input)
+  mockIsPermissionGranted.mockResolvedValue(true)
+  mockRequestPermission.mockResolvedValue('granted')
+  mockSendNotification.mockResolvedValue(undefined)
 })
 
 describe('taskStore reset and feedback', () => {
@@ -287,6 +299,136 @@ describe('taskStore reset and feedback', () => {
 
     useTaskStore.getState().refreshReminderBuckets('2026-04-16T09:30:00.000Z')
     expect(useTaskStore.getState().reminderBuckets.overdue.map((item) => item.task.id)).toEqual(['task-future'])
+  })
+
+  it('sends runtime desktop notifications once per reminder item when desktop reminders are enabled', async () => {
+    const dueSoonTask = buildTask({
+      id: 'task-due-soon',
+      title: '即将到期任务',
+      priority: 'urgent',
+      dueAt: '2026-04-16T09:00:00.000Z',
+    })
+
+    const { useTaskStore } = await loadStore()
+
+    useTaskStore.setState({
+      tasks: [dueSoonTask],
+      filteredTasks: [dueSoonTask],
+      reminderPreferences: {
+        ...DEFAULT_REMINDER_PREFERENCES,
+        enableDesktop: true,
+      },
+    })
+
+    useTaskStore.getState().refreshReminderBuckets('2026-04-16T08:30:00.000Z')
+    await vi.waitFor(() => {
+      expect(mockSendNotification).toHaveBeenCalledTimes(1)
+    })
+
+    useTaskStore.getState().refreshReminderBuckets('2026-04-16T08:31:00.000Z')
+    await Promise.resolve()
+
+    expect(mockSendNotification).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not send desktop notifications for undated reminder items', async () => {
+    const focusTask = buildTask({
+      id: 'task-focus',
+      title: '未排期高优任务',
+      priority: 'high',
+      dueAt: null,
+    })
+
+    const { useTaskStore } = await loadStore()
+
+    useTaskStore.setState({
+      tasks: [focusTask],
+      filteredTasks: [focusTask],
+      reminderPreferences: {
+        ...DEFAULT_REMINDER_PREFERENCES,
+        enableDesktop: true,
+      },
+    })
+
+    useTaskStore.getState().refreshReminderBuckets('2026-04-16T08:30:00.000Z')
+    await Promise.resolve()
+
+    expect(mockSendNotification).not.toHaveBeenCalled()
+  })
+
+  it('rechecks system permission after a prior desktop permission denial', async () => {
+    const dueSoonTask = buildTask({
+      id: 'task-due-soon',
+      title: '即将到期任务',
+      priority: 'urgent',
+      dueAt: '2026-04-16T09:00:00.000Z',
+    })
+
+    mockIsPermissionGranted.mockResolvedValueOnce(false).mockResolvedValueOnce(true)
+    mockRequestPermission.mockResolvedValueOnce('denied')
+
+    const { useTaskStore } = await loadStore()
+
+    useTaskStore.setState({
+      tasks: [dueSoonTask],
+      filteredTasks: [dueSoonTask],
+      reminderPreferences: {
+        ...DEFAULT_REMINDER_PREFERENCES,
+        enableDesktop: true,
+      },
+    })
+
+    useTaskStore.getState().refreshReminderBuckets('2026-04-16T08:30:00.000Z')
+    await vi.waitFor(() => {
+      expect(mockRequestPermission).toHaveBeenCalledTimes(1)
+    })
+    expect(mockSendNotification).not.toHaveBeenCalled()
+
+    useTaskStore.getState().refreshReminderBuckets('2026-04-16T08:31:00.000Z')
+    await vi.waitFor(() => {
+      expect(mockSendNotification).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  it('does not double-send the same desktop reminder while a prior notification is still in flight', async () => {
+    const dueSoonTask = buildTask({
+      id: 'task-due-soon',
+      title: '即将到期任务',
+      priority: 'urgent',
+      dueAt: '2026-04-16T09:00:00.000Z',
+    })
+
+    let resolveNotification: (() => void) | null = null
+    mockSendNotification.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveNotification = resolve
+        }),
+    )
+
+    const { useTaskStore } = await loadStore()
+
+    useTaskStore.setState({
+      tasks: [dueSoonTask],
+      filteredTasks: [dueSoonTask],
+      reminderPreferences: {
+        ...DEFAULT_REMINDER_PREFERENCES,
+        enableDesktop: true,
+      },
+    })
+
+    useTaskStore.getState().refreshReminderBuckets('2026-04-16T08:30:00.000Z')
+    useTaskStore.getState().refreshReminderBuckets('2026-04-16T08:30:30.000Z')
+
+    await vi.waitFor(() => {
+      expect(mockSendNotification).toHaveBeenCalledTimes(1)
+    })
+
+    const completeNotification = resolveNotification as (() => void) | null
+    if (completeNotification) {
+      completeNotification()
+    }
+    await Promise.resolve()
   })
 
   it('clears success toast and error dialog through explicit actions', async () => {

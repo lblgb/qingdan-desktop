@@ -15,9 +15,15 @@ interface TaskReminderCenterProps {
   buckets: ReminderBuckets
   isOpen: boolean
   onOpenChange: (isOpen: boolean) => void
+  onSelectTask: (taskId: string) => void
 }
 
-export function TaskReminderCenter({ buckets, isOpen, onOpenChange }: TaskReminderCenterProps) {
+export function TaskReminderCenter({
+  buckets,
+  isOpen,
+  onOpenChange,
+  onSelectTask,
+}: TaskReminderCenterProps) {
   const totalCount =
     buckets.overdue.length +
     buckets.upcoming.length +
@@ -61,7 +67,7 @@ export function TaskReminderCenter({ buckets, isOpen, onOpenChange }: TaskRemind
 
             <div className="task-reminder-center-summary">
               <strong>{totalCount} 条提醒</strong>
-              <p>当前阶段仅展示提醒分组与摘要，任务定位跳转将在后续任务接入。</p>
+              <p>点击任意提醒项会直接定位到对应任务。</p>
             </div>
 
             <div className="task-reminder-group-list">
@@ -77,7 +83,15 @@ export function TaskReminderCenter({ buckets, isOpen, onOpenChange }: TaskRemind
 
                   <div className="task-reminder-item-list">
                     {buckets[group.key].map((item) => (
-                      <article key={item.task.id} className="task-reminder-item">
+                      <button
+                        key={item.task.id}
+                        className="task-reminder-item"
+                        onClick={() => {
+                          onSelectTask(item.task.id)
+                          onOpenChange(false)
+                        }}
+                        type="button"
+                      >
                         <div>
                           <strong>{item.task.title}</strong>
                           <p>{item.task.description || '暂无补充说明。'}</p>
@@ -86,7 +100,7 @@ export function TaskReminderCenter({ buckets, isOpen, onOpenChange }: TaskRemind
                           <span className={`priority-badge ${item.task.priority}`}>{item.dueLabel}</span>
                           <span className="meta-pill">{item.task.completed ? '已完成' : '待处理'}</span>
                         </div>
-                      </article>
+                      </button>
                     ))}
                   </div>
                 </section>
@@ -95,7 +109,7 @@ export function TaskReminderCenter({ buckets, isOpen, onOpenChange }: TaskRemind
               {totalCount === 0 ? (
                 <section className="task-reminder-empty">
                   <strong>当前没有提醒内容</strong>
-                  <p>当有逾期事项或高优先级未排期任务时，这里会自动展示对应分组。</p>
+                  <p>当有逾期事项、即将到期任务或高优先级未排期任务时，这里会自动展示对应分组。</p>
                 </section>
               ) : null}
             </div>

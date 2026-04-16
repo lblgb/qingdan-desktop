@@ -1,10 +1,12 @@
 /**
  * 文件说明：统一管理任务状态、筛选状态、提醒偏好和全局反馈。
  */
+import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification'
 import { create } from 'zustand'
 import { applyTaskQuery, DEFAULT_TASK_QUERY } from '../features/tasks/task.filters'
 import {
   DEFAULT_REMINDER_PREFERENCES,
+  deriveDesktopNotificationItems,
   deriveReminderBuckets,
   EMPTY_REMINDER_BUCKETS,
   type ReminderBuckets,
@@ -129,6 +131,11 @@ interface TaskState {
 }
 
 let reminderAutoRefreshTimer: ReturnType<typeof setInterval> | null = null
+let notifiedDesktopReminderKeys = new Set<string>()
+let pendingDesktopReminderKeys = new Set<string>()
+let desktopNotificationPermissionState: 'unknown' | 'granted' = 'unknown'
+let lastDesktopPermissionRequestAt = 0
+const DESKTOP_PERMISSION_REQUEST_COOLDOWN_MS = 5 * 60_000
 
 function buildVisibleTasks(tasks: TaskItem[], query: TaskQueryInput) {
   return applyTaskQuery(tasks, query)
@@ -163,6 +170,79 @@ function buildReminderState(tasks: TaskItem[], preferences: ReminderPreferences,
   return {
     reminderSnapshotAt: snapshotAt,
     reminderBuckets: deriveReminderBuckets(tasks, preferences, snapshotAt),
+  }
+}
+
+async function ensureDesktopNotificationPermission() {
+  if (desktopNotificationPermissionState === 'granted') {
+    return true
+  }
+
+  const granted = await isPermissionGranted()
+  if (granted) {
+    desktopNotificationPermissionState = 'granted'
+    return true
+  }
+
+  if (Date.now() - lastDesktopPermissionRequestAt < DESKTOP_PERMISSION_REQUEST_COOLDOWN_MS) {
+    return false
+  }
+
+  lastDesktopPermissionRequestAt = Date.now()
+  const permission = await requestPermission()
+  if (permission === 'granted') {
+    desktopNotificationPermissionState = 'granted'
+    return true
+  }
+
+  return false
+}
+
+async function syncDesktopNotifications(tasks: TaskItem[], preferences: ReminderPreferences, nowIso?: string) {
+  if (!preferences.enableDesktop) {
+    notifiedDesktopReminderKeys.clear()
+    pendingDesktopReminderKeys.clear()
+    return
+  }
+
+  const snapshotAt = getNowIso(nowIso)
+  const reminderItems = deriveDesktopNotificationItems(tasks, preferences, snapshotAt)
+  const activeKeys = new Set(reminderItems.map((item) => item.notificationKey))
+
+  notifiedDesktopReminderKeys.forEach((key) => {
+    if (!activeKeys.has(key)) {
+      notifiedDesktopReminderKeys.delete(key)
+    }
+  })
+
+  const pendingItems = reminderItems.filter(
+    (item) =>
+      !notifiedDesktopReminderKeys.has(item.notificationKey) &&
+      !pendingDesktopReminderKeys.has(item.notificationKey),
+  )
+  if (pendingItems.length === 0) {
+    return
+  }
+
+  pendingItems.forEach((item) => pendingDesktopReminderKeys.add(item.notificationKey))
+
+  try {
+    const permissionGranted = await ensureDesktopNotificationPermission()
+    if (!permissionGranted) {
+      return
+    }
+
+    for (const item of pendingItems) {
+      await sendNotification({
+        title: item.task.title,
+        body: item.dueLabel,
+      })
+      notifiedDesktopReminderKeys.add(item.notificationKey)
+    }
+  } catch {
+    // 桌面通知失败不阻塞主流程，应用内提醒仍然可用。
+  } finally {
+    pendingItems.forEach((item) => pendingDesktopReminderKeys.delete(item.notificationKey))
   }
 }
 
@@ -223,6 +303,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           ...buildReminderState(tasks, state.reminderPreferences),
         }
       })
+      void syncDesktopNotifications(tasks, get().reminderPreferences)
     } catch (error) {
       set({
         isLoading: false,
@@ -247,6 +328,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         isReminderPreferencesLoading: false,
         ...buildReminderState(state.tasks, reminderPreferences, nowIso),
       }))
+      void syncDesktopNotifications(get().tasks, reminderPreferences, nowIso)
     } catch (error) {
       set((state) => ({
         isReminderPreferencesLoading: false,
@@ -280,6 +362,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         },
         ...buildReminderState(state.tasks, reminderPreferences, nowIso),
       }))
+      void syncDesktopNotifications(get().tasks, reminderPreferences, nowIso)
       return true
     } catch (error) {
       set({
@@ -295,9 +378,11 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     }
   },
   refreshReminderBuckets: (nowIso) =>
-    set((state) => ({
-      ...buildReminderState(state.tasks, state.reminderPreferences, nowIso),
-    })),
+    set((state) => {
+      const reminderState = buildReminderState(state.tasks, state.reminderPreferences, nowIso)
+      void syncDesktopNotifications(state.tasks, state.reminderPreferences, reminderState.reminderSnapshotAt)
+      return reminderState
+    }),
   startReminderAutoRefresh: () => {
     if (reminderAutoRefreshTimer) {
       return
@@ -390,6 +475,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         },
         ...buildReminderState(tasks, state.reminderPreferences),
       }))
+      void syncDesktopNotifications(tasks, get().reminderPreferences)
     } catch (error) {
       set({
         activeAction: null,
@@ -426,6 +512,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         },
         ...buildReminderState(tasks, state.reminderPreferences),
       }))
+      void syncDesktopNotifications(tasks, get().reminderPreferences)
     } catch (error) {
       set({
         activeAction: null,
@@ -463,6 +550,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         },
         ...buildReminderState(tasks, state.reminderPreferences),
       }))
+      void syncDesktopNotifications(tasks, get().reminderPreferences)
     } catch (error) {
       set({
         activeAction: null,
@@ -499,6 +587,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         },
         ...buildReminderState(tasks, state.reminderPreferences),
       }))
+      void syncDesktopNotifications(tasks, get().reminderPreferences)
     } catch (error) {
       set({
         activeAction: null,
@@ -535,6 +624,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         },
         ...buildReminderState(tasks, state.reminderPreferences),
       }))
+      void syncDesktopNotifications(tasks, get().reminderPreferences)
     } catch (error) {
       set({
         activeAction: null,
@@ -660,6 +750,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           ...buildReminderState(tasks, state.reminderPreferences),
         }
       })
+      void syncDesktopNotifications(tasks, get().reminderPreferences)
     } catch (error) {
       set({
         activeAction: null,
@@ -709,6 +800,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         },
         ...buildReminderState(tasks, state.reminderPreferences),
       }))
+      void syncDesktopNotifications(tasks, get().reminderPreferences)
     } catch (error) {
       set({
         activeAction: null,

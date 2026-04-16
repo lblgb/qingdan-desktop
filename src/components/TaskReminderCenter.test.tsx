@@ -1,7 +1,13 @@
+// @vitest-environment jsdom
+
+import { act } from 'react'
+import { createRoot } from 'react-dom/client'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 import type { ReminderItem, TaskItem } from '../features/tasks/task.types'
 import { TaskReminderCenter } from './TaskReminderCenter'
+
+;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 function buildTask(overrides: Partial<TaskItem> = {}): TaskItem {
   return {
@@ -45,6 +51,7 @@ describe('TaskReminderCenter', () => {
         }}
         isOpen
         onOpenChange={vi.fn()}
+        onSelectTask={vi.fn()}
       />,
     )
 
@@ -52,5 +59,40 @@ describe('TaskReminderCenter', () => {
     expect(markup).toContain('已逾期')
     expect(markup).toContain('高优先级未排期')
     expect(markup).toContain('补齐验收清单')
+  })
+
+  it('queues reminder navigation through the selected task callback when an item is clicked', async () => {
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    const onOpenChange = vi.fn()
+    const onSelectTask = vi.fn()
+
+    await act(async () => {
+      root.render(
+        <TaskReminderCenter
+          buckets={{
+            overdue: [buildReminderItem()],
+            upcoming: [],
+            focusWithoutDate: [],
+            recentlyReminded: [],
+          }}
+          isOpen
+          onOpenChange={onOpenChange}
+          onSelectTask={onSelectTask}
+        />,
+      )
+    })
+
+    const reminderButton = container.querySelector('.task-reminder-item')
+    reminderButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+    expect(onSelectTask).toHaveBeenCalledWith('task-1')
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+
+    await act(async () => {
+      root.unmount()
+    })
+    container.remove()
   })
 })

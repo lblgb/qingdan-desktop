@@ -1,7 +1,7 @@
 /**
  * 文件说明：任务列表组件，负责展示筛选结果并提供编辑、完成、删除、分页和批量操作。
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { buildBulkCompleteInput, buildBulkGroupInput, buildBulkPriorityInput, BULK_PRIORITY_OPTIONS } from '../features/tasks/task.bulk'
 import { applyTaskQuery, summarizeFilters } from '../features/tasks/task.filters'
 import { buildTaskGroups } from '../features/tasks/task.grouping'
@@ -55,6 +55,8 @@ export function TaskList() {
   const toggleTaskSelection = useTaskStore((state) => state.toggleTaskSelection)
   const clearTaskSelection = useTaskStore((state) => state.clearTaskSelection)
   const applyBulkUpdate = useTaskStore((state) => state.applyBulkUpdate)
+  const reminderNavigation = useTaskStore((state) => state.reminderNavigation)
+  const clearReminderNavigation = useTaskStore((state) => state.clearReminderNavigation)
   const emptyState = EMPTY_STATE_COPY[activeFilter]
 
   const [currentPage, setCurrentPage] = useState(1)
@@ -65,6 +67,8 @@ export function TaskList() {
   const [editingGroupId, setEditingGroupId] = useState('')
   const [editingPriority, setEditingPriority] = useState<TaskPriority>('medium')
   const [bulkGroupValue, setBulkGroupValue] = useState('')
+  const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(null)
+  const clearHighlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const totalPages = Math.max(1, Math.ceil(filteredTasks.length / PAGE_SIZE))
   const pagedTasks = useMemo(() => {
@@ -119,6 +123,51 @@ export function TaskList() {
 
     handleCancelEdit()
   }, [isBulkMode])
+
+  useEffect(() => {
+    return () => {
+      if (clearHighlightTimerRef.current) {
+        clearTimeout(clearHighlightTimerRef.current)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!reminderNavigation) {
+      return
+    }
+
+    const targetIndex = filteredTasks.findIndex((task) => task.id === reminderNavigation.taskId)
+    if (targetIndex === -1) {
+      return
+    }
+
+    const targetPage = Math.floor(targetIndex / PAGE_SIZE) + 1
+    setCurrentPage(targetPage)
+    setHighlightedTaskId(reminderNavigation.taskId)
+
+    if (clearHighlightTimerRef.current) {
+      clearTimeout(clearHighlightTimerRef.current)
+    }
+
+    clearHighlightTimerRef.current = setTimeout(() => {
+      setHighlightedTaskId((current) => (current === reminderNavigation.taskId ? null : current))
+      clearReminderNavigation()
+      clearHighlightTimerRef.current = null
+    }, 2_000)
+  }, [clearReminderNavigation, filteredTasks, reminderNavigation])
+
+  useEffect(() => {
+    if (!highlightedTaskId) {
+      return
+    }
+
+    const target = document.querySelector<HTMLElement>(`[data-task-id="${highlightedTaskId}"]`)
+    target?.scrollIntoView({
+      block: 'center',
+      behavior: 'smooth',
+    })
+  }, [currentPage, highlightedTaskId, pagedTasks])
 
   function handleStartEdit(task: TaskItem) {
     setEditingTaskId(task.id)
@@ -333,10 +382,12 @@ export function TaskList() {
                 return (
                   <li
                     key={task.id}
+                    data-task-id={task.id}
                     className={[
                       'task-item',
                       task.completed ? 'completed' : '',
                       isSelected ? 'selected' : '',
+                      highlightedTaskId === task.id ? 'reminder-target' : '',
                     ]
                       .filter(Boolean)
                       .join(' ')}

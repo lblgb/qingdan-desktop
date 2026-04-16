@@ -85,6 +85,7 @@ function buildReminderStripSummary(reminderCount: number, buckets: ReminderBucke
 
 export function AppShell() {
   const tasks = useTaskStore((state) => state.tasks)
+  const filteredTasks = useTaskStore((state) => state.filteredTasks)
   const taskGroups = useTaskStore((state) => state.taskGroups)
   const activeFilter = useTaskStore((state) => state.activeFilter)
   const activeGroupFilter = useTaskStore((state) => state.activeGroupFilter)
@@ -108,6 +109,7 @@ export function AppShell() {
   const setSortBy = useTaskStore((state) => state.setSortBy)
   const resetFilters = useTaskStore((state) => state.resetFilters)
   const dismissFeedback = useTaskStore((state) => state.dismissFeedback)
+  const queueReminderNavigation = useTaskStore((state) => state.queueReminderNavigation)
 
   const [isMoreFiltersOpen, setIsMoreFiltersOpen] = useState(false)
   const [activeConditionPanel, setActiveConditionPanel] = useState<ConditionPanel>('root')
@@ -272,6 +274,13 @@ export function AppShell() {
             buckets={reminderBuckets}
             isOpen={isReminderCenterOpen}
             onOpenChange={setIsReminderCenterOpen}
+            onSelectTask={(taskId) => {
+              if (!filteredTasks.some((task) => task.id === taskId)) {
+                resetFilters()
+              }
+              queueReminderNavigation(taskId)
+              setIsReminderCenterOpen(false)
+            }}
           />
           <TaskGroupManager />
           <TaskComposer />
