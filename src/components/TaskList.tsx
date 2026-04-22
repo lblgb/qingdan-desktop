@@ -188,16 +188,17 @@ export function TaskList() {
     setEditingPriority('medium')
   }
 
-  async function handleSubmitEdit(taskId: string) {
+  async function handleSubmitEdit(task: TaskItem) {
     const nextTitle = editingTitle.trim()
     if (!nextTitle) {
       return
     }
 
     await updateTask({
-      id: taskId,
+      id: task.id,
       title: nextTitle,
       description: editingDescription.trim(),
+      note: task.note,
       groupId: editingGroupId || null,
       dueAt: editingDueAt || null,
       priority: editingPriority,
@@ -211,6 +212,7 @@ export function TaskList() {
       id: task.id,
       title: task.title,
       description: task.description,
+      note: task.note,
       groupId: task.groupId,
       dueAt: task.dueAt,
       priority: nextPriority(task.priority),
@@ -399,7 +401,7 @@ export function TaskList() {
                           className="task-body task-edit-form"
                           onSubmit={(event) => {
                             event.preventDefault()
-                            void handleSubmitEdit(task.id)
+                            void handleSubmitEdit(task)
                           }}
                         >
                           <div className="task-main-row">
@@ -485,7 +487,7 @@ export function TaskList() {
                           </button>
                           <button
                             className="primary-button task-save-button"
-                            onClick={() => void handleSubmitEdit(task.id)}
+                            onClick={() => void handleSubmitEdit(task)}
                             type="button"
                             disabled={isMutating}
                           >

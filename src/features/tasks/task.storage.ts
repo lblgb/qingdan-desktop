@@ -132,23 +132,27 @@ export async function loadTasks(): Promise<TaskItem[]> {
  */
 export async function queryTasks(input: TaskQueryInput): Promise<TaskItem[]> {
   if (isTauriRuntime()) {
+    const tauriInput = {
+      status: input.status === 'all' ? null : input.status,
+      archive: input.archive === 'all' ? null : input.archive,
+      groupId: input.group === 'all-groups' ? null : input.group,
+      priority: input.priority === 'all-priorities' ? null : input.priority,
+      dateRange:
+        input.dateRange === 'all-time' || input.dateRange === 'no-date'
+          ? null
+          : buildDateRangePayload(input.dateRange),
+      sortBy: input.sortBy,
+    }
+
     if (input.dateRange === 'no-date') {
-      const tasks = await invoke<TaskItem[]>('list_tasks')
+      const tasks = await invoke<TaskItem[]>('query_tasks', {
+        input: tauriInput,
+      })
       return applyTaskQuery(tasks, input)
     }
 
     return invoke<TaskItem[]>('query_tasks', {
-      input: {
-        status: input.status === 'all' ? null : input.status,
-        archive: input.archive === 'all' ? null : input.archive,
-        groupId: input.group === 'all-groups' ? null : input.group,
-        priority: input.priority === 'all-priorities' ? null : input.priority,
-        dateRange:
-          input.dateRange === 'all-time'
-            ? null
-            : buildDateRangePayload(input.dateRange),
-        sortBy: input.sortBy,
-      },
+      input: tauriInput,
     })
   }
 
@@ -210,7 +214,7 @@ export async function updateTask(input: UpdateTaskInput): Promise<TaskItem[]> {
           ...task,
           title: input.title.trim(),
           description: input.description.trim(),
-          note: input.note?.trim() ?? '',
+          note: input.note?.trim() ?? task.note,
           groupId: input.groupId,
           dueAt: input.dueAt,
           priority: input.priority,

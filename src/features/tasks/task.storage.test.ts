@@ -1,6 +1,19 @@
-import { afterEach, describe, expect, it } from 'vitest'
-import { loadReminderPreferences, loadTasks, queryTasks, saveReminderPreferences } from './task.storage'
-import type { ReminderPreferences } from './task.types'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import {
+  bulkUpdateTasks,
+  loadReminderPreferences,
+  loadTasks,
+  queryTasks,
+  saveReminderPreferences,
+  updateTask,
+} from './task.storage'
+import type { ReminderPreferences, TaskItem, UpdateTaskInput } from './task.types'
+
+const mockInvoke = vi.hoisted(() => vi.fn())
+
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: mockInvoke,
+}))
 
 function createLocalStorage(initialData: Record<string, string> = {}) {
   const store = new Map(Object.entries(initialData))
@@ -24,6 +37,8 @@ function createLocalStorage(initialData: Record<string, string> = {}) {
 const originalWindow = globalThis.window
 
 afterEach(() => {
+  vi.clearAllMocks()
+
   if (originalWindow === undefined) {
     Reflect.deleteProperty(globalThis, 'window')
     return
@@ -73,6 +88,24 @@ describe('reminder preference storage', () => {
 })
 
 describe('task query storage', () => {
+  function buildTask(overrides: Partial<TaskItem> = {}): TaskItem {
+    return {
+      id: 'task-1',
+      title: 'Task',
+      description: '',
+      note: '',
+      completed: false,
+      completedAt: null,
+      archivedAt: null,
+      groupId: null,
+      dueAt: null,
+      priority: 'medium',
+      createdAt: '2026-04-10T08:00:00.000Z',
+      updatedAt: '2026-04-10T09:00:00.000Z',
+      ...overrides,
+    }
+  }
+
   it('loads local fallback tasks with required archive metadata', async () => {
     const localStorage = createLocalStorage()
     ;(globalThis as typeof globalThis & { window: Window }).window = {
@@ -183,5 +216,123 @@ describe('task query storage', () => {
     })
 
     expect(tasks.map((task) => task.id)).toEqual(['archived-task'])
+  })
+
+  it('preserves an existing local task note when legacy update input omits note', async () => {
+    const localStorage = createLocalStorage({
+      'qingdan.tasks': JSON.stringify([
+        buildTask({
+          id: 'task-with-note',
+          title: 'Original title',
+          description: 'Original description',
+          note: 'Keep this note',
+        }),
+      ]),
+    })
+    ;(globalThis as typeof globalThis & { window: Window }).window = {
+      localStorage: localStorage as never,
+    } as never
+
+    const tasks = await updateTask({
+      id: 'task-with-note',
+      title: 'Updated title',
+      description: 'Updated description',
+      groupId: null,
+      dueAt: null,
+      priority: 'high',
+    } as Omit<UpdateTaskInput, 'note'> as UpdateTaskInput)
+
+    expect(tasks[0]).toMatchObject({
+      id: 'task-with-note',
+      title: 'Updated title',
+      description: 'Updated description',
+      note: 'Keep this note',
+      priority: 'high',
+    })
+  })
+
+  it('queries Tauri no-date tasks with the requested archive scope before client filtering', async () => {
+    ;(globalThis as typeof globalThis & { window: Window & { __TAURI_INTERNALS__: unknown } }).window = {
+      localStorage: createLocalStorage() as never,
+      __TAURI_INTERNALS__: {},
+    } as never
+    mockInvoke.mockResolvedValue([
+      buildTask({ id: 'archived-no-date', completed: true, archivedAt: '2026-04-12T08:00:00.000Z' }),
+      buildTask({ id: 'archived-with-date', dueAt: '2026-04-13', completed: true, archivedAt: '2026-04-12T08:00:00.000Z' }),
+    ])
+
+    const tasks = await queryTasks({
+      status: 'all',
+      group: 'all-groups',
+      priority: 'all-priorities',
+      dateRange: 'no-date',
+      sortBy: 'default',
+      archive: 'archived',
+    })
+
+    expect(mockInvoke).toHaveBeenCalledWith('query_tasks', {
+      input: {
+        status: null,
+        archive: 'archived',
+        groupId: null,
+        priority: null,
+        dateRange: null,
+        sortBy: 'default',
+      },
+    })
+    expect(tasks.map((task) => task.id)).toEqual(['archived-no-date'])
+  })
+
+  it('queries Tauri no-date tasks with all archive scope before client filtering', async () => {
+    ;(globalThis as typeof globalThis & { window: Window & { __TAURI_INTERNALS__: unknown } }).window = {
+      localStorage: createLocalStorage() as never,
+      __TAURI_INTERNALS__: {},
+    } as never
+    mockInvoke.mockResolvedValue([
+      buildTask({ id: 'active-no-date' }),
+      buildTask({ id: 'archived-no-date', completed: true, archivedAt: '2026-04-12T08:00:00.000Z' }),
+      buildTask({ id: 'active-with-date', dueAt: '2026-04-13' }),
+    ])
+
+    const tasks = await queryTasks({
+      status: 'all',
+      group: 'all-groups',
+      priority: 'all-priorities',
+      dateRange: 'no-date',
+      sortBy: 'default',
+      archive: 'all',
+    })
+
+    expect(mockInvoke).toHaveBeenCalledWith('query_tasks', {
+      input: {
+        status: null,
+        archive: null,
+        groupId: null,
+        priority: null,
+        dateRange: null,
+        sortBy: 'default',
+      },
+    })
+    expect(tasks.map((task) => task.id)).toEqual(['active-no-date', 'archived-no-date'])
+  })
+
+  it('archives completed local tasks without archiving active selections', async () => {
+    const localStorage = createLocalStorage({
+      'qingdan.tasks': JSON.stringify([
+        buildTask({ id: 'completed-task', completed: true }),
+        buildTask({ id: 'active-task', completed: false }),
+      ]),
+    })
+    ;(globalThis as typeof globalThis & { window: Window }).window = {
+      localStorage: localStorage as never,
+    } as never
+
+    const tasks = await bulkUpdateTasks({
+      taskIds: ['completed-task', 'active-task'],
+      archive: true,
+    })
+
+    expect(tasks.find((task) => task.id === 'completed-task')?.archivedAt).not.toBeNull()
+    expect(tasks.find((task) => task.id === 'active-task')?.archivedAt).toBeNull()
   })
 })

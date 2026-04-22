@@ -69,7 +69,7 @@ export interface UpdateTaskInput {
   id: string
   title: string
   description: string
-  note?: string
+  note: string
   groupId: string | null
   dueAt: string | null
   priority: TaskPriority

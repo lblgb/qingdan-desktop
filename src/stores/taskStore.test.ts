@@ -186,6 +186,7 @@ describe('taskStore reset and feedback', () => {
       id: 'task-updated',
       title: '已更新任务',
       description: '',
+      note: '',
       priority: 'high',
       dueAt: null,
       groupId: null,
