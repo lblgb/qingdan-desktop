@@ -72,3 +72,56 @@ fn init_database_adds_priority_column_to_legacy_tasks_table() {
 
     assert_eq!(priority, "medium");
 }
+
+#[test]
+fn init_database_adds_v040_task_columns_to_legacy_tasks_table() {
+    let db_path = legacy_database_path();
+    fs::create_dir_all(db_path.parent().expect("temp path has a parent"))
+        .expect("create temp directory");
+
+    {
+        let connection = Connection::open(&db_path).expect("open legacy db");
+        connection
+            .execute_batch(
+                "
+                CREATE TABLE task_groups (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    name TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+
+                CREATE TABLE tasks (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    title TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    completed INTEGER NOT NULL DEFAULT 0,
+                    priority TEXT NOT NULL DEFAULT 'medium',
+                    group_id TEXT NULL,
+                    due_at TEXT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY(group_id) REFERENCES task_groups(id) ON DELETE SET NULL
+                );
+                ",
+            )
+            .expect("seed legacy schema");
+    }
+
+    init_database(&db_path).expect("run database migration");
+
+    let connection = Connection::open(&db_path).expect("reopen migrated db");
+    let mut statement = connection
+        .prepare("PRAGMA table_info(tasks)")
+        .expect("read migrated schema");
+    let columns = statement
+        .query_map([], |row| row.get::<_, String>(1))
+        .expect("query task columns")
+        .collect::<Result<Vec<_>, _>>()
+        .expect("collect task columns");
+
+    assert!(columns.iter().any(|column| column == "note"));
+    assert!(columns.iter().any(|column| column == "completed_at"));
+    assert!(columns.iter().any(|column| column == "archived_at"));
+}

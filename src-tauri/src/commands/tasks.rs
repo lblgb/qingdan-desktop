@@ -7,7 +7,7 @@ use crate::{
     db::{open_connection, DatabaseState},
     models::{
         BulkUpdateTasksInput, CreateTaskGroupInput, CreateTaskInput, TaskGroup, TaskItem,
-        TaskPriority, TaskQueryInput, TaskQuerySortBy, TaskQueryStatus,
+        TaskArchiveFilter, TaskPriority, TaskQueryInput, TaskQuerySortBy, TaskQueryStatus,
         UpdateTaskGroupInput, UpdateTaskInput,
     },
 };
@@ -17,12 +17,15 @@ fn task_row_to_item(row: &rusqlite::Row<'_>) -> Result<TaskItem, rusqlite::Error
         id: row.get(0)?,
         title: row.get(1)?,
         description: row.get(2)?,
-        completed: row.get::<_, i64>(3)? != 0,
-        priority: TaskPriority::from_db_value(&row.get::<_, String>(4)?),
-        group_id: row.get(5)?,
-        due_at: row.get(6)?,
-        created_at: row.get(7)?,
-        updated_at: row.get(8)?,
+        note: row.get(3)?,
+        completed: row.get::<_, i64>(4)? != 0,
+        completed_at: row.get(5)?,
+        archived_at: row.get(6)?,
+        priority: TaskPriority::from_db_value(&row.get::<_, String>(7)?),
+        group_id: row.get(8)?,
+        due_at: row.get(9)?,
+        created_at: row.get(10)?,
+        updated_at: row.get(11)?,
     })
 }
 
@@ -43,10 +46,16 @@ fn task_sort_clause(sort_by: TaskQuerySortBy) -> &'static str {
 
 fn build_task_query(query: &TaskQueryInput) -> Result<(String, Vec<Value>), String> {
     let mut sql = String::from(
-        "SELECT id, title, description, completed, priority, group_id, due_at, created_at, updated_at FROM tasks",
+        "SELECT id, title, description, note, completed, completed_at, archived_at, priority, group_id, due_at, created_at, updated_at FROM tasks",
     );
     let mut predicates = Vec::new();
     let mut values = Vec::new();
+
+    match query.archive.unwrap_or(TaskArchiveFilter::Active) {
+        TaskArchiveFilter::Active => predicates.push("archived_at IS NULL".to_string()),
+        TaskArchiveFilter::Archived => predicates.push("archived_at IS NOT NULL".to_string()),
+        TaskArchiveFilter::All => {}
+    }
 
     if let Some(status) = query.status {
         match status {
@@ -181,6 +190,23 @@ fn bulk_update_tasks_inner(
         if let Some(mark_completed) = input.mark_completed {
             set_clauses.push("completed = ?");
             values.push(Value::Integer(if mark_completed { 1 } else { 0 }));
+            set_clauses.push("completed_at = ?");
+            values.push(if mark_completed {
+                Value::Text(timestamp.clone())
+            } else {
+                Value::Null
+            });
+        }
+
+        if let Some(archive) = input.archive {
+            if archive {
+                set_clauses
+                    .push("archived_at = CASE WHEN completed = 1 THEN ? ELSE archived_at END");
+                values.push(Value::Text(timestamp.clone()));
+            } else {
+                set_clauses.push("archived_at = ?");
+                values.push(Value::Null);
+            }
         }
 
         if set_clauses.is_empty() {
@@ -238,13 +264,14 @@ pub fn create_task(
     connection
         .execute(
             "
-            INSERT INTO tasks (id, title, description, completed, priority, group_id, due_at, created_at, updated_at)
-            VALUES (?1, ?2, ?3, 0, ?4, ?5, ?6, ?7, ?8)
+            INSERT INTO tasks (id, title, description, note, completed, priority, group_id, due_at, created_at, updated_at)
+            VALUES (?1, ?2, ?3, ?4, 0, ?5, ?6, ?7, ?8, ?9)
             ",
             params![
                 Uuid::new_v4().to_string(),
                 title,
                 input.description.trim(),
+                input.note.trim(),
                 input.priority.as_db_value(),
                 input.group_id,
                 input.due_at,
@@ -275,16 +302,18 @@ pub fn update_task(
             UPDATE tasks
             SET title = ?2,
                 description = ?3,
-                priority = ?4,
-                due_at = ?5,
-                group_id = ?6,
-                updated_at = ?7
+                note = ?4,
+                priority = ?5,
+                due_at = ?6,
+                group_id = ?7,
+                updated_at = ?8
             WHERE id = ?1
             ",
             params![
                 input.id,
                 title,
                 input.description.trim(),
+                input.note.trim(),
                 input.priority.as_db_value(),
                 input.due_at,
                 input.group_id,
@@ -305,6 +334,7 @@ pub fn toggle_task(task_id: String, state: State<'_, DatabaseState>) -> Result<V
             "
             UPDATE tasks
             SET completed = CASE completed WHEN 1 THEN 0 ELSE 1 END,
+                completed_at = CASE completed WHEN 1 THEN NULL ELSE ?2 END,
                 updated_at = ?2
             WHERE id = ?1
             ",
@@ -555,6 +585,7 @@ mod tests {
             priority: Some(TaskPriority::Urgent),
             date_range: None,
             sort_by: Some(TaskQuerySortBy::Priority),
+            archive: None,
         };
 
         let tasks = query_tasks_inner(&state, &query).expect("query tasks");

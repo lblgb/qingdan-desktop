@@ -36,7 +36,10 @@ pub fn init_database(db_path: &PathBuf) -> Result<(), String> {
                 id TEXT PRIMARY KEY NOT NULL,
                 title TEXT NOT NULL,
                 description TEXT NOT NULL,
+                note TEXT NOT NULL DEFAULT '',
                 completed INTEGER NOT NULL DEFAULT 0,
+                completed_at TEXT NULL,
+                archived_at TEXT NULL,
                 priority TEXT NOT NULL DEFAULT 'medium',
                 group_id TEXT NULL,
                 due_at TEXT NULL,
@@ -55,6 +58,7 @@ pub fn init_database(db_path: &PathBuf) -> Result<(), String> {
 
     ensure_tasks_priority_column(&connection)?;
     ensure_tasks_group_column(&connection)?;
+    ensure_tasks_v040_columns(&connection)?;
     ensure_tasks_group_index(&connection)?;
 
     Ok(())
@@ -115,6 +119,52 @@ fn ensure_tasks_priority_column(connection: &Connection) -> Result<(), String> {
             )
             .map_err(|error| format!("为 tasks 表补充 priority 字段失败：{error}"))?;
     }
+
+    Ok(())
+}
+
+fn ensure_tasks_v040_columns(connection: &Connection) -> Result<(), String> {
+    let mut statement = connection
+        .prepare("PRAGMA table_info(tasks)")
+        .map_err(|error| format!("璇诲彇 tasks 琛ㄧ粨鏋勫け璐ワ細{error}"))?;
+
+    let columns = statement
+        .query_map([], |row| row.get::<_, String>(1))
+        .map_err(|error| format!("鏌ヨ tasks 琛ㄥ瓧娈靛け璐ワ細{error}"))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|error| format!("璇诲彇 tasks 琛ㄥ瓧娈电粨鏋滃け璐ワ細{error}"))?;
+
+    if !columns.iter().any(|column| column == "note") {
+        connection
+            .execute("ALTER TABLE tasks ADD COLUMN note TEXT NOT NULL DEFAULT ''", [])
+            .map_err(|error| format!("add tasks.note column failed: {error}"))?;
+    }
+
+    if !columns.iter().any(|column| column == "completed_at") {
+        connection
+            .execute("ALTER TABLE tasks ADD COLUMN completed_at TEXT NULL", [])
+            .map_err(|error| format!("add tasks.completed_at column failed: {error}"))?;
+    }
+
+    if !columns.iter().any(|column| column == "archived_at") {
+        connection
+            .execute("ALTER TABLE tasks ADD COLUMN archived_at TEXT NULL", [])
+            .map_err(|error| format!("add tasks.archived_at column failed: {error}"))?;
+    }
+
+    connection
+        .execute(
+            "CREATE INDEX IF NOT EXISTS idx_tasks_completed_at ON tasks(completed_at DESC)",
+            [],
+        )
+        .map_err(|error| format!("create tasks.completed_at index failed: {error}"))?;
+
+    connection
+        .execute(
+            "CREATE INDEX IF NOT EXISTS idx_tasks_archived_at ON tasks(archived_at DESC)",
+            [],
+        )
+        .map_err(|error| format!("create tasks.archived_at index failed: {error}"))?;
 
     Ok(())
 }

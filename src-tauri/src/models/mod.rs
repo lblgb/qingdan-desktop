@@ -38,6 +38,14 @@ pub enum TaskQueryStatus {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
+pub enum TaskArchiveFilter {
+    Active,
+    Archived,
+    All,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
 pub enum TaskQuerySortBy {
     Default,
     DueDate,
@@ -60,6 +68,7 @@ pub struct TaskQueryInput {
     pub priority: Option<TaskPriority>,
     pub date_range: Option<TaskDateRangeInput>,
     pub sort_by: Option<TaskQuerySortBy>,
+    pub archive: Option<TaskArchiveFilter>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -69,6 +78,7 @@ pub struct BulkUpdateTasksInput {
     pub priority: Option<TaskPriority>,
     pub group_id: Option<Option<String>>,
     pub mark_completed: Option<bool>,
+    pub archive: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -77,7 +87,10 @@ pub struct TaskItem {
     pub id: String,
     pub title: String,
     pub description: String,
+    pub note: String,
     pub completed: bool,
+    pub completed_at: Option<String>,
+    pub archived_at: Option<String>,
     pub group_id: Option<String>,
     pub due_at: Option<String>,
     pub priority: TaskPriority,
@@ -100,6 +113,7 @@ pub struct TaskGroup {
 pub struct CreateTaskInput {
     pub title: String,
     pub description: String,
+    pub note: String,
     pub group_id: Option<String>,
     pub due_at: Option<String>,
     pub priority: TaskPriority,
@@ -111,6 +125,7 @@ pub struct UpdateTaskInput {
     pub id: String,
     pub title: String,
     pub description: String,
+    pub note: String,
     pub group_id: Option<String>,
     pub due_at: Option<String>,
     pub priority: TaskPriority,
