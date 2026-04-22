@@ -195,9 +195,7 @@ fn bulk_update_tasks_inner(
             set_clauses.push("completed = ?");
             values.push(Value::Integer(if mark_completed { 1 } else { 0 }));
             if mark_completed {
-                set_clauses.push(
-                    "completed_at = CASE WHEN completed = 1 AND completed_at IS NOT NULL THEN completed_at ELSE ? END",
-                );
+                set_clauses.push("completed_at = CASE WHEN completed = 0 THEN ? ELSE completed_at END");
                 values.push(Value::Text(timestamp.clone()));
             } else {
                 set_clauses.push("completed_at = ?");
@@ -645,6 +643,7 @@ mod tests {
 
         let connection = Connection::open(&db_path).expect("open database");
         let already_completed_id = Uuid::new_v4().to_string();
+        let already_completed_null_id = Uuid::new_v4().to_string();
         let open_id = Uuid::new_v4().to_string();
         let original_completed_at = "2026-04-14T03:00:00Z";
         seed_task_with_id(
@@ -656,6 +655,23 @@ mod tests {
             None,
             "2026-04-14T04:00:00Z",
         );
+        seed_task_with_id(
+            &connection,
+            &already_completed_null_id,
+            "already completed without timestamp",
+            true,
+            None,
+            None,
+            "2026-04-14T04:30:00Z",
+        );
+        let seeded_completed_at: Option<String> = connection
+            .query_row(
+                "SELECT completed_at FROM tasks WHERE id = ?1",
+                params![already_completed_null_id],
+                |row| row.get(0),
+            )
+            .expect("read seeded completed_at");
+        assert!(seeded_completed_at.is_none());
         seed_task_with_id(
             &connection,
             &open_id,
@@ -683,6 +699,10 @@ mod tests {
             .iter()
             .find(|task| task.id == already_completed_id)
             .expect("already completed task returned");
+        let already_completed_without_timestamp = tasks
+            .iter()
+            .find(|task| task.id == already_completed_null_id)
+            .expect("already completed task without timestamp returned");
         let opened_then_completed = tasks
             .iter()
             .find(|task| task.id == open_id)
@@ -692,6 +712,7 @@ mod tests {
             already_completed.completed_at.as_deref(),
             Some(original_completed_at)
         );
+        assert!(already_completed_without_timestamp.completed_at.is_none());
         assert!(opened_then_completed.completed_at.is_some());
     }
 
