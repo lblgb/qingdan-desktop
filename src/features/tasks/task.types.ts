@@ -28,10 +28,10 @@ export interface TaskItem {
   id: string
   title: string
   description: string
-  note?: string
+  note: string
   completed: boolean
-  completedAt?: string | null
-  archivedAt?: string | null
+  completedAt: string | null
+  archivedAt: string | null
   groupId: string | null
   dueAt: string | null
   priority: TaskPriority
@@ -94,7 +94,7 @@ export interface UpdateTaskGroupInput {
 
 export interface TaskQueryInput {
   status: TaskFilter
-  archive?: TaskArchiveFilter
+  archive: TaskArchiveFilter
   group: TaskGroupFilter
   priority: TaskPriorityFilter
   dateRange: TaskDateRangeFilter

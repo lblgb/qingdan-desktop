@@ -169,12 +169,11 @@ function sortTasks(tasks: TaskItem[], sortBy: TaskSortBy) {
 }
 
 export function applyTaskQuery(tasks: TaskItem[], query: TaskQueryInput) {
-  const archive = query.archive ?? 'active'
   let archiveFiltered = tasks
-  if (archive === 'active') {
+  if (query.archive === 'active') {
     archiveFiltered = archiveFiltered.filter((task) => !task.archivedAt)
   }
-  if (archive === 'archived') {
+  if (query.archive === 'archived') {
     archiveFiltered = archiveFiltered.filter((task) => Boolean(task.archivedAt))
   }
 

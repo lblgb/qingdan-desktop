@@ -154,6 +154,7 @@ function buildQuery(
 ): TaskQueryInput {
   return {
     status: state.activeFilter,
+    archive: DEFAULT_TASK_QUERY.archive,
     group: state.activeGroupFilter,
     priority: state.activePriorityFilter,
     dateRange: state.activeDateRange,

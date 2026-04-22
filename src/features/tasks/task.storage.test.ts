@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { loadReminderPreferences, queryTasks, saveReminderPreferences } from './task.storage'
+import { loadReminderPreferences, loadTasks, queryTasks, saveReminderPreferences } from './task.storage'
 import type { ReminderPreferences } from './task.types'
 
 function createLocalStorage(initialData: Record<string, string> = {}) {
@@ -73,6 +73,20 @@ describe('reminder preference storage', () => {
 })
 
 describe('task query storage', () => {
+  it('loads local fallback tasks with required archive metadata', async () => {
+    const localStorage = createLocalStorage()
+    ;(globalThis as typeof globalThis & { window: Window }).window = {
+      localStorage: localStorage as never,
+    } as never
+
+    const tasks = await loadTasks()
+
+    expect(tasks).not.toHaveLength(0)
+    expect(tasks.every((task) => typeof task.note === 'string')).toBe(true)
+    expect(tasks.every((task) => Object.prototype.hasOwnProperty.call(task, 'completedAt'))).toBe(true)
+    expect(tasks.every((task) => Object.prototype.hasOwnProperty.call(task, 'archivedAt'))).toBe(true)
+  })
+
   it('hides archived local tasks by default', async () => {
     const localStorage = createLocalStorage({
       'qingdan.tasks': JSON.stringify([

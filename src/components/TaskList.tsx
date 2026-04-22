@@ -3,7 +3,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { buildBulkCompleteInput, buildBulkGroupInput, buildBulkPriorityInput, BULK_PRIORITY_OPTIONS } from '../features/tasks/task.bulk'
-import { applyTaskQuery, summarizeFilters } from '../features/tasks/task.filters'
+import { DEFAULT_TASK_QUERY, applyTaskQuery, summarizeFilters } from '../features/tasks/task.filters'
 import { buildTaskGroups } from '../features/tasks/task.grouping'
 import { TASK_PRIORITY_META } from '../features/tasks/task.priority'
 import type { TaskItem, TaskPriority } from '../features/tasks/task.types'
@@ -81,6 +81,7 @@ export function TaskList() {
   const currentQuery = useMemo(
     () => ({
       status: activeFilter,
+      archive: DEFAULT_TASK_QUERY.archive,
       group: activeGroupFilter,
       priority: activePriorityFilter,
       dateRange: activeDateRange,

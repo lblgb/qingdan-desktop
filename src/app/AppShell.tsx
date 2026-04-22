@@ -136,6 +136,7 @@ export function AppShell() {
   const currentQuery = useMemo(
     () => ({
       status: activeFilter,
+      archive: DEFAULT_TASK_QUERY.archive,
       group: activeGroupFilter,
       priority: activePriorityFilter,
       dateRange: activeDateRange,

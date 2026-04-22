@@ -132,7 +132,6 @@ export async function loadTasks(): Promise<TaskItem[]> {
  */
 export async function queryTasks(input: TaskQueryInput): Promise<TaskItem[]> {
   if (isTauriRuntime()) {
-    const archive = input.archive ?? 'active'
     if (input.dateRange === 'no-date') {
       const tasks = await invoke<TaskItem[]>('list_tasks')
       return applyTaskQuery(tasks, input)
@@ -141,7 +140,7 @@ export async function queryTasks(input: TaskQueryInput): Promise<TaskItem[]> {
     return invoke<TaskItem[]>('query_tasks', {
       input: {
         status: input.status === 'all' ? null : input.status,
-        archive: archive === 'all' ? null : archive,
+        archive: input.archive === 'all' ? null : input.archive,
         groupId: input.group === 'all-groups' ? null : input.group,
         priority: input.priority === 'all-priorities' ? null : input.priority,
         dateRange:
