@@ -686,7 +686,11 @@ mod tests {
         let tasks = bulk_update_tasks_inner(
             &state,
             &BulkUpdateTasksInput {
-                task_ids: vec![already_completed_id.clone(), open_id.clone()],
+                task_ids: vec![
+                    already_completed_id.clone(),
+                    already_completed_null_id.clone(),
+                    open_id.clone(),
+                ],
                 priority: None,
                 group_id: None,
                 mark_completed: Some(true),
