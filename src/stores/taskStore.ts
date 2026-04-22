@@ -32,6 +32,7 @@ import type {
   CreateTaskGroupInput,
   CreateTaskInput,
   ReminderPreferences,
+  TaskArchiveFilter,
   TaskDateRangeFilter,
   TaskFilter,
   TaskGroup,
@@ -73,10 +74,12 @@ interface TaskState {
   tasks: TaskItem[]
   taskGroups: TaskGroup[]
   activeFilter: TaskFilter
+  activeArchiveFilter: TaskArchiveFilter
   activeGroupFilter: TaskGroupFilter
   activePriorityFilter: TaskPriorityFilter
   activeDateRange: TaskDateRangeFilter
   activeSortBy: TaskSortBy
+  editingTaskId: string | null
   filteredTasks: TaskItem[]
   reminderPreferences: ReminderPreferences
   reminderBuckets: ReminderBuckets
@@ -106,7 +109,10 @@ interface TaskState {
   stopReminderAutoRefresh: () => void
   dismissSuccessToast: () => void
   closeErrorDialog: () => void
+  openTaskDetail: (taskId: string) => void
+  closeTaskDetail: () => void
   setFilter: (filter: TaskFilter) => void
+  setArchiveFilter: (filter: TaskArchiveFilter) => void
   setGroupFilter: (filter: TaskGroupFilter) => void
   setPriorityFilter: (filter: TaskPriorityFilter) => void
   setDateRange: (filter: TaskDateRangeFilter) => void
@@ -115,6 +121,7 @@ interface TaskState {
   addTask: (input: CreateTaskInput) => Promise<void>
   updateTask: (input: UpdateTaskInput) => Promise<void>
   toggleTask: (taskId: string) => Promise<void>
+  archiveTask: (taskId: string) => Promise<void>
   removeTask: (taskId: string) => Promise<void>
   updateTaskGroupAssignment: (taskId: string, groupId: string | null) => Promise<void>
   addTaskGroup: (input: CreateTaskGroupInput) => Promise<void>
@@ -123,6 +130,7 @@ interface TaskState {
   toggleBulkMode: () => void
   toggleTaskSelection: (taskId: string) => void
   clearTaskSelection: () => void
+  applyBulkArchive: () => Promise<void>
   applyBulkUpdate: (input: BulkUpdateTasksInput) => Promise<void>
   /** Legacy compatibility no-op for current UI consumers. */
   dismissFeedback: () => void
@@ -150,11 +158,14 @@ function normalizeGroupFilter(taskGroups: TaskGroup[], activeGroupFilter: TaskGr
 }
 
 function buildQuery(
-  state: Pick<TaskState, 'activeFilter' | 'activeGroupFilter' | 'activePriorityFilter' | 'activeDateRange' | 'activeSortBy'>,
+  state: Pick<
+    TaskState,
+    'activeFilter' | 'activeArchiveFilter' | 'activeGroupFilter' | 'activePriorityFilter' | 'activeDateRange' | 'activeSortBy'
+  >,
 ): TaskQueryInput {
   return {
     status: state.activeFilter,
-    archive: DEFAULT_TASK_QUERY.archive,
+    archive: state.activeArchiveFilter,
     group: state.activeGroupFilter,
     priority: state.activePriorityFilter,
     dateRange: state.activeDateRange,
@@ -251,10 +262,12 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   tasks: [],
   taskGroups: [],
   activeFilter: DEFAULT_TASK_QUERY.status,
+  activeArchiveFilter: DEFAULT_TASK_QUERY.archive,
   activeGroupFilter: DEFAULT_TASK_QUERY.group,
   activePriorityFilter: DEFAULT_TASK_QUERY.priority,
   activeDateRange: DEFAULT_TASK_QUERY.dateRange,
   activeSortBy: DEFAULT_TASK_QUERY.sortBy,
+  editingTaskId: null,
   filteredTasks: [],
   reminderPreferences: DEFAULT_REMINDER_PREFERENCES,
   reminderBuckets: EMPTY_REMINDER_BUCKETS,
@@ -404,12 +417,22 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   },
   dismissSuccessToast: () => set({ successToast: null }),
   closeErrorDialog: () => set({ errorDialog: null }),
+  openTaskDetail: (taskId) => set({ editingTaskId: taskId }),
+  closeTaskDetail: () => set({ editingTaskId: null }),
   setFilter: (filter) =>
     set((state) => ({
       activeFilter: filter,
       filteredTasks: buildVisibleTasks(state.tasks, {
         ...buildQuery(state),
         status: filter,
+      }),
+    })),
+  setArchiveFilter: (filter) =>
+    set((state) => ({
+      activeArchiveFilter: filter,
+      filteredTasks: buildVisibleTasks(state.tasks, {
+        ...buildQuery(state),
+        archive: filter,
       }),
     })),
   setGroupFilter: (filter) =>
@@ -447,6 +470,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   resetFilters: () =>
     set((state) => ({
       activeFilter: DEFAULT_TASK_QUERY.status,
+      activeArchiveFilter: DEFAULT_TASK_QUERY.archive,
       activeGroupFilter: DEFAULT_TASK_QUERY.group,
       activePriorityFilter: DEFAULT_TASK_QUERY.priority,
       activeDateRange: DEFAULT_TASK_QUERY.dateRange,
@@ -559,6 +583,43 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           title: '任务状态更新失败',
           message: getErrorMessage(error, '更新任务状态失败，请稍后再试。'),
           source: 'toggle',
+        },
+      })
+    } finally {
+      set({ isMutating: false })
+    }
+  },
+  archiveTask: async (taskId) => {
+    set({
+      isMutating: true,
+      activeAction: 'bulk',
+      feedback: null,
+      successToast: null,
+      errorDialog: null,
+    })
+
+    try {
+      const tasks = await bulkUpdateTasks({ taskIds: [taskId], archive: true })
+      set((state) => ({
+        tasks,
+        filteredTasks: buildVisibleTasks(tasks, buildQuery(state)),
+        isHydrated: true,
+        activeAction: null,
+        successToast: {
+          tone: 'success',
+          message: '任务已归档。',
+          source: 'bulk',
+        },
+        ...buildReminderState(tasks, state.reminderPreferences),
+      }))
+      void syncDesktopNotifications(tasks, get().reminderPreferences)
+    } catch (error) {
+      set({
+        activeAction: null,
+        errorDialog: {
+          title: '归档失败',
+          message: getErrorMessage(error, '归档失败，请稍后再试。'),
+          source: 'bulk',
         },
       })
     } finally {
@@ -777,6 +838,45 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         : [...state.selectedTaskIds, taskId],
     })),
   clearTaskSelection: () => set({ selectedTaskIds: [] }),
+  applyBulkArchive: async () => {
+    const taskIds = get().selectedTaskIds
+    set({
+      isMutating: true,
+      activeAction: 'bulk',
+      feedback: null,
+      successToast: null,
+      errorDialog: null,
+    })
+
+    try {
+      const tasks = await bulkUpdateTasks({ taskIds, archive: true })
+      set((state) => ({
+        tasks,
+        filteredTasks: buildVisibleTasks(tasks, buildQuery(state)),
+        isBulkMode: false,
+        selectedTaskIds: [],
+        activeAction: null,
+        successToast: {
+          tone: 'success',
+          message: '已归档选中任务。',
+          source: 'bulk',
+        },
+        ...buildReminderState(tasks, state.reminderPreferences),
+      }))
+      void syncDesktopNotifications(tasks, get().reminderPreferences)
+    } catch (error) {
+      set({
+        activeAction: null,
+        errorDialog: {
+          title: '归档失败',
+          message: getErrorMessage(error, '归档失败，请稍后再试。'),
+          source: 'bulk',
+        },
+      })
+    } finally {
+      set({ isMutating: false })
+    }
+  },
   applyBulkUpdate: async (input) => {
     set({
       isMutating: true,

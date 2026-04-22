@@ -128,6 +128,109 @@ describe('taskStore reset and feedback', () => {
     expect(state.filteredTasks.map((task) => task.id)).toEqual(['task-a', 'task-b'])
   })
 
+  it('opens and closes task detail state', async () => {
+    const { useTaskStore } = await loadStore()
+
+    useTaskStore.getState().openTaskDetail('task-detail')
+    expect(useTaskStore.getState().editingTaskId).toBe('task-detail')
+
+    useTaskStore.getState().closeTaskDetail()
+    expect(useTaskStore.getState().editingTaskId).toBeNull()
+  })
+
+  it('filters visible tasks by archive state', async () => {
+    const { useTaskStore } = await loadStore()
+    const activeTask = buildTask({ id: 'active-task', archivedAt: null })
+    const archivedTask = buildTask({
+      id: 'archived-task',
+      archivedAt: '2026-04-16T01:00:00.000Z',
+    })
+
+    useTaskStore.setState({
+      tasks: [activeTask, archivedTask],
+      filteredTasks: [activeTask],
+    })
+
+    useTaskStore.getState().setArchiveFilter('archived')
+
+    const state = useTaskStore.getState()
+    expect(state.activeArchiveFilter).toBe('archived')
+    expect(state.filteredTasks.map((task) => task.id)).toEqual(['archived-task'])
+  })
+
+  it('archives a single task through bulk update and shows success feedback', async () => {
+    const doneTask = buildTask({
+      id: 'done',
+      completed: true,
+      completedAt: '2026-04-16T01:00:00.000Z',
+    })
+    const archivedDoneTask = {
+      ...doneTask,
+      archivedAt: '2026-04-16T02:00:00.000Z',
+    }
+    mockBulkUpdateTasks.mockResolvedValue([archivedDoneTask])
+
+    const { useTaskStore } = await loadStore()
+
+    useTaskStore.setState({
+      tasks: [doneTask],
+      filteredTasks: [doneTask],
+    })
+
+    await useTaskStore.getState().archiveTask('done')
+
+    const state = useTaskStore.getState()
+    expect(mockBulkUpdateTasks).toHaveBeenCalledWith({ taskIds: ['done'], archive: true })
+    expect(state.tasks).toEqual([archivedDoneTask])
+    expect(state.filteredTasks).toEqual([])
+    expect(state.successToast).toEqual({
+      tone: 'success',
+      message: '任务已归档。',
+      source: 'bulk',
+    })
+    expect(state.errorDialog).toBeNull()
+  })
+
+  it('archives selected tasks and clears bulk selection on success', async () => {
+    const doneTask = buildTask({
+      id: 'done',
+      completed: true,
+      completedAt: '2026-04-16T01:00:00.000Z',
+    })
+    const secondDoneTask = buildTask({
+      id: 'done-2',
+      completed: true,
+      completedAt: '2026-04-16T01:30:00.000Z',
+    })
+    const archivedTasks = [
+      { ...doneTask, archivedAt: '2026-04-16T02:00:00.000Z' },
+      { ...secondDoneTask, archivedAt: '2026-04-16T02:00:00.000Z' },
+    ]
+    mockBulkUpdateTasks.mockResolvedValue(archivedTasks)
+
+    const { useTaskStore } = await loadStore()
+
+    useTaskStore.setState({
+      tasks: [doneTask, secondDoneTask],
+      filteredTasks: [doneTask, secondDoneTask],
+      isBulkMode: true,
+      selectedTaskIds: ['done', 'done-2'],
+    })
+
+    await useTaskStore.getState().applyBulkArchive()
+
+    const state = useTaskStore.getState()
+    expect(mockBulkUpdateTasks).toHaveBeenCalledWith({ taskIds: ['done', 'done-2'], archive: true })
+    expect(state.filteredTasks).toEqual([])
+    expect(state.isBulkMode).toBe(false)
+    expect(state.selectedTaskIds).toEqual([])
+    expect(state.successToast).toEqual({
+      tone: 'success',
+      message: '已归档选中任务。',
+      source: 'bulk',
+    })
+  })
+
   it('stores success toast state for successful task creation', async () => {
     const nextTasks = [buildTask({ id: 'task-created' })]
     mockCreateTask.mockResolvedValue(nextTasks)
