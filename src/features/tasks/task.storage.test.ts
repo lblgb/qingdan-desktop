@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { loadReminderPreferences, saveReminderPreferences } from './task.storage'
+import { loadReminderPreferences, queryTasks, saveReminderPreferences } from './task.storage'
 import type { ReminderPreferences } from './task.types'
 
 function createLocalStorage(initialData: Record<string, string> = {}) {
@@ -69,5 +69,105 @@ describe('reminder preference storage', () => {
 
     const loadedPreferences = await loadReminderPreferences()
     expect(loadedPreferences.customOffsetMinutes).toBe(120)
+  })
+})
+
+describe('task query storage', () => {
+  it('hides archived local tasks by default', async () => {
+    const localStorage = createLocalStorage({
+      'qingdan.tasks': JSON.stringify([
+        {
+          id: 'active-task',
+          title: 'Active task',
+          description: '',
+          completed: false,
+          groupId: null,
+          dueAt: null,
+          priority: 'medium',
+          createdAt: '2026-04-10T08:00:00.000Z',
+          updatedAt: '2026-04-10T09:00:00.000Z',
+          note: '',
+          completedAt: null,
+          archivedAt: null,
+        },
+        {
+          id: 'archived-task',
+          title: 'Archived task',
+          description: '',
+          completed: true,
+          groupId: null,
+          dueAt: null,
+          priority: 'medium',
+          createdAt: '2026-04-10T08:00:00.000Z',
+          updatedAt: '2026-04-10T09:00:00.000Z',
+          note: '',
+          completedAt: '2026-04-11T08:00:00.000Z',
+          archivedAt: '2026-04-12T08:00:00.000Z',
+        },
+      ]),
+    })
+    ;(globalThis as typeof globalThis & { window: Window }).window = {
+      localStorage: localStorage as never,
+    } as never
+
+    const tasks = await queryTasks({
+      status: 'all',
+      group: 'all-groups',
+      priority: 'all-priorities',
+      dateRange: 'all-time',
+      sortBy: 'default',
+      archive: 'active',
+    })
+
+    expect(tasks.map((task) => task.id)).toEqual(['active-task'])
+  })
+
+  it('loads only archived local tasks when archive filter is archived', async () => {
+    const localStorage = createLocalStorage({
+      'qingdan.tasks': JSON.stringify([
+        {
+          id: 'active-task',
+          title: 'Active task',
+          description: '',
+          completed: false,
+          groupId: null,
+          dueAt: null,
+          priority: 'medium',
+          createdAt: '2026-04-10T08:00:00.000Z',
+          updatedAt: '2026-04-10T09:00:00.000Z',
+          note: '',
+          completedAt: null,
+          archivedAt: null,
+        },
+        {
+          id: 'archived-task',
+          title: 'Archived task',
+          description: '',
+          completed: true,
+          groupId: null,
+          dueAt: null,
+          priority: 'medium',
+          createdAt: '2026-04-10T08:00:00.000Z',
+          updatedAt: '2026-04-10T09:00:00.000Z',
+          note: '',
+          completedAt: '2026-04-11T08:00:00.000Z',
+          archivedAt: '2026-04-12T08:00:00.000Z',
+        },
+      ]),
+    })
+    ;(globalThis as typeof globalThis & { window: Window }).window = {
+      localStorage: localStorage as never,
+    } as never
+
+    const tasks = await queryTasks({
+      status: 'all',
+      group: 'all-groups',
+      priority: 'all-priorities',
+      dateRange: 'all-time',
+      sortBy: 'default',
+      archive: 'archived',
+    })
+
+    expect(tasks.map((task) => task.id)).toEqual(['archived-task'])
   })
 })

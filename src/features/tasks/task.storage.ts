@@ -26,7 +26,10 @@ const taskSchema = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string(),
+  note: z.string().catch(''),
   completed: z.boolean(),
+  completedAt: z.string().nullable().catch(null),
+  archivedAt: z.string().nullable().catch(null),
   groupId: z.string().nullable(),
   dueAt: z.string().nullable(),
   priority: z.enum(['urgent', 'high', 'medium', 'low']).catch('medium'),
@@ -129,6 +132,7 @@ export async function loadTasks(): Promise<TaskItem[]> {
  */
 export async function queryTasks(input: TaskQueryInput): Promise<TaskItem[]> {
   if (isTauriRuntime()) {
+    const archive = input.archive ?? 'active'
     if (input.dateRange === 'no-date') {
       const tasks = await invoke<TaskItem[]>('list_tasks')
       return applyTaskQuery(tasks, input)
@@ -137,6 +141,7 @@ export async function queryTasks(input: TaskQueryInput): Promise<TaskItem[]> {
     return invoke<TaskItem[]>('query_tasks', {
       input: {
         status: input.status === 'all' ? null : input.status,
+        archive: archive === 'all' ? null : archive,
         groupId: input.group === 'all-groups' ? null : input.group,
         priority: input.priority === 'all-priorities' ? null : input.priority,
         dateRange:
@@ -156,7 +161,12 @@ export async function queryTasks(input: TaskQueryInput): Promise<TaskItem[]> {
  */
 export async function createTask(input: CreateTaskInput): Promise<TaskItem[]> {
   if (isTauriRuntime()) {
-    return invoke<TaskItem[]>('create_task', { input })
+    return invoke<TaskItem[]>('create_task', {
+      input: {
+        ...input,
+        note: input.note?.trim() ?? '',
+      },
+    })
   }
 
   const timestamp = new Date().toISOString()
@@ -165,7 +175,10 @@ export async function createTask(input: CreateTaskInput): Promise<TaskItem[]> {
       id: crypto.randomUUID(),
       title: input.title.trim(),
       description: input.description.trim(),
+      note: input.note?.trim() ?? '',
       completed: false,
+      completedAt: null,
+      archivedAt: null,
       groupId: input.groupId,
       dueAt: input.dueAt,
       priority: input.priority,
@@ -184,7 +197,12 @@ export async function createTask(input: CreateTaskInput): Promise<TaskItem[]> {
  */
 export async function updateTask(input: UpdateTaskInput): Promise<TaskItem[]> {
   if (isTauriRuntime()) {
-    return invoke<TaskItem[]>('update_task', { input })
+    return invoke<TaskItem[]>('update_task', {
+      input: {
+        ...input,
+        note: input.note?.trim() ?? '',
+      },
+    })
   }
 
   const nextTasks = loadLocalTasks().map((task) =>
@@ -193,6 +211,7 @@ export async function updateTask(input: UpdateTaskInput): Promise<TaskItem[]> {
           ...task,
           title: input.title.trim(),
           description: input.description.trim(),
+          note: input.note?.trim() ?? '',
           groupId: input.groupId,
           dueAt: input.dueAt,
           priority: input.priority,
@@ -215,7 +234,12 @@ export async function toggleTask(taskId: string): Promise<TaskItem[]> {
 
   const nextTasks = loadLocalTasks().map((task) =>
     task.id === taskId
-      ? { ...task, completed: !task.completed, updatedAt: new Date().toISOString() }
+      ? {
+          ...task,
+          completed: !task.completed,
+          completedAt: task.completed ? null : new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }
       : task,
   )
 
@@ -247,21 +271,27 @@ export async function bulkUpdateTasks(input: BulkUpdateTasksInput): Promise<Task
         priority: input.priority ?? null,
         groupId: Object.prototype.hasOwnProperty.call(input, 'groupId') ? input.groupId ?? null : undefined,
         markCompleted: input.markCompleted ?? null,
+        archive: input.archive ?? null,
       },
     })
   }
 
+  const timestamp = new Date().toISOString()
   const nextTasks = loadLocalTasks().map((task) => {
     if (!input.taskIds.includes(task.id)) {
       return task
     }
 
+    const completed = input.markCompleted ?? task.completed
+
     return {
       ...task,
       priority: input.priority ?? task.priority,
       groupId: Object.prototype.hasOwnProperty.call(input, 'groupId') ? (input.groupId ?? null) : task.groupId,
-      completed: input.markCompleted ?? task.completed,
-      updatedAt: new Date().toISOString(),
+      completed,
+      completedAt: input.markCompleted === undefined ? task.completedAt : completed ? timestamp : null,
+      archivedAt: input.archive === true && completed ? (task.archivedAt ?? timestamp) : task.archivedAt,
+      updatedAt: timestamp,
     }
   })
 

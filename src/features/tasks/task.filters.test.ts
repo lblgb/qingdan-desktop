@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import dayjs from 'dayjs'
-import { applyTaskQuery, summarizeFilters } from './task.filters'
+import { DEFAULT_TASK_QUERY, applyTaskQuery, summarizeFilters } from './task.filters'
 import type { TaskItem } from './task.types'
 
 const today = dayjs().format('YYYY-MM-DD')
@@ -10,7 +10,10 @@ const seedTasks: TaskItem[] = [
     id: 'urgent-today',
     title: '紧急任务',
     description: '',
+    note: '',
     completed: false,
+    completedAt: null,
+    archivedAt: null,
     groupId: null,
     dueAt: today,
     priority: 'urgent',
@@ -21,7 +24,10 @@ const seedTasks: TaskItem[] = [
     id: 'high-done',
     title: '已完成高优先级任务',
     description: '',
+    note: '',
     completed: true,
+    completedAt: '2026-04-11T08:00:00.000Z',
+    archivedAt: null,
     groupId: 'group-1',
     dueAt: null,
     priority: 'high',
@@ -32,7 +38,10 @@ const seedTasks: TaskItem[] = [
     id: 'medium-upcoming',
     title: '普通任务',
     description: '',
+    note: '',
     completed: false,
+    completedAt: null,
+    archivedAt: null,
     groupId: 'group-1',
     dueAt: dayjs().add(6, 'day').format('YYYY-MM-DD'),
     priority: 'medium',
@@ -47,6 +56,7 @@ describe('summarizeFilters', () => {
       summarizeFilters(
         {
           status: 'all',
+          archive: 'active',
           group: 'ungrouped',
           priority: 'urgent',
           dateRange: 'today',
@@ -59,9 +69,53 @@ describe('summarizeFilters', () => {
 })
 
 describe('applyTaskQuery', () => {
+  it('hides archived tasks in the default query', () => {
+    const result = applyTaskQuery(
+      [
+        {
+          ...seedTasks[0],
+          id: 'active-task',
+          archivedAt: null,
+        },
+        {
+          ...seedTasks[1],
+          id: 'archived-task',
+          archivedAt: '2026-04-12T08:00:00.000Z',
+        },
+      ] as TaskItem[],
+      DEFAULT_TASK_QUERY,
+    )
+
+    expect(result.map((task) => task.id)).toEqual(['active-task'])
+  })
+
+  it('shows only archived tasks when archive filter is archived', () => {
+    const result = applyTaskQuery(
+      [
+        {
+          ...seedTasks[0],
+          id: 'active-task',
+          archivedAt: null,
+        },
+        {
+          ...seedTasks[1],
+          id: 'archived-task',
+          archivedAt: '2026-04-12T08:00:00.000Z',
+        },
+      ] as TaskItem[],
+      {
+        ...DEFAULT_TASK_QUERY,
+        archive: 'archived',
+      },
+    )
+
+    expect(result.map((task) => task.id)).toEqual(['archived-task'])
+  })
+
   it('applies status and extra conditions as intersection', () => {
     const result = applyTaskQuery(seedTasks, {
       status: 'active',
+      archive: 'active',
       group: 'ungrouped',
       priority: 'urgent',
       dateRange: 'today',

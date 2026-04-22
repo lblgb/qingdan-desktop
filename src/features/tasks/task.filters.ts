@@ -16,6 +16,7 @@ import { TASK_PRIORITY_META } from './task.priority'
 
 export const DEFAULT_TASK_QUERY: TaskQueryInput = {
   status: 'all',
+  archive: 'active',
   group: 'all-groups',
   priority: 'all-priorities',
   dateRange: 'all-time',
@@ -168,7 +169,16 @@ function sortTasks(tasks: TaskItem[], sortBy: TaskSortBy) {
 }
 
 export function applyTaskQuery(tasks: TaskItem[], query: TaskQueryInput) {
-  const statusFiltered = applyStatusFilter(tasks, query.status)
+  const archive = query.archive ?? 'active'
+  let archiveFiltered = tasks
+  if (archive === 'active') {
+    archiveFiltered = archiveFiltered.filter((task) => !task.archivedAt)
+  }
+  if (archive === 'archived') {
+    archiveFiltered = archiveFiltered.filter((task) => Boolean(task.archivedAt))
+  }
+
+  const statusFiltered = applyStatusFilter(archiveFiltered, query.status)
   const groupFiltered = applyGroupFilter(statusFiltered, query.group)
   const priorityFiltered = applyPriorityFilter(groupFiltered, query.priority)
   const dateFiltered = applyDateRangeFilter(priorityFiltered, query.dateRange)

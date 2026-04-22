@@ -3,9 +3,13 @@
  */
 export type TaskFilter = 'all' | 'active' | 'completed'
 
+export type TaskArchiveFilter = 'active' | 'archived' | 'all'
+
 export type TaskGroupFilter = 'all-groups' | 'ungrouped' | string
 
 export type TaskPriority = 'urgent' | 'high' | 'medium' | 'low'
+
+export type NotificationPermissionStatus = 'allowed' | 'not-requested' | 'denied' | 'error'
 
 export type ReminderPriorityThreshold = 'urgent' | 'high' | 'medium'
 
@@ -24,7 +28,10 @@ export interface TaskItem {
   id: string
   title: string
   description: string
+  note?: string
   completed: boolean
+  completedAt?: string | null
+  archivedAt?: string | null
   groupId: string | null
   dueAt: string | null
   priority: TaskPriority
@@ -49,6 +56,7 @@ export interface TaskGroup {
 export interface CreateTaskInput {
   title: string
   description: string
+  note?: string
   groupId: string | null
   dueAt: string | null
   priority: TaskPriority
@@ -61,6 +69,7 @@ export interface UpdateTaskInput {
   id: string
   title: string
   description: string
+  note?: string
   groupId: string | null
   dueAt: string | null
   priority: TaskPriority
@@ -85,6 +94,7 @@ export interface UpdateTaskGroupInput {
 
 export interface TaskQueryInput {
   status: TaskFilter
+  archive?: TaskArchiveFilter
   group: TaskGroupFilter
   priority: TaskPriorityFilter
   dateRange: TaskDateRangeFilter
@@ -110,4 +120,5 @@ export interface BulkUpdateTasksInput {
   priority?: TaskPriority
   groupId?: string | null
   markCompleted?: boolean
+  archive?: boolean
 }
