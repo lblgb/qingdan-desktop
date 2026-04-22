@@ -169,6 +169,10 @@ fn bulk_update_tasks_inner(
         .transaction()
         .map_err(|error| format!("开启批量更新事务失败：{error}"))?;
     let timestamp = now_iso_string()?;
+    let archive_only = input.priority.is_none()
+        && input.group_id.is_none()
+        && input.mark_completed.is_none()
+        && input.archive == Some(true);
 
     for task_id in &input.task_ids {
         let mut set_clauses = Vec::new();
@@ -190,12 +194,15 @@ fn bulk_update_tasks_inner(
         if let Some(mark_completed) = input.mark_completed {
             set_clauses.push("completed = ?");
             values.push(Value::Integer(if mark_completed { 1 } else { 0 }));
-            set_clauses.push("completed_at = ?");
-            values.push(if mark_completed {
-                Value::Text(timestamp.clone())
+            if mark_completed {
+                set_clauses.push(
+                    "completed_at = CASE WHEN completed = 1 AND completed_at IS NOT NULL THEN completed_at ELSE ? END",
+                );
+                values.push(Value::Text(timestamp.clone()));
             } else {
-                Value::Null
-            });
+                set_clauses.push("completed_at = ?");
+                values.push(Value::Null);
+            }
         }
 
         if let Some(archive) = input.archive {
@@ -217,7 +224,10 @@ fn bulk_update_tasks_inner(
         values.push(Value::Text(timestamp.clone()));
         values.push(Value::Text(task_id.clone()));
 
-        let sql = format!("UPDATE tasks SET {} WHERE id = ?", set_clauses.join(", "));
+        let mut sql = format!("UPDATE tasks SET {} WHERE id = ?", set_clauses.join(", "));
+        if archive_only {
+            sql.push_str(" AND completed = 1");
+        }
         transaction
             .execute(&sql, params_from_iter(values))
             .map_err(|error| format!("批量更新任务失败：{error}"))?;
@@ -482,10 +492,12 @@ pub fn assign_task_group(
 
 #[cfg(test)]
 mod tests {
-    use super::query_tasks_inner;
+    use super::{bulk_update_tasks_inner, query_tasks_inner};
     use crate::{
         db::{init_database, DatabaseState},
-        models::{TaskPriority, TaskQueryInput, TaskQuerySortBy, TaskQueryStatus},
+        models::{
+            BulkUpdateTasksInput, TaskPriority, TaskQueryInput, TaskQuerySortBy, TaskQueryStatus,
+        },
     };
     use rusqlite::{params, Connection};
     use std::{fs, path::PathBuf};
@@ -524,6 +536,37 @@ mod tests {
                 ],
             )
             .expect("seed task");
+    }
+
+    fn seed_task_with_id(
+        connection: &Connection,
+        id: &str,
+        title: &str,
+        completed: bool,
+        completed_at: Option<&str>,
+        archived_at: Option<&str>,
+        updated_at: &str,
+    ) {
+        connection
+            .execute(
+                "
+                INSERT INTO tasks (
+                    id, title, description, note, completed, completed_at, archived_at, priority,
+                    group_id, due_at, created_at, updated_at
+                ) VALUES (?1, ?2, ?3, '', ?4, ?5, ?6, 'medium', NULL, NULL, ?7, ?8)
+                ",
+                params![
+                    id,
+                    title,
+                    format!("{title} description"),
+                    if completed { 1 } else { 0 },
+                    completed_at,
+                    archived_at,
+                    "2026-04-14T00:00:00Z",
+                    updated_at,
+                ],
+            )
+            .expect("seed task with id");
     }
 
     #[test]
@@ -592,5 +635,124 @@ mod tests {
 
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].title, "urgent active");
+    }
+
+    #[test]
+    fn bulk_complete_preserves_existing_completed_at_for_completed_tasks() {
+        let db_path = temp_db_path();
+        fs::remove_file(&db_path).ok();
+        init_database(&db_path).expect("initialize database");
+
+        let connection = Connection::open(&db_path).expect("open database");
+        let already_completed_id = Uuid::new_v4().to_string();
+        let open_id = Uuid::new_v4().to_string();
+        let original_completed_at = "2026-04-14T03:00:00Z";
+        seed_task_with_id(
+            &connection,
+            &already_completed_id,
+            "already completed",
+            true,
+            Some(original_completed_at),
+            None,
+            "2026-04-14T04:00:00Z",
+        );
+        seed_task_with_id(
+            &connection,
+            &open_id,
+            "open task",
+            false,
+            None,
+            None,
+            "2026-04-14T05:00:00Z",
+        );
+
+        let state = DatabaseState { db_path };
+        let tasks = bulk_update_tasks_inner(
+            &state,
+            &BulkUpdateTasksInput {
+                task_ids: vec![already_completed_id.clone(), open_id.clone()],
+                priority: None,
+                group_id: None,
+                mark_completed: Some(true),
+                archive: None,
+            },
+        )
+        .expect("bulk complete tasks");
+
+        let already_completed = tasks
+            .iter()
+            .find(|task| task.id == already_completed_id)
+            .expect("already completed task returned");
+        let opened_then_completed = tasks
+            .iter()
+            .find(|task| task.id == open_id)
+            .expect("open task returned");
+
+        assert_eq!(
+            already_completed.completed_at.as_deref(),
+            Some(original_completed_at)
+        );
+        assert!(opened_then_completed.completed_at.is_some());
+    }
+
+    #[test]
+    fn bulk_archive_only_leaves_incomplete_tasks_unchanged() {
+        let db_path = temp_db_path();
+        fs::remove_file(&db_path).ok();
+        init_database(&db_path).expect("initialize database");
+
+        let connection = Connection::open(&db_path).expect("open database");
+        let incomplete_id = Uuid::new_v4().to_string();
+        let completed_id = Uuid::new_v4().to_string();
+        let incomplete_updated_at = "2026-04-14T06:00:00Z";
+        seed_task_with_id(
+            &connection,
+            &incomplete_id,
+            "incomplete",
+            false,
+            None,
+            None,
+            incomplete_updated_at,
+        );
+        seed_task_with_id(
+            &connection,
+            &completed_id,
+            "completed",
+            true,
+            Some("2026-04-14T07:00:00Z"),
+            None,
+            "2026-04-14T08:00:00Z",
+        );
+
+        let state = DatabaseState {
+            db_path: db_path.clone(),
+        };
+        let tasks = bulk_update_tasks_inner(
+            &state,
+            &BulkUpdateTasksInput {
+                task_ids: vec![incomplete_id.clone(), completed_id.clone()],
+                priority: None,
+                group_id: None,
+                mark_completed: None,
+                archive: Some(true),
+            },
+        )
+        .expect("bulk archive tasks");
+
+        let incomplete = tasks
+            .iter()
+            .find(|task| task.id == incomplete_id)
+            .expect("incomplete task returned");
+        let archived_at = connection
+            .query_row(
+                "SELECT archived_at FROM tasks WHERE id = ?1",
+                params![completed_id],
+                |row| row.get::<_, Option<String>>(0),
+            )
+            .expect("read completed task archive timestamp");
+
+        assert_eq!(incomplete.updated_at, incomplete_updated_at);
+        assert!(incomplete.archived_at.is_none());
+        assert!(archived_at.is_some());
     }
 }
