@@ -231,6 +231,68 @@ describe('taskStore reset and feedback', () => {
     })
   })
 
+  it('does nothing when applying bulk archive with no selected tasks', async () => {
+    const taskA = buildTask({ id: 'task-a' })
+    const { useTaskStore } = await loadStore()
+
+    useTaskStore.setState({
+      tasks: [taskA],
+      filteredTasks: [taskA],
+      isBulkMode: true,
+      selectedTaskIds: [],
+      successToast: null,
+      errorDialog: null,
+    })
+
+    await useTaskStore.getState().applyBulkArchive()
+
+    const state = useTaskStore.getState()
+    expect(mockBulkUpdateTasks).not.toHaveBeenCalled()
+    expect(state.tasks).toEqual([taskA])
+    expect(state.filteredTasks).toEqual([taskA])
+    expect(state.isBulkMode).toBe(true)
+    expect(state.selectedTaskIds).toEqual([])
+    expect(state.successToast).toBeNull()
+    expect(state.errorDialog).toBeNull()
+    expect(state.isMutating).toBe(false)
+    expect(state.activeAction).toBeNull()
+  })
+
+  it('keeps bulk selection and shows archive failure details when bulk archive fails', async () => {
+    mockBulkUpdateTasks.mockRejectedValueOnce(new Error('归档失败原因'))
+
+    const doneTask = buildTask({
+      id: 'done',
+      completed: true,
+      completedAt: '2026-04-16T01:00:00.000Z',
+    })
+    const { useTaskStore } = await loadStore()
+
+    useTaskStore.setState({
+      tasks: [doneTask],
+      filteredTasks: [doneTask],
+      isBulkMode: true,
+      selectedTaskIds: ['done'],
+    })
+
+    await useTaskStore.getState().applyBulkArchive()
+
+    const state = useTaskStore.getState()
+    expect(mockBulkUpdateTasks).toHaveBeenCalledWith({ taskIds: ['done'], archive: true })
+    expect(state.tasks).toEqual([doneTask])
+    expect(state.filteredTasks).toEqual([doneTask])
+    expect(state.isBulkMode).toBe(true)
+    expect(state.selectedTaskIds).toEqual(['done'])
+    expect(state.successToast).toBeNull()
+    expect(state.errorDialog).toEqual({
+      title: '归档失败',
+      message: '归档失败原因',
+      source: 'bulk',
+    })
+    expect(state.isMutating).toBe(false)
+    expect(state.activeAction).toBeNull()
+  })
+
   it('stores success toast state for successful task creation', async () => {
     const nextTasks = [buildTask({ id: 'task-created' })]
     mockCreateTask.mockResolvedValue(nextTasks)

@@ -840,6 +840,10 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   clearTaskSelection: () => set({ selectedTaskIds: [] }),
   applyBulkArchive: async () => {
     const taskIds = get().selectedTaskIds
+    if (taskIds.length === 0) {
+      return
+    }
+
     set({
       isMutating: true,
       activeAction: 'bulk',
