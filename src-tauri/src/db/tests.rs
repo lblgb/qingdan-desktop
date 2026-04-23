@@ -125,3 +125,68 @@ fn init_database_adds_v040_task_columns_to_legacy_tasks_table() {
     assert!(columns.iter().any(|column| column == "completed_at"));
     assert!(columns.iter().any(|column| column == "archived_at"));
 }
+
+#[test]
+fn init_database_backfills_completed_at_for_legacy_completed_tasks() {
+    let db_path = legacy_database_path();
+    fs::create_dir_all(db_path.parent().expect("temp path has a parent"))
+        .expect("create temp directory");
+
+    {
+        let connection = Connection::open(&db_path).expect("open legacy db");
+        connection
+            .execute_batch(
+                "
+                CREATE TABLE task_groups (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    name TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+
+                CREATE TABLE tasks (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    title TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    completed INTEGER NOT NULL DEFAULT 0,
+                    priority TEXT NOT NULL DEFAULT 'medium',
+                    group_id TEXT NULL,
+                    due_at TEXT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY(group_id) REFERENCES task_groups(id) ON DELETE SET NULL
+                );
+                ",
+            )
+            .expect("seed legacy schema");
+
+        connection
+            .execute(
+                "
+                INSERT INTO tasks (
+                    id, title, description, completed, priority, group_id, due_at, created_at, updated_at
+                ) VALUES (?1, 'legacy completed', '', 1, 'medium', NULL, NULL, ?2, ?3)
+                ",
+                params![
+                    Uuid::new_v4().to_string(),
+                    "2026-04-13T00:00:00Z",
+                    "2026-04-14T08:00:00Z"
+                ],
+            )
+            .expect("seed legacy completed task");
+    }
+
+    init_database(&db_path).expect("run database migration");
+
+    let connection = Connection::open(&db_path).expect("reopen migrated db");
+    let completed_at = connection
+        .query_row(
+            "SELECT completed_at FROM tasks WHERE title = 'legacy completed'",
+            [],
+            |row| row.get::<_, Option<String>>(0),
+        )
+        .expect("read migrated completed_at");
+
+    assert_eq!(completed_at.as_deref(), Some("2026-04-14T08:00:00Z"));
+}

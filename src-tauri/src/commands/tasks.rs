@@ -119,7 +119,13 @@ fn query_tasks_inner(state: &DatabaseState, query: &TaskQueryInput) -> Result<Ve
 }
 
 fn list_tasks_inner(state: &DatabaseState) -> Result<Vec<TaskItem>, String> {
-    query_tasks_inner(state, &TaskQueryInput::default())
+    query_tasks_inner(
+        state,
+        &TaskQueryInput {
+            archive: Some(TaskArchiveFilter::All),
+            ..TaskQueryInput::default()
+        },
+    )
 }
 
 fn now_iso_string() -> Result<String, String> {
@@ -195,7 +201,7 @@ fn bulk_update_tasks_inner(
             set_clauses.push("completed = ?");
             values.push(Value::Integer(if mark_completed { 1 } else { 0 }));
             if mark_completed {
-                set_clauses.push("completed_at = CASE WHEN completed = 0 THEN ? ELSE completed_at END");
+                set_clauses.push("completed_at = CASE WHEN completed = 0 OR completed_at IS NULL THEN ? ELSE completed_at END");
                 values.push(Value::Text(timestamp.clone()));
             } else {
                 set_clauses.push("completed_at = ?");
@@ -490,11 +496,12 @@ pub fn assign_task_group(
 
 #[cfg(test)]
 mod tests {
-    use super::{bulk_update_tasks_inner, query_tasks_inner};
+    use super::{bulk_update_tasks_inner, list_tasks_inner, query_tasks_inner};
     use crate::{
         db::{init_database, DatabaseState},
         models::{
-            BulkUpdateTasksInput, TaskPriority, TaskQueryInput, TaskQuerySortBy, TaskQueryStatus,
+            BulkUpdateTasksInput, TaskArchiveFilter, TaskPriority, TaskQueryInput, TaskQuerySortBy,
+            TaskQueryStatus,
         },
     };
     use rusqlite::{params, Connection};
@@ -716,8 +723,89 @@ mod tests {
             already_completed.completed_at.as_deref(),
             Some(original_completed_at)
         );
-        assert!(already_completed_without_timestamp.completed_at.is_none());
+        assert!(already_completed_without_timestamp.completed_at.is_some());
         assert!(opened_then_completed.completed_at.is_some());
+    }
+
+    #[test]
+    fn list_tasks_returns_active_and_archived_tasks_for_store_hydration() {
+        let db_path = temp_db_path();
+        fs::remove_file(&db_path).ok();
+        init_database(&db_path).expect("initialize database");
+
+        let connection = Connection::open(&db_path).expect("open database");
+        let active_id = Uuid::new_v4().to_string();
+        let archived_id = Uuid::new_v4().to_string();
+        seed_task_with_id(
+            &connection,
+            &active_id,
+            "active",
+            false,
+            None,
+            None,
+            "2026-04-14T06:00:00Z",
+        );
+        seed_task_with_id(
+            &connection,
+            &archived_id,
+            "archived",
+            true,
+            Some("2026-04-14T07:00:00Z"),
+            Some("2026-04-14T08:00:00Z"),
+            "2026-04-14T09:00:00Z",
+        );
+
+        let state = DatabaseState { db_path };
+        let tasks = list_tasks_inner(&state).expect("list tasks");
+
+        assert!(tasks.iter().any(|task| task.id == active_id));
+        assert!(tasks.iter().any(|task| task.id == archived_id));
+    }
+
+    #[test]
+    fn query_tasks_archive_all_returns_active_and_archived_tasks() {
+        let db_path = temp_db_path();
+        fs::remove_file(&db_path).ok();
+        init_database(&db_path).expect("initialize database");
+
+        let connection = Connection::open(&db_path).expect("open database");
+        let active_id = Uuid::new_v4().to_string();
+        let archived_id = Uuid::new_v4().to_string();
+        seed_task_with_id(
+            &connection,
+            &active_id,
+            "active",
+            false,
+            None,
+            None,
+            "2026-04-14T06:00:00Z",
+        );
+        seed_task_with_id(
+            &connection,
+            &archived_id,
+            "archived",
+            true,
+            Some("2026-04-14T07:00:00Z"),
+            Some("2026-04-14T08:00:00Z"),
+            "2026-04-14T09:00:00Z",
+        );
+
+        let state = DatabaseState { db_path };
+        let tasks = query_tasks_inner(
+            &state,
+            &TaskQueryInput {
+                status: None,
+                group_id: None,
+                priority: None,
+                date_range: None,
+                sort_by: Some(TaskQuerySortBy::Updated),
+                archive: Some(TaskArchiveFilter::All),
+            },
+        )
+        .expect("query all archive tasks");
+
+        assert!(tasks.iter().any(|task| task.id == active_id));
+        assert!(tasks.iter().any(|task| task.id == archived_id));
     }
 
     #[test]

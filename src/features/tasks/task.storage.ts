@@ -134,7 +134,7 @@ export async function queryTasks(input: TaskQueryInput): Promise<TaskItem[]> {
   if (isTauriRuntime()) {
     const tauriInput = {
       status: input.status === 'all' ? null : input.status,
-      archive: input.archive === 'all' ? null : input.archive,
+      archive: input.archive,
       groupId: input.group === 'all-groups' ? null : input.group,
       priority: input.priority === 'all-priorities' ? null : input.priority,
       dateRange:

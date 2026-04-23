@@ -154,6 +154,13 @@ fn ensure_tasks_v040_columns(connection: &Connection) -> Result<(), String> {
 
     connection
         .execute(
+            "UPDATE tasks SET completed_at = updated_at WHERE completed = 1 AND completed_at IS NULL",
+            [],
+        )
+        .map_err(|error| format!("backfill tasks.completed_at failed: {error}"))?;
+
+    connection
+        .execute(
             "CREATE INDEX IF NOT EXISTS idx_tasks_completed_at ON tasks(completed_at DESC)",
             [],
         )

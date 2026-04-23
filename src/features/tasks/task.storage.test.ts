@@ -306,7 +306,7 @@ describe('task query storage', () => {
     expect(mockInvoke).toHaveBeenCalledWith('query_tasks', {
       input: {
         status: null,
-        archive: null,
+        archive: 'all',
         groupId: null,
         priority: null,
         dateRange: null,
