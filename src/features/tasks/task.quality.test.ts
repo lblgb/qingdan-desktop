@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { TaskItem } from './task.types'
-import { getTaskQualityWarnings } from './task.quality'
+import { getTaskQualityWarnings, TASK_QUALITY_WARNINGS } from './task.quality'
 
 function buildTask(overrides: Partial<TaskItem> = {}): TaskItem {
   return {
@@ -27,11 +27,28 @@ describe('getTaskQualityWarnings', () => {
     expect(getTaskQualityWarnings(task, [task])).toContain('标题较短，后续可能不易回忆任务背景。')
   })
 
+  it('does not warn about short or duplicate titles when the title is empty', () => {
+    const task = buildTask({ title: '   ' })
+    const duplicate = buildTask({ id: 'task-2', title: '   ' })
+
+    const warnings = getTaskQualityWarnings(task, [task, duplicate])
+
+    expect(warnings).not.toContain(TASK_QUALITY_WARNINGS.shortTitle)
+    expect(warnings).not.toContain(TASK_QUALITY_WARNINGS.duplicateTitle)
+  })
+
   it('warns when another task has the same trimmed title', () => {
     const task = buildTask({ id: 'task-1', title: ' 准备周报 ' })
     const duplicate = buildTask({ id: 'task-2', title: '准备周报' })
 
     expect(getTaskQualityWarnings(task, [task, duplicate])).toContain('存在标题相同的任务，建议确认是否重复。')
+  })
+
+  it('does not warn when the only matching title is the same task id', () => {
+    const task = buildTask({ id: 'task-1', title: ' Weekly report ' })
+    const sameTask = buildTask({ id: 'task-1', title: 'Weekly report' })
+
+    expect(getTaskQualityWarnings(task, [sameTask])).not.toContain(TASK_QUALITY_WARNINGS.duplicateTitle)
   })
 
   it('warns when an urgent or high priority task has no note', () => {

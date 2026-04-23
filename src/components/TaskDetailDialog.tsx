@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { formatTaskDate } from '../lib/date'
 import { getTaskQualityWarnings } from '../features/tasks/task.quality'
 import { TASK_PRIORITY_META } from '../features/tasks/task.priority'
@@ -31,27 +31,38 @@ export function TaskDetailDialog({
   onSave,
   onArchive,
 }: TaskDetailDialogProps) {
-  const [title, setTitle] = useState('')
-  const [note, setNote] = useState('')
-  const [priority, setPriority] = useState<TaskPriority>('medium')
-  const [groupId, setGroupId] = useState('')
-  const [dueAt, setDueAt] = useState('')
-
-  useEffect(() => {
-    if (!task) {
-      return
-    }
-
-    setTitle(task.title)
-    setNote(task.note)
-    setPriority(task.priority)
-    setGroupId(task.groupId ?? '')
-    setDueAt(toDateInputValue(task.dueAt))
-  }, [task])
-
   if (!isOpen || !task) {
     return null
   }
+
+  return (
+    <TaskDetailDialogContent
+      key={task.id}
+      task={task}
+      tasks={tasks}
+      taskGroups={taskGroups}
+      isMutating={isMutating}
+      onClose={onClose}
+      onSave={onSave}
+      onArchive={onArchive}
+    />
+  )
+}
+
+function TaskDetailDialogContent({
+  task,
+  tasks,
+  taskGroups,
+  isMutating,
+  onClose,
+  onSave,
+  onArchive,
+}: Omit<TaskDetailDialogProps, 'isOpen' | 'task'> & { task: TaskItem }) {
+  const [title, setTitle] = useState(task.title)
+  const [note, setNote] = useState(task.note)
+  const [priority, setPriority] = useState<TaskPriority>(task.priority)
+  const [groupId, setGroupId] = useState(task.groupId ?? '')
+  const [dueAt, setDueAt] = useState(toDateInputValue(task.dueAt))
 
   const normalizedTitle = title.trim()
   const qualityTask: TaskItem = {
@@ -68,7 +79,7 @@ export function TaskDetailDialog({
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    if (!task || !normalizedTitle) {
+    if (!normalizedTitle) {
       return
     }
 

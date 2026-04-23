@@ -99,6 +99,86 @@ describe('TaskDetailDialog', () => {
     })
   })
 
+  it('resets the editable draft when switching tasks while open', async () => {
+    const onSave = vi.fn<(input: UpdateTaskInput) => void>()
+    const firstTask = buildTask({
+      id: 'task-1',
+      title: 'First task',
+      note: 'First note',
+      priority: 'high',
+    })
+    const secondTask = buildTask({
+      id: 'task-2',
+      title: 'Second task',
+      description: 'Second description',
+      note: 'Second note',
+      groupId: 'group-2',
+      dueAt: '2026-04-30T10:00:00.000Z',
+      priority: 'low',
+    })
+    const groups = [buildGroup(), buildGroup({ id: 'group-2', name: 'Personal' })]
+
+    await act(async () => {
+      root.render(
+        <TaskDetailDialog
+          isOpen
+          task={firstTask}
+          tasks={[firstTask, secondTask]}
+          taskGroups={groups}
+          isMutating={false}
+          onClose={vi.fn()}
+          onSave={onSave}
+          onArchive={vi.fn()}
+        />,
+      )
+    })
+
+    const titleField = container.querySelector<HTMLInputElement>('#task-detail-title')
+    expect(titleField).not.toBeNull()
+
+    await act(async () => {
+      const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+      valueSetter?.call(titleField, 'Unsaved draft title')
+      titleField!.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+
+    await act(async () => {
+      root.render(
+        <TaskDetailDialog
+          isOpen
+          task={secondTask}
+          tasks={[firstTask, secondTask]}
+          taskGroups={groups}
+          isMutating={false}
+          onClose={vi.fn()}
+          onSave={onSave}
+          onArchive={vi.fn()}
+        />,
+      )
+    })
+
+    expect(container.querySelector<HTMLInputElement>('#task-detail-title')?.value).toBe(secondTask.title)
+    expect(container.querySelector<HTMLTextAreaElement>('#task-detail-note')?.value).toBe(secondTask.note)
+    expect(container.querySelector<HTMLSelectElement>('#task-detail-priority')?.value).toBe(secondTask.priority)
+    expect(container.querySelector<HTMLSelectElement>('#task-detail-group')?.value).toBe(secondTask.groupId)
+    expect(container.querySelector<HTMLInputElement>('#task-detail-due-at')?.value).toBe('2026-04-30')
+
+    const form = container.querySelector('form')
+    await act(async () => {
+      form!.dispatchEvent(new SubmitEvent('submit', { bubbles: true, cancelable: true }))
+    })
+
+    expect(onSave).toHaveBeenCalledWith({
+      id: secondTask.id,
+      title: secondTask.title,
+      description: secondTask.description,
+      note: secondTask.note,
+      groupId: secondTask.groupId,
+      dueAt: '2026-04-30',
+      priority: secondTask.priority,
+    })
+  })
+
   it('shows archive action for completed non-archived task and calls onArchive', async () => {
     const onArchive = vi.fn()
     const task = buildTask({
