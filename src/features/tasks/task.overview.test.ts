@@ -1,10 +1,12 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import dayjs from 'dayjs'
 import { buildTaskOverview } from './task.overview'
 import type { TaskItem } from './task.types'
 
-const today = dayjs().format('YYYY-MM-DD')
-const yesterday = dayjs().subtract(1, 'day').format('YYYY-MM-DD')
+const systemNow = new Date('2026-04-22T12:00:00+08:00')
+const today = '2026-04-22'
+const yesterday = '2026-04-21'
+const tomorrowAfterNext = '2026-04-24'
 
 const seedTasks: TaskItem[] = [
   {
@@ -18,8 +20,8 @@ const seedTasks: TaskItem[] = [
     groupId: null,
     dueAt: today,
     priority: 'urgent',
-    createdAt: `${today}T08:00:00.000Z`,
-    updatedAt: `${today}T08:00:00.000Z`,
+    createdAt: `${today}T08:00:00`,
+    updatedAt: `${today}T08:00:00`,
   },
   {
     id: 'high-done',
@@ -27,13 +29,13 @@ const seedTasks: TaskItem[] = [
     description: '',
     note: '',
     completed: true,
-    completedAt: `${today}T09:00:00.000Z`,
+    completedAt: `${today}T09:00:00`,
     archivedAt: null,
     groupId: 'group-1',
     dueAt: yesterday,
     priority: 'high',
-    createdAt: `${yesterday}T08:00:00.000Z`,
-    updatedAt: `${today}T09:00:00.000Z`,
+    createdAt: `${yesterday}T08:00:00`,
+    updatedAt: `${today}T09:00:00`,
   },
   {
     id: 'medium-open',
@@ -44,14 +46,23 @@ const seedTasks: TaskItem[] = [
     completedAt: null,
     archivedAt: null,
     groupId: 'group-1',
-    dueAt: dayjs().add(2, 'day').format('YYYY-MM-DD'),
+    dueAt: tomorrowAfterNext,
     priority: 'medium',
-    createdAt: `${today}T10:00:00.000Z`,
-    updatedAt: `${today}T10:00:00.000Z`,
+    createdAt: `${today}T10:00:00`,
+    updatedAt: `${today}T10:00:00`,
   },
 ]
 
 describe('buildTaskOverview', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(systemNow)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('builds priority distribution and weekly summary', () => {
     const result = buildTaskOverview(seedTasks)
 
@@ -77,13 +88,13 @@ describe('buildTaskOverview', () => {
         description: '',
         note: '有完成时间但不在本周',
         completed: true,
-        completedAt: `${staleCompletedAt}T08:00:00.000Z`,
+        completedAt: `${staleCompletedAt}T08:00:00`,
         archivedAt: null,
         groupId: null,
         dueAt: null,
         priority: 'medium',
-        createdAt: `${staleCompletedAt}T07:00:00.000Z`,
-        updatedAt: `${today}T08:00:00.000Z`,
+        createdAt: `${staleCompletedAt}T07:00:00`,
+        updatedAt: `${today}T08:00:00`,
       },
       {
         id: 'recent-high',
@@ -91,13 +102,13 @@ describe('buildTaskOverview', () => {
         description: '',
         note: '',
         completed: true,
-        completedAt: `${recentCompletedAt}T10:00:00.000Z`,
+        completedAt: `${recentCompletedAt}T10:00:00`,
         archivedAt: null,
         groupId: null,
         dueAt: null,
         priority: 'high',
-        createdAt: `${recentCompletedAt}T08:00:00.000Z`,
-        updatedAt: `${recentCompletedAt}T10:00:00.000Z`,
+        createdAt: `${recentCompletedAt}T08:00:00`,
+        updatedAt: `${recentCompletedAt}T10:00:00`,
       },
       {
         id: 'archived-completed',
@@ -105,13 +116,13 @@ describe('buildTaskOverview', () => {
         description: '',
         note: '归档也要进入完成统计',
         completed: true,
-        completedAt: `${today}T11:00:00.000Z`,
-        archivedAt: `${archivedAt}T12:00:00.000Z`,
+        completedAt: `${today}T11:00:00`,
+        archivedAt: `${archivedAt}T12:00:00`,
         groupId: null,
         dueAt: null,
         priority: 'urgent',
-        createdAt: `${today}T08:00:00.000Z`,
-        updatedAt: `${today}T12:00:00.000Z`,
+        createdAt: `${today}T08:00:00`,
+        updatedAt: `${today}T12:00:00`,
       },
       {
         id: 'last-month-completed',
@@ -119,13 +130,13 @@ describe('buildTaskOverview', () => {
         description: '',
         note: '',
         completed: true,
-        completedAt: `${lastMonth.format('YYYY-MM-DD')}T09:00:00.000Z`,
+        completedAt: `${lastMonth.format('YYYY-MM-DD')}T09:00:00`,
         archivedAt: null,
         groupId: null,
         dueAt: null,
         priority: 'low',
-        createdAt: `${lastMonth.format('YYYY-MM-DD')}T08:00:00.000Z`,
-        updatedAt: `${lastMonth.format('YYYY-MM-DD')}T09:00:00.000Z`,
+        createdAt: `${lastMonth.format('YYYY-MM-DD')}T08:00:00`,
+        updatedAt: `${lastMonth.format('YYYY-MM-DD')}T09:00:00`,
       },
       {
         id: 'overdue-open',
@@ -138,8 +149,8 @@ describe('buildTaskOverview', () => {
         groupId: null,
         dueAt: overdueAt,
         priority: 'medium',
-        createdAt: `${overdueAt}T08:00:00.000Z`,
-        updatedAt: `${overdueAt}T08:00:00.000Z`,
+        createdAt: `${overdueAt}T08:00:00`,
+        updatedAt: `${overdueAt}T08:00:00`,
       },
       {
         id: 'archived-overdue-open',
@@ -148,12 +159,12 @@ describe('buildTaskOverview', () => {
         note: '',
         completed: false,
         completedAt: null,
-        archivedAt: `${today}T08:00:00.000Z`,
+        archivedAt: `${today}T08:00:00`,
         groupId: null,
         dueAt: overdueAt,
         priority: 'medium',
-        createdAt: `${overdueAt}T08:00:00.000Z`,
-        updatedAt: `${today}T08:00:00.000Z`,
+        createdAt: `${overdueAt}T08:00:00`,
+        updatedAt: `${today}T08:00:00`,
       },
       {
         id: 'short-title',
@@ -166,8 +177,8 @@ describe('buildTaskOverview', () => {
         groupId: null,
         dueAt: null,
         priority: 'low',
-        createdAt: `${today}T08:00:00.000Z`,
-        updatedAt: `${today}T08:00:00.000Z`,
+        createdAt: `${today}T08:00:00`,
+        updatedAt: `${today}T08:00:00`,
       },
       {
         id: 'duplicate-a',
@@ -180,8 +191,8 @@ describe('buildTaskOverview', () => {
         groupId: null,
         dueAt: null,
         priority: 'low',
-        createdAt: `${today}T08:00:00.000Z`,
-        updatedAt: `${today}T08:00:00.000Z`,
+        createdAt: `${today}T08:00:00`,
+        updatedAt: `${today}T08:00:00`,
       },
       {
         id: 'duplicate-b',
@@ -194,8 +205,8 @@ describe('buildTaskOverview', () => {
         groupId: null,
         dueAt: null,
         priority: 'low',
-        createdAt: `${today}T08:00:00.000Z`,
-        updatedAt: `${today}T08:00:00.000Z`,
+        createdAt: `${today}T08:00:00`,
+        updatedAt: `${today}T08:00:00`,
       },
     ]
 
@@ -207,13 +218,13 @@ describe('buildTaskOverview', () => {
         description: '',
         note: '用于验证最近完成只取前十',
         completed: true,
-        completedAt: `${today}T${String(index).padStart(2, '0')}:00:00.000Z`,
+        completedAt: `${today}T${String(index).padStart(2, '0')}:00:00`,
         archivedAt: null,
         groupId: null,
         dueAt: null,
         priority: 'medium',
-        createdAt: `${today}T00:00:00.000Z`,
-        updatedAt: `${today}T${String(index).padStart(2, '0')}:00:00.000Z`,
+        createdAt: `${today}T00:00:00`,
+        updatedAt: `${today}T${String(index).padStart(2, '0')}:00:00`,
       })),
     ])
 
