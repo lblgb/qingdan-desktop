@@ -142,7 +142,7 @@ describe('AppShell reminder navigation', () => {
     expect(state.reminderNavigation?.taskId).toBe('task-2')
   })
 
-  it('shows archived tasks from the archive work view', async () => {
+  it('shows archived completed tasks from the archive work view after starting from the active status filter', async () => {
     useTaskStore.setState({
       tasks: [
         buildTask({ id: 'active-task', title: '当前任务', archivedAt: null }),
@@ -154,7 +154,7 @@ describe('AppShell reminder navigation', () => {
         }),
       ],
       filteredTasks: [buildTask({ id: 'active-task', title: '当前任务', archivedAt: null })],
-      activeFilter: 'all',
+      activeFilter: 'active',
       activeArchiveFilter: 'active',
     })
 
@@ -170,7 +170,43 @@ describe('AppShell reminder navigation', () => {
     })
 
     expect(useTaskStore.getState().activeArchiveFilter).toBe('archived')
+    expect(useTaskStore.getState().activeFilter).toBe('all')
     expect(container.textContent).toContain('归档任务')
     expect(container.textContent).not.toContain('当前任务')
+  })
+
+  it('counts normal work views from non-archived tasks only', async () => {
+    useTaskStore.setState({
+      tasks: [
+        buildTask({ id: 'active-task', title: '当前任务', completed: false, archivedAt: null }),
+        buildTask({ id: 'completed-task', title: '完成任务', completed: true, archivedAt: null }),
+        buildTask({
+          id: 'archived-completed-task',
+          title: '归档完成任务',
+          completed: true,
+          archivedAt: '2026-04-16T10:00:00.000Z',
+        }),
+      ],
+      filteredTasks: [
+        buildTask({ id: 'active-task', title: '当前任务', completed: false, archivedAt: null }),
+        buildTask({ id: 'completed-task', title: '完成任务', completed: true, archivedAt: null }),
+      ],
+      activeFilter: 'all',
+      activeArchiveFilter: 'active',
+    })
+
+    await act(async () => {
+      root.render(<AppShell />)
+    })
+
+    const allButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('全部任务'))
+    const activeButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('进行中'))
+    const completedButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('已完成'))
+    const archiveButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('归档'))
+
+    expect(allButton?.querySelector('strong')?.textContent).toBe('2')
+    expect(activeButton?.querySelector('strong')?.textContent).toBe('1')
+    expect(completedButton?.querySelector('strong')?.textContent).toBe('1')
+    expect(archiveButton?.querySelector('strong')?.textContent).toBe('1')
   })
 })

@@ -306,7 +306,7 @@ export function TaskList() {
           <div className="bulk-toolbar-main">
             <strong>已选 {selectedCount} 项</strong>
             <p className="section-note">
-              当前筛选结果内可见 {selectedVisibleCount} 项。批量操作只包含改优先级、归组和完成。
+              当前筛选结果内可见 {selectedVisibleCount} 项。批量操作只包含改优先级、归组、完成和归档。
             </p>
           </div>
 

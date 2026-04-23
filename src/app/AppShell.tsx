@@ -152,8 +152,9 @@ export function AppShell() {
     [activeArchiveFilter, activeDateRange, activeFilter, activeGroupFilter, activePriorityFilter, activeSortBy],
   )
 
-  const totalCount = tasks.length
-  const completedCount = tasks.filter((task) => task.completed).length
+  const activeTasks = tasks.filter((task) => !task.archivedAt)
+  const totalCount = activeTasks.length
+  const completedCount = activeTasks.filter((task) => task.completed).length
   const activeCount = totalCount - completedCount
 
   const filterCounts = {
@@ -232,6 +233,7 @@ export function AppShell() {
   }
 
   function handleSelectArchiveFilter() {
+    setFilter('all')
     setArchiveFilter('archived')
   }
 

@@ -110,6 +110,24 @@ describe('TaskList reminder navigation', () => {
     expect((archiveButton as HTMLButtonElement).title).toBe('仅已完成任务可归档')
   })
 
+  it('mentions archive in the bulk toolbar helper text', async () => {
+    const completedTask = buildTask({ id: 'task-1', title: '已完成任务', completed: true })
+
+    useTaskStore.setState({
+      tasks: [completedTask],
+      filteredTasks: [completedTask],
+      isBulkMode: true,
+      selectedTaskIds: ['task-1'],
+    })
+
+    await act(async () => {
+      root.render(<TaskList />)
+    })
+
+    const helperText = container.querySelector('.bulk-toolbar-main .section-note')?.textContent
+    expect(helperText).toContain('归档')
+  })
+
   it('scrolls the requested reminder target into view, highlights it, and clears the queued navigation', async () => {
     vi.useFakeTimers()
     const scrollIntoView = vi.fn()
