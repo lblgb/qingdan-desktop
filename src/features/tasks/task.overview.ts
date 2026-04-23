@@ -3,6 +3,7 @@
  */
 import dayjs from 'dayjs'
 import { TASK_PRIORITY_META } from './task.priority'
+import { getTaskQualityWarnings, TASK_QUALITY_WARNINGS } from './task.quality'
 import type { TaskGroup, TaskItem, TaskPriority } from './task.types'
 
 export type TaskDueBucketKey = 'overdue' | 'today' | 'upcoming' | 'unscheduled' | 'completed'
@@ -36,12 +37,29 @@ export interface WeeklySummary {
   highestOpenPriority: TaskPriority | null
 }
 
+export interface ReviewSnapshot {
+  recentCompleted: TaskItem[]
+  monthlyTrend: Array<{ label: string; completed: number }>
+  weekly: {
+    completed: number
+    archived: number
+    highestPriorityCompleted: number
+    overdueOpen: number
+  }
+  quality: {
+    shortTitleCount: number
+    duplicateTitleCount: number
+    highPriorityWithoutNoteCount: number
+  }
+}
+
 export interface TaskOverviewSnapshot {
   totals: OverviewTotals
   priorityBreakdown: Record<TaskPriority, { count: number; ratio: number }>
   dueBuckets: TaskDueBucket[]
   trend: TaskTrendItem[]
   weeklySummary: WeeklySummary
+  review: ReviewSnapshot
 }
 
 const DUE_BUCKET_META: Record<TaskDueBucketKey, Omit<TaskDueBucket, 'count'>> = {
@@ -103,6 +121,18 @@ function toPercent(value: number, total: number) {
   return Math.round((value / total) * 100)
 }
 
+function isWithinRecentDays(value: string | null, days: number) {
+  if (!value) {
+    return false
+  }
+
+  const today = dayjs().startOf('day')
+  const rangeStart = today.subtract(days - 1, 'day')
+  const date = dayjs(value).startOf('day')
+
+  return !date.isBefore(rangeStart) && !date.isAfter(today)
+}
+
 function buildPriorityBreakdown(tasks: TaskItem[]) {
   const total = tasks.length
 
@@ -129,7 +159,7 @@ function buildTrend(tasks: TaskItem[]) {
       date: dateKey,
       created: tasks.filter((task) => dayjs(task.createdAt).format('YYYY-MM-DD') === dateKey).length,
       completed: tasks.filter(
-        (task) => task.completed && dayjs(task.updatedAt).format('YYYY-MM-DD') === dateKey,
+        (task) => task.completed && task.completedAt && dayjs(task.completedAt).format('YYYY-MM-DD') === dateKey,
       ).length,
     }
   })
@@ -141,7 +171,7 @@ function buildWeeklySummary(tasks: TaskItem[]) {
 
   const created = tasks.filter((task) => !dayjs(task.createdAt).startOf('day').isBefore(weekStart)).length
   const completed = tasks.filter(
-    (task) => task.completed && !dayjs(task.updatedAt).startOf('day').isBefore(weekStart),
+    (task) => task.completed && task.completedAt && !dayjs(task.completedAt).startOf('day').isBefore(weekStart),
   ).length
 
   const overdueNow = tasks.filter((task) => getDueBucketKey(task) === 'overdue').length
@@ -152,7 +182,7 @@ function buildWeeklySummary(tasks: TaskItem[]) {
 
     const dueDate = dayjs(task.dueAt).startOf('day')
     const wasCompletedBeforeWeekStart =
-      task.completed && dayjs(task.updatedAt).startOf('day').isBefore(weekStart)
+      task.completed && task.completedAt && dayjs(task.completedAt).startOf('day').isBefore(weekStart)
 
     return dueDate.isBefore(weekStart) && !wasCompletedBeforeWeekStart
   }).length
@@ -168,6 +198,75 @@ function buildWeeklySummary(tasks: TaskItem[]) {
     completed,
     overdueDelta: overdueNow - overdueAtWeekStart,
     highestOpenPriority,
+  }
+}
+
+function buildReviewSnapshot(tasks: TaskItem[]): ReviewSnapshot {
+  const recentCompleted = [...tasks]
+    .filter((task) => task.completed && task.completedAt)
+    .sort((left, right) => dayjs(right.completedAt).valueOf() - dayjs(left.completedAt).valueOf())
+    .slice(0, 10)
+
+  const monthlyTrend = Array.from({ length: 6 }, (_, index) => {
+    const month = dayjs().startOf('month').subtract(5 - index, 'month')
+    const label = month.format('YYYY-MM')
+
+    return {
+      label,
+      completed: tasks.filter(
+        (task) => task.completed && task.completedAt && dayjs(task.completedAt).format('YYYY-MM') === label,
+      ).length,
+    }
+  })
+
+  const weekly = {
+    completed: tasks.filter((task) => task.completed && isWithinRecentDays(task.completedAt, 7)).length,
+    archived: tasks.filter((task) => isWithinRecentDays(task.archivedAt, 7)).length,
+    highestPriorityCompleted: tasks.filter(
+      (task) =>
+        task.completed &&
+        isWithinRecentDays(task.completedAt, 7) &&
+        (task.priority === 'urgent' || task.priority === 'high'),
+    ).length,
+    overdueOpen: tasks.filter((task) => {
+      if (task.completed || task.archivedAt || !task.dueAt) {
+        return false
+      }
+
+      return dayjs(task.dueAt).startOf('day').isBefore(dayjs().startOf('day'))
+    }).length,
+  }
+
+  const quality = tasks.reduce<ReviewSnapshot['quality']>(
+    (result, task) => {
+      const warnings = getTaskQualityWarnings(task, tasks)
+
+      if (warnings.includes(TASK_QUALITY_WARNINGS.shortTitle)) {
+        result.shortTitleCount += 1
+      }
+
+      if (warnings.includes(TASK_QUALITY_WARNINGS.duplicateTitle)) {
+        result.duplicateTitleCount += 1
+      }
+
+      if (warnings.includes(TASK_QUALITY_WARNINGS.highPriorityWithoutNote)) {
+        result.highPriorityWithoutNoteCount += 1
+      }
+
+      return result
+    },
+    {
+      shortTitleCount: 0,
+      duplicateTitleCount: 0,
+      highPriorityWithoutNoteCount: 0,
+    },
+  )
+
+  return {
+    recentCompleted,
+    monthlyTrend,
+    weekly,
+    quality,
   }
 }
 
@@ -211,5 +310,6 @@ export function buildTaskOverview(tasks: TaskItem[], _taskGroups: TaskGroup[] = 
     dueBuckets,
     trend: buildTrend(tasks),
     weeklySummary: buildWeeklySummary(tasks),
+    review: buildReviewSnapshot(tasks),
   }
 }

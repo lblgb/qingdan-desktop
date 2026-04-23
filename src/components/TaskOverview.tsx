@@ -28,6 +28,18 @@ export function TaskOverview() {
       trendMode === 'completed' ? [item.completed] : [item.created, item.completed],
     ),
   )
+  const reviewMonthlyMax = Math.max(1, ...overview.review.monthlyTrend.map((item) => item.completed))
+  const reviewWeeklyCards = [
+    { label: '近 7 天完成', value: overview.review.weekly.completed, hint: '按完成时间统计' },
+    { label: '近 7 天归档', value: overview.review.weekly.archived, hint: '按归档时间统计' },
+    { label: '高优先级完成', value: overview.review.weekly.highestPriorityCompleted, hint: '紧急 / 高优先级' },
+    { label: '开口逾期', value: overview.review.weekly.overdueOpen, hint: '未完成且未归档' },
+  ]
+  const reviewQualityCards = [
+    { label: '短标题', value: overview.review.quality.shortTitleCount, hint: '可能不易回忆背景' },
+    { label: '重复标题', value: overview.review.quality.duplicateTitleCount, hint: '建议确认是否重复' },
+    { label: '高优先级缺备注', value: overview.review.quality.highPriorityWithoutNoteCount, hint: '补充备注便于复盘' },
+  ]
 
   useEffect(() => {
     if (!isModalOpen) {
@@ -236,6 +248,98 @@ export function TaskOverview() {
                         : '无'}
                     </strong>
                   </article>
+                </div>
+              </section>
+
+              <section className="overview-card overview-review-card">
+                <div className="overview-card-header">
+                  <div>
+                    <h3>复盘</h3>
+                    <p>从完成、归档和任务质量里提炼近期回看线索，帮助判断节奏和沉淀质量。</p>
+                  </div>
+                </div>
+
+                <div className="overview-review-grid">
+                  <div className="overview-review-block">
+                    <div className="overview-review-heading">
+                      <h4>最近完成</h4>
+                      <span>Top 10</span>
+                    </div>
+
+                    {overview.review.recentCompleted.length > 0 ? (
+                      <ul className="overview-review-list">
+                        {overview.review.recentCompleted.map((task) => (
+                          <li key={task.id}>
+                            <div>
+                              <strong>{task.title}</strong>
+                              <small>
+                                {task.completedAt ? dayjs(task.completedAt).format('MM-DD HH:mm') : '无完成时间'} ·{' '}
+                                {TASK_PRIORITY_META[task.priority].label}
+                              </small>
+                            </div>
+                            {task.archivedAt ? <span>已归档</span> : null}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="overview-empty-state">最近还没有完成记录。</p>
+                    )}
+                  </div>
+
+                  <div className="overview-review-block">
+                    <div className="overview-review-heading">
+                      <h4>近 7 天</h4>
+                      <span>周复盘</span>
+                    </div>
+                    <div className="overview-review-card-grid">
+                      {reviewWeeklyCards.map((item) => (
+                        <article key={item.label} className="overview-review-metric">
+                          <span>{item.label}</span>
+                          <strong>{item.value}</strong>
+                          <small>{item.hint}</small>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="overview-review-block">
+                    <div className="overview-review-heading">
+                      <h4>月度趋势</h4>
+                      <span>近 6 个月</span>
+                    </div>
+                    <div className="overview-monthly-bars">
+                      {overview.review.monthlyTrend.map((item) => (
+                        <article key={item.label} className="overview-monthly-item">
+                          <span>{dayjs(`${item.label}-01`).format('MM月')}</span>
+                          <div className="overview-monthly-track" aria-hidden="true">
+                            <span
+                              className="overview-monthly-fill"
+                              style={{
+                                width: `${Math.max(Math.round((item.completed / reviewMonthlyMax) * 100), item.completed > 0 ? 8 : 0)}%`,
+                              }}
+                            />
+                          </div>
+                          <strong>{item.completed}</strong>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="overview-review-block">
+                    <div className="overview-review-heading">
+                      <h4>质量提醒</h4>
+                      <span>可优化项</span>
+                    </div>
+                    <div className="overview-review-card-grid">
+                      {reviewQualityCards.map((item) => (
+                        <article key={item.label} className="overview-review-metric">
+                          <span>{item.label}</span>
+                          <strong>{item.value}</strong>
+                          <small>{item.hint}</small>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </section>
 
