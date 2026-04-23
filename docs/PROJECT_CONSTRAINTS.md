@@ -73,7 +73,10 @@
 - Windows 正式发布时，默认必须同时附带两类安装产物：
   - `轻单_<version>_x64-setup.exe`
   - `轻单_<version>_x64_zh-CN.msi`
-- 若某次发布缺失上述任一安装产物，应视为发布内容不完整。
+- GitHub Release 若将中文前缀规整为下划线，发布页资产名应至少保留为：
+  - `_<version>_x64-setup.exe`
+  - `_<version>_x64_zh-CN.msi`
+- 若某次发布缺失上述任一安装产物，或版本号不一致，应视为发布内容不完整。
 - 发布前应核对 tag、release notes、安装包文件名和应用内部版本号一致。
 
 ## 当前阶段说明

@@ -418,7 +418,7 @@
 
 - `master` 已合并 `feature/v040` 并推送到 GitHub。
 - 正式发布版本统一对齐为 `0.40.0`，后续 tag、安装包文件名、应用内部版本号和 GitHub Release 应保持一致。
-- GitHub Release 仍必须同时附带 `轻单_0.40.0_x64-setup.exe` 与 `轻单_0.40.0_x64_zh-CN.msi`。
+- 本地构建产物为 `轻单_0.40.0_x64-setup.exe` 与 `轻单_0.40.0_x64_zh-CN.msi`；GitHub Release 资产名会将中文前缀规整为 `_0.40.0_x64-setup.exe` 与 `_0.40.0_x64_zh-CN.msi`。
 
 ### 文档更新
 
