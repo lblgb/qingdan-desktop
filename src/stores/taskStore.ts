@@ -31,6 +31,7 @@ import type {
   BulkUpdateTasksInput,
   CreateTaskGroupInput,
   CreateTaskInput,
+  NotificationPermissionStatus,
   ReminderPreferences,
   TaskArchiveFilter,
   TaskDateRangeFilter,
@@ -84,6 +85,7 @@ interface TaskState {
   reminderPreferences: ReminderPreferences
   reminderBuckets: ReminderBuckets
   reminderSnapshotAt: string | null
+  notificationPermissionStatus: NotificationPermissionStatus
   isReminderPreferencesLoading: boolean
   isSavingReminderPreferences: boolean
   isBulkMode: boolean
@@ -105,6 +107,8 @@ interface TaskState {
   hydrateReminderPreferences: (nowIso?: string) => Promise<void>
   saveReminderPreferences: (input: ReminderPreferences, nowIso?: string) => Promise<boolean>
   refreshReminderBuckets: (nowIso?: string) => void
+  refreshNotificationPermissionStatus: () => Promise<void>
+  sendTestDesktopNotification: () => Promise<void>
   startReminderAutoRefresh: () => void
   stopReminderAutoRefresh: () => void
   dismissSuccessToast: () => void
@@ -210,6 +214,26 @@ async function ensureDesktopNotificationPermission() {
   return false
 }
 
+function mapNotificationPermission(permission: NotificationPermission): NotificationPermissionStatus {
+  if (permission === 'granted') {
+    return 'allowed'
+  }
+
+  if (permission === 'denied') {
+    return 'denied'
+  }
+
+  return 'not-requested'
+}
+
+function readBrowserNotificationPermission(): NotificationPermissionStatus | null {
+  if (typeof window === 'undefined' || !('Notification' in window)) {
+    return null
+  }
+
+  return mapNotificationPermission(window.Notification.permission)
+}
+
 async function syncDesktopNotifications(tasks: TaskItem[], preferences: ReminderPreferences, nowIso?: string) {
   if (!preferences.enableDesktop) {
     notifiedDesktopReminderKeys.clear()
@@ -272,6 +296,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   reminderPreferences: DEFAULT_REMINDER_PREFERENCES,
   reminderBuckets: EMPTY_REMINDER_BUCKETS,
   reminderSnapshotAt: null,
+  notificationPermissionStatus: 'not-requested',
   isReminderPreferencesLoading: false,
   isSavingReminderPreferences: false,
   isBulkMode: false,
@@ -397,6 +422,67 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       void syncDesktopNotifications(state.tasks, state.reminderPreferences, reminderState.reminderSnapshotAt)
       return reminderState
     }),
+  refreshNotificationPermissionStatus: async () => {
+    try {
+      const browserStatus = readBrowserNotificationPermission()
+      if (browserStatus) {
+        set({ notificationPermissionStatus: browserStatus })
+        return
+      }
+
+      const isGranted = await isPermissionGranted()
+      set({ notificationPermissionStatus: isGranted ? 'allowed' : 'not-requested' })
+    } catch {
+      set({ notificationPermissionStatus: 'error' })
+    }
+  },
+  sendTestDesktopNotification: async () => {
+    set({
+      activeAction: 'reminder',
+      successToast: null,
+      errorDialog: null,
+    })
+
+    try {
+      const permissionGranted = await ensureDesktopNotificationPermission()
+      if (!permissionGranted) {
+        set({
+          activeAction: null,
+          notificationPermissionStatus: 'denied',
+          errorDialog: {
+            title: '测试通知失败',
+            message: '桌面系统通知权限未开启，请在系统设置中允许轻单发送通知后重试。',
+            source: 'reminder',
+          },
+        })
+        return
+      }
+
+      await sendNotification({
+        title: '轻单测试通知',
+        body: '桌面系统通知可用。轻单运行期间会按提醒规则触发通知。',
+      })
+      set({
+        activeAction: null,
+        notificationPermissionStatus: 'allowed',
+        successToast: {
+          tone: 'success',
+          message: '测试通知已发送。',
+          source: 'reminder',
+        },
+      })
+    } catch {
+      set({
+        activeAction: null,
+        notificationPermissionStatus: 'error',
+        errorDialog: {
+          title: '测试通知失败',
+          message: '发送测试通知失败，请稍后重试。',
+          source: 'reminder',
+        },
+      })
+    }
+  },
   startReminderAutoRefresh: () => {
     if (reminderAutoRefreshTimer) {
       return

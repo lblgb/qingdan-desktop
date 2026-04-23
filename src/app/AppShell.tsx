@@ -98,10 +98,13 @@ export function AppShell() {
   const feedback = useTaskStore((state) => state.feedback)
   const reminderPreferences = useTaskStore((state) => state.reminderPreferences)
   const reminderBuckets = useTaskStore((state) => state.reminderBuckets)
+  const notificationPermissionStatus = useTaskStore((state) => state.notificationPermissionStatus)
   const isSavingReminderPreferences = useTaskStore((state) => state.isSavingReminderPreferences)
   const hydrateTasks = useTaskStore((state) => state.hydrateTasks)
   const hydrateReminderPreferences = useTaskStore((state) => state.hydrateReminderPreferences)
   const saveReminderPreferences = useTaskStore((state) => state.saveReminderPreferences)
+  const refreshNotificationPermissionStatus = useTaskStore((state) => state.refreshNotificationPermissionStatus)
+  const sendTestDesktopNotification = useTaskStore((state) => state.sendTestDesktopNotification)
   const startReminderAutoRefresh = useTaskStore((state) => state.startReminderAutoRefresh)
   const stopReminderAutoRefresh = useTaskStore((state) => state.stopReminderAutoRefresh)
   const setFilter = useTaskStore((state) => state.setFilter)
@@ -287,9 +290,12 @@ export function AppShell() {
           <TaskSettings
             isOpen={isSettingsOpen}
             isSaving={isSavingReminderPreferences}
+            notificationPermissionStatus={notificationPermissionStatus}
             onOpenChange={setIsSettingsOpen}
             onPreferencesChange={setDraftReminderPreferences}
+            onRefreshNotificationPermissionStatus={refreshNotificationPermissionStatus}
             onSave={handleSaveReminderPreferences}
+            onSendTestDesktopNotification={sendTestDesktopNotification}
             preferences={draftReminderPreferences}
           />
           <TaskReminderCenter

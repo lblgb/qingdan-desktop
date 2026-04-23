@@ -1,4 +1,10 @@
-import type { ReminderOffsetPreset, ReminderPreferences, ReminderPriorityThreshold } from '../features/tasks/task.types'
+import { useEffect } from 'react'
+import type {
+  NotificationPermissionStatus,
+  ReminderOffsetPreset,
+  ReminderPreferences,
+  ReminderPriorityThreshold,
+} from '../features/tasks/task.types'
 
 const THRESHOLD_OPTIONS: Array<{ value: ReminderPriorityThreshold; label: string }> = [
   { value: 'urgent', label: '紧急及以上' },
@@ -14,23 +20,42 @@ const OFFSET_OPTIONS: Array<{ value: ReminderOffsetPreset; label: string }> = [
   { value: 'custom', label: '自定义时间' },
 ]
 
+const NOTIFICATION_STATUS_LABELS: Record<NotificationPermissionStatus, string> = {
+  allowed: '系统通知权限已开启',
+  'not-requested': '尚未确认系统通知权限',
+  denied: '系统通知权限未开启',
+  error: '系统通知权限状态读取失败',
+}
+
 interface TaskSettingsProps {
   isOpen: boolean
   isSaving: boolean
+  notificationPermissionStatus: NotificationPermissionStatus
   preferences: ReminderPreferences
   onOpenChange: (isOpen: boolean) => void
   onPreferencesChange: (preferences: ReminderPreferences) => void
+  onRefreshNotificationPermissionStatus: () => void | Promise<void>
   onSave: () => void | Promise<void>
+  onSendTestDesktopNotification: () => void | Promise<void>
 }
 
 export function TaskSettings({
   isOpen,
   isSaving,
+  notificationPermissionStatus,
   preferences,
   onOpenChange,
   onPreferencesChange,
+  onRefreshNotificationPermissionStatus,
   onSave,
+  onSendTestDesktopNotification,
 }: TaskSettingsProps) {
+  useEffect(() => {
+    if (isOpen) {
+      void onRefreshNotificationPermissionStatus()
+    }
+  }, [isOpen, onRefreshNotificationPermissionStatus])
+
   return (
     <>
       <button
@@ -102,9 +127,33 @@ export function TaskSettings({
                 />
                 <div>
                   <strong>桌面系统通知</strong>
-                  <span>本任务阶段仅保留偏好设置，不会实际调度系统通知。</span>
+                  <span>开启后，轻单运行期间会按提醒规则触发桌面系统通知；应用关闭后不会后台提醒。</span>
                 </div>
               </label>
+
+              <div className="task-settings-note">
+                <p>{NOTIFICATION_STATUS_LABELS[notificationPermissionStatus]}</p>
+                <div className="task-modal-button-row">
+                  <button
+                    className="secondary-button"
+                    onClick={() => {
+                      void onRefreshNotificationPermissionStatus()
+                    }}
+                    type="button"
+                  >
+                    刷新权限状态
+                  </button>
+                  <button
+                    className="secondary-button"
+                    onClick={() => {
+                      void onSendTestDesktopNotification()
+                    }}
+                    type="button"
+                  >
+                    发送测试通知
+                  </button>
+                </div>
+              </div>
 
               <label>
                 <span>提醒优先级门槛</span>

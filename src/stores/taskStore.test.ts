@@ -600,6 +600,25 @@ describe('taskStore reset and feedback', () => {
     await Promise.resolve()
   })
 
+  it('sends a test desktop notification and shows success feedback when permission is allowed', async () => {
+    const { useTaskStore } = await loadStore()
+
+    await useTaskStore.getState().sendTestDesktopNotification()
+
+    const state = useTaskStore.getState()
+    expect(mockSendNotification).toHaveBeenCalledWith({
+      title: '轻单测试通知',
+      body: '桌面系统通知可用。轻单运行期间会按提醒规则触发通知。',
+    })
+    expect(state.notificationPermissionStatus).toBe('allowed')
+    expect(state.successToast).toEqual({
+      tone: 'success',
+      message: '测试通知已发送。',
+      source: 'reminder',
+    })
+    expect(state.errorDialog).toBeNull()
+  })
+
   it('clears success toast and error dialog through explicit actions', async () => {
     const { useTaskStore } = await loadStore()
 
