@@ -3,10 +3,11 @@ import dayjs from 'dayjs'
 import { buildTaskOverview } from './task.overview'
 import type { TaskItem } from './task.types'
 
-const systemNow = new Date('2026-04-22T12:00:00+08:00')
-const today = '2026-04-22'
-const yesterday = '2026-04-21'
-const tomorrowAfterNext = '2026-04-24'
+const systemNow = new Date(2026, 3, 22, 12, 0, 0)
+const anchor = dayjs(systemNow)
+const today = anchor.format('YYYY-MM-DD')
+const yesterday = anchor.subtract(1, 'day').format('YYYY-MM-DD')
+const tomorrowAfterNext = anchor.add(2, 'day').format('YYYY-MM-DD')
 
 const seedTasks: TaskItem[] = [
   {
@@ -74,12 +75,12 @@ describe('buildTaskOverview', () => {
   })
 
   it('builds review snapshot from completion, archive, overdue, and quality signals', () => {
-    const thisMonth = dayjs()
-    const lastMonth = dayjs().subtract(1, 'month')
-    const staleCompletedAt = dayjs().subtract(10, 'day').format('YYYY-MM-DD')
-    const recentCompletedAt = dayjs().subtract(2, 'day').format('YYYY-MM-DD')
-    const archivedAt = dayjs().subtract(3, 'day').format('YYYY-MM-DD')
-    const overdueAt = dayjs().subtract(1, 'day').format('YYYY-MM-DD')
+    const thisMonth = anchor
+    const lastMonth = anchor.subtract(1, 'month')
+    const staleCompletedAt = anchor.subtract(10, 'day').format('YYYY-MM-DD')
+    const recentCompletedAt = anchor.subtract(2, 'day').format('YYYY-MM-DD')
+    const archivedAt = anchor.subtract(3, 'day').format('YYYY-MM-DD')
+    const overdueAt = anchor.subtract(1, 'day').format('YYYY-MM-DD')
 
     const tasks: TaskItem[] = [
       {
