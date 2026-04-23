@@ -20,6 +20,7 @@
   - [`2026-04-14 第 38 轮`](#2026-04-14-第-38-轮)
   - [`2026-04-14 第 39 轮`](#2026-04-14-第-39-轮)
   - [`2026-04-22 第 46 轮`](#2026-04-22-第-46-轮)
+  - [`2026-04-23 第 47 轮`](#2026-04-23-第-47-轮)
 - 近期关键节点：
   - `v0.1.5` 正式收口：见 [`docs/V015_CLOSEOUT.md`](./V015_CLOSEOUT.md)
   - `v0.1.5` 发布资产补齐：详见 [`docs/WORKLOG_ARCHIVE.md`](./WORKLOG_ARCHIVE.md)
@@ -406,3 +407,38 @@
 ### 下一步建议
 
 - 对 `v0.40.0` 完整变更执行最终审查，通过后再进入合并与发布判断。
+
+## 2026-04-23 第 47 轮
+
+### 讨论主题
+
+- 完成 `v0.40.0` 合并后的发布准备，统一源码版本号、项目约束和后续安装包交付口径。
+
+### 当前结论
+
+- `master` 已合并 `feature/v040` 并推送到 GitHub。
+- 正式发布版本统一对齐为 `0.40.0`，后续 tag、安装包文件名、应用内部版本号和 GitHub Release 应保持一致。
+- GitHub Release 仍必须同时附带 `轻单_0.40.0_x64-setup.exe` 与 `轻单_0.40.0_x64_zh-CN.msi`。
+
+### 文档更新
+
+- 更新 [`docs/PROJECT_CONSTRAINTS.md`](./PROJECT_CONSTRAINTS.md)，把当前活跃指针从 `v0.20` 修正为 `v0.40.0`。
+- 更新 [`docs/WORKLOG.md`](./WORKLOG.md)，记录本轮版本号对齐和发布准备。
+
+### 实现记录
+
+- 更新 [package.json](E:/CodeBase/package.json)、[package-lock.json](E:/CodeBase/package-lock.json)、[src-tauri/Cargo.toml](E:/CodeBase/src-tauri/Cargo.toml)、[src-tauri/Cargo.lock](E:/CodeBase/src-tauri/Cargo.lock) 和 [src-tauri/tauri.conf.json](E:/CodeBase/src-tauri/tauri.conf.json)，把应用版本统一改为 `0.40.0`。
+
+### 验证记录
+
+- `cmd /c npx.cmd vitest run --exclude=.worktrees/**` 通过，结果为 11 个测试文件、63 个用例通过。
+- `cmd /c npx.cmd tsc -b` 通过。
+- `cargo test` 通过，结果为 8 个 Rust 测试通过。
+- `cargo check` 通过。
+- `cmd /c npm.cmd run tauri:build` 通过，生成：
+  - `src-tauri/target/release/bundle/nsis/轻单_0.40.0_x64-setup.exe`
+  - `src-tauri/target/release/bundle/msi/轻单_0.40.0_x64_zh-CN.msi`
+
+### 下一步建议
+
+- 验证通过后提交版本号与发布文档变更，打 `v0.40.0` tag，并重新打包上传 GitHub Release 所需安装资产。
