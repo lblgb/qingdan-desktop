@@ -26,7 +26,17 @@ vi.mock('../components/TaskSettings', () => ({
 }))
 
 vi.mock('../components/TaskList', () => ({
-  TaskList: () => null,
+  TaskList: () => {
+    const { filteredTasks } = useTaskStore.getState()
+
+    return (
+      <ul aria-label="task-list-test-double">
+        {filteredTasks.map((task) => (
+          <li key={task.id}>{task.title}</li>
+        ))}
+      </ul>
+    )
+  },
 }))
 
 vi.mock('../components/TaskFeedbackToast', () => ({
@@ -130,5 +140,37 @@ describe('AppShell reminder navigation', () => {
     expect(state.activeSortBy).toBe('default')
     expect(state.filteredTasks.map((task) => task.id)).toEqual(['task-2', 'task-1'])
     expect(state.reminderNavigation?.taskId).toBe('task-2')
+  })
+
+  it('shows archived tasks from the archive work view', async () => {
+    useTaskStore.setState({
+      tasks: [
+        buildTask({ id: 'active-task', title: '当前任务', archivedAt: null }),
+        buildTask({
+          id: 'archived-task',
+          title: '归档任务',
+          completed: true,
+          archivedAt: '2026-04-16T10:00:00.000Z',
+        }),
+      ],
+      filteredTasks: [buildTask({ id: 'active-task', title: '当前任务', archivedAt: null })],
+      activeFilter: 'all',
+      activeArchiveFilter: 'active',
+    })
+
+    await act(async () => {
+      root.render(<AppShell />)
+    })
+
+    const archiveButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('归档'))
+    expect(archiveButton).toBeTruthy()
+
+    await act(async () => {
+      archiveButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(useTaskStore.getState().activeArchiveFilter).toBe('archived')
+    expect(container.textContent).toContain('归档任务')
+    expect(container.textContent).not.toContain('当前任务')
   })
 })

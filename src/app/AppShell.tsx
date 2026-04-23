@@ -6,6 +6,7 @@ import { TaskComposer } from '../components/TaskComposer'
 import { TaskErrorDialog } from '../components/TaskErrorDialog'
 import { TaskFeedbackToast } from '../components/TaskFeedbackToast'
 import { TaskGroupManager } from '../components/TaskGroupManager'
+import { TaskDetailDialog } from '../components/TaskDetailDialog'
 import { TaskList } from '../components/TaskList'
 import { TaskOverview } from '../components/TaskOverview'
 import { TaskReminderCenter } from '../components/TaskReminderCenter'
@@ -88,6 +89,7 @@ export function AppShell() {
   const filteredTasks = useTaskStore((state) => state.filteredTasks)
   const taskGroups = useTaskStore((state) => state.taskGroups)
   const activeFilter = useTaskStore((state) => state.activeFilter)
+  const activeArchiveFilter = useTaskStore((state) => state.activeArchiveFilter)
   const activeGroupFilter = useTaskStore((state) => state.activeGroupFilter)
   const activePriorityFilter = useTaskStore((state) => state.activePriorityFilter)
   const activeDateRange = useTaskStore((state) => state.activeDateRange)
@@ -103,6 +105,7 @@ export function AppShell() {
   const startReminderAutoRefresh = useTaskStore((state) => state.startReminderAutoRefresh)
   const stopReminderAutoRefresh = useTaskStore((state) => state.stopReminderAutoRefresh)
   const setFilter = useTaskStore((state) => state.setFilter)
+  const setArchiveFilter = useTaskStore((state) => state.setArchiveFilter)
   const setGroupFilter = useTaskStore((state) => state.setGroupFilter)
   const setPriorityFilter = useTaskStore((state) => state.setPriorityFilter)
   const setDateRange = useTaskStore((state) => state.setDateRange)
@@ -110,6 +113,10 @@ export function AppShell() {
   const resetFilters = useTaskStore((state) => state.resetFilters)
   const dismissFeedback = useTaskStore((state) => state.dismissFeedback)
   const queueReminderNavigation = useTaskStore((state) => state.queueReminderNavigation)
+  const editingTaskId = useTaskStore((state) => state.editingTaskId)
+  const closeTaskDetail = useTaskStore((state) => state.closeTaskDetail)
+  const updateTask = useTaskStore((state) => state.updateTask)
+  const archiveTask = useTaskStore((state) => state.archiveTask)
 
   const [isMoreFiltersOpen, setIsMoreFiltersOpen] = useState(false)
   const [activeConditionPanel, setActiveConditionPanel] = useState<ConditionPanel>('root')
@@ -136,13 +143,13 @@ export function AppShell() {
   const currentQuery = useMemo(
     () => ({
       status: activeFilter,
-      archive: DEFAULT_TASK_QUERY.archive,
+      archive: activeArchiveFilter,
       group: activeGroupFilter,
       priority: activePriorityFilter,
       dateRange: activeDateRange,
       sortBy: activeSortBy,
     }),
-    [activeDateRange, activeFilter, activeGroupFilter, activePriorityFilter, activeSortBy],
+    [activeArchiveFilter, activeDateRange, activeFilter, activeGroupFilter, activePriorityFilter, activeSortBy],
   )
 
   const totalCount = tasks.length
@@ -154,6 +161,8 @@ export function AppShell() {
     active: activeCount,
     completed: completedCount,
   }
+  const archivedCount = tasks.filter((task) => task.archivedAt).length
+  const sidebarCount = activeArchiveFilter === 'archived' ? archivedCount : filterCounts[activeFilter]
 
   const dynamicGroupOptions = useMemo(
     () =>
@@ -196,6 +205,7 @@ export function AppShell() {
     reminderBuckets.recentlyReminded.length
 
   const reminderStripSummary = buildReminderStripSummary(reminderCount, reminderBuckets)
+  const editingTask = tasks.find((task) => task.id === editingTaskId) ?? null
 
   function handleToggleMoreFilters() {
     setIsMoreFiltersOpen((current) => {
@@ -214,6 +224,15 @@ export function AppShell() {
 
   function countTasksWith(next: Partial<typeof currentQuery>) {
     return applyTaskQuery(tasks, { ...currentQuery, ...next }).length
+  }
+
+  function handleSelectStatusFilter(filter: TaskFilter) {
+    setArchiveFilter('active')
+    setFilter(filter)
+  }
+
+  function handleSelectArchiveFilter() {
+    setArchiveFilter('archived')
   }
 
   function handleSelectGroupFilter(filter: TaskGroupFilter) {
@@ -296,15 +315,15 @@ export function AppShell() {
                 <p className="section-tag">工作视图</p>
                 <h2>筛选当前清单</h2>
               </div>
-              <span className="sidebar-count">{filterCounts[activeFilter]}</span>
+              <span className="sidebar-count">{sidebarCount}</span>
             </div>
 
             <div className="filter-list">
               {FILTER_OPTIONS.map((option) => (
                 <button
                   key={option.key}
-                  className={option.key === activeFilter ? 'filter-button active' : 'filter-button'}
-                  onClick={() => setFilter(option.key)}
+                  className={option.key === activeFilter && activeArchiveFilter === 'active' ? 'filter-button active' : 'filter-button'}
+                  onClick={() => handleSelectStatusFilter(option.key)}
                   type="button"
                 >
                   <span>{option.label}</span>
@@ -312,6 +331,16 @@ export function AppShell() {
                   <strong>{filterCounts[option.key]}</strong>
                 </button>
               ))}
+
+              <button
+                className={activeArchiveFilter === 'archived' ? 'filter-button active' : 'filter-button'}
+                onClick={handleSelectArchiveFilter}
+                type="button"
+              >
+                <span>归档</span>
+                <small>查看已经收纳归档的任务</small>
+                <strong>{archivedCount}</strong>
+              </button>
 
               <button
                 className={isMoreFiltersOpen || hasExtraFilters ? 'filter-button active' : 'filter-button'}
@@ -525,6 +554,16 @@ export function AppShell() {
 
       <TaskFeedbackToast />
       <TaskErrorDialog />
+      <TaskDetailDialog
+        isOpen={Boolean(editingTask)}
+        task={editingTask}
+        tasks={tasks}
+        taskGroups={taskGroups}
+        isMutating={activeAction === 'update' || activeAction === 'bulk'}
+        onClose={closeTaskDetail}
+        onSave={updateTask}
+        onArchive={archiveTask}
+      />
     </main>
   )
 }

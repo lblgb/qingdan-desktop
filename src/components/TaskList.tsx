@@ -3,7 +3,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { buildBulkCompleteInput, buildBulkGroupInput, buildBulkPriorityInput, BULK_PRIORITY_OPTIONS } from '../features/tasks/task.bulk'
-import { DEFAULT_TASK_QUERY, applyTaskQuery, summarizeFilters } from '../features/tasks/task.filters'
+import { applyTaskQuery, summarizeFilters } from '../features/tasks/task.filters'
 import { buildTaskGroups } from '../features/tasks/task.grouping'
 import { TASK_PRIORITY_META } from '../features/tasks/task.priority'
 import type { TaskItem, TaskPriority } from '../features/tasks/task.types'
@@ -38,6 +38,7 @@ export function TaskList() {
   const tasks = useTaskStore((state) => state.tasks)
   const filteredTasks = useTaskStore((state) => state.filteredTasks)
   const activeFilter = useTaskStore((state) => state.activeFilter)
+  const activeArchiveFilter = useTaskStore((state) => state.activeArchiveFilter)
   const activeGroupFilter = useTaskStore((state) => state.activeGroupFilter)
   const activePriorityFilter = useTaskStore((state) => state.activePriorityFilter)
   const activeDateRange = useTaskStore((state) => state.activeDateRange)
@@ -55,6 +56,8 @@ export function TaskList() {
   const toggleTaskSelection = useTaskStore((state) => state.toggleTaskSelection)
   const clearTaskSelection = useTaskStore((state) => state.clearTaskSelection)
   const applyBulkUpdate = useTaskStore((state) => state.applyBulkUpdate)
+  const applyBulkArchive = useTaskStore((state) => state.applyBulkArchive)
+  const openTaskDetail = useTaskStore((state) => state.openTaskDetail)
   const reminderNavigation = useTaskStore((state) => state.reminderNavigation)
   const clearReminderNavigation = useTaskStore((state) => state.clearReminderNavigation)
   const emptyState = EMPTY_STATE_COPY[activeFilter]
@@ -81,13 +84,13 @@ export function TaskList() {
   const currentQuery = useMemo(
     () => ({
       status: activeFilter,
-      archive: DEFAULT_TASK_QUERY.archive,
+      archive: activeArchiveFilter,
       group: activeGroupFilter,
       priority: activePriorityFilter,
       dateRange: activeDateRange,
       sortBy: activeSortBy,
     }),
-    [activeDateRange, activeFilter, activeGroupFilter, activePriorityFilter, activeSortBy],
+    [activeArchiveFilter, activeDateRange, activeFilter, activeGroupFilter, activePriorityFilter, activeSortBy],
   )
 
   const filterSummary = useMemo(
@@ -96,6 +99,8 @@ export function TaskList() {
   )
 
   const selectedCount = selectedTaskIds.length
+  const selectedTasks = useMemo(() => tasks.filter((task) => selectedTaskIds.includes(task.id)), [selectedTaskIds, tasks])
+  const canBulkArchive = selectedTasks.length > 0 && selectedTasks.every((task) => task.completed)
   const selectedVisibleCount = filteredTasks.filter((task) => selectedTaskIds.includes(task.id)).length
   const filteredActiveTasks = useMemo(
     () =>
@@ -108,7 +113,7 @@ export function TaskList() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [activeFilter, activeGroupFilter, activePriorityFilter, activeDateRange, activeSortBy])
+  }, [activeFilter, activeArchiveFilter, activeGroupFilter, activePriorityFilter, activeDateRange, activeSortBy])
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -245,6 +250,14 @@ export function TaskList() {
     await applyBulkUpdate(buildBulkCompleteInput(selectedTaskIds))
   }
 
+  async function handleArchiveSelectedTasks() {
+    if (!canBulkArchive) {
+      return
+    }
+
+    await applyBulkArchive()
+  }
+
   if (filteredTasks.length === 0) {
     return (
       <section className="task-list-card empty-state">
@@ -345,6 +358,16 @@ export function TaskList() {
               disabled={isMutating || selectedCount === 0}
             >
               标记完成
+            </button>
+
+            <button
+              className="secondary-button"
+              onClick={() => void handleArchiveSelectedTasks()}
+              type="button"
+              disabled={isMutating || !canBulkArchive}
+              title={canBulkArchive ? undefined : '仅已完成任务可归档'}
+            >
+              批量归档
             </button>
 
             {selectedCount > 0 ? (
@@ -539,6 +562,7 @@ export function TaskList() {
                           <div className="task-main">
                             <h3>{task.title}</h3>
                             {task.description ? <p>{task.description}</p> : null}
+                            {task.note.trim() ? <p className="task-note-summary">{task.note.trim()}</p> : null}
                           </div>
 
                           <div className="task-meta">
@@ -554,6 +578,9 @@ export function TaskList() {
 
                         {!isBulkMode ? (
                           <div className="task-actions">
+                            <button className="secondary-button" onClick={() => openTaskDetail(task.id)} type="button" disabled={isMutating}>
+                              详情
+                            </button>
                             <button
                               className="secondary-button"
                               onClick={() => handleStartEdit(task)}
