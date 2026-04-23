@@ -7,7 +7,7 @@
 
 ## 当前活跃基线
 
-- 当前活跃版本：`v0.40.0`
+- 当前活跃版本：`v0.40.1`
 - 当前架构基线：[`docs/ARCHITECTURE.md`](./ARCHITECTURE.md)
 - 当前验收清单：[`docs/V040_ACCEPTANCE.md`](./V040_ACCEPTANCE.md)
 - 历史日志归档：[`docs/WORKLOG_ARCHIVE.md`](./WORKLOG_ARCHIVE.md)
@@ -21,6 +21,7 @@
   - [`2026-04-14 第 39 轮`](#2026-04-14-第-39-轮)
   - [`2026-04-22 第 46 轮`](#2026-04-22-第-46-轮)
   - [`2026-04-23 第 47 轮`](#2026-04-23-第-47-轮)
+  - [`2026-04-23 第 48 轮`](#2026-04-23-第-48-轮)
 - 近期关键节点：
   - `v0.1.5` 正式收口：见 [`docs/V015_CLOSEOUT.md`](./V015_CLOSEOUT.md)
   - `v0.1.5` 发布资产补齐：详见 [`docs/WORKLOG_ARCHIVE.md`](./WORKLOG_ARCHIVE.md)
@@ -442,3 +443,40 @@
 ### 下一步建议
 
 - 验证通过后提交版本号与发布文档变更，打 `v0.40.0` tag，并重新打包上传 GitHub Release 所需安装资产。
+
+## 2026-04-23 第 48 轮
+
+### 讨论主题
+
+- 修复 `v0.40.0` 验收时发现的桌面系统通知权限与测试通知失败问题。
+
+### 当前结论
+
+- 根因是 Tauri 2 构建产物中的 capabilities 为空数组，主窗口未获得 `notification:default` 插件权限。
+- 本轮作为 `v0.40.1` 热修处理，不继续移动已发布的 `v0.40.0` tag。
+- `v0.40.1` 仍沿用 `docs/V040_ACCEPTANCE.md` 的验收清单，只修复桌面通知权限接线问题。
+
+### 文档更新
+
+- 更新 [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md)、[`docs/PROJECT_CONSTRAINTS.md`](./PROJECT_CONSTRAINTS.md) 与 [`docs/WORKLOG.md`](./WORKLOG.md)，将活跃版本指针切到 `v0.40.1`。
+
+### 实现记录
+
+- 新增 `src-tauri/capabilities/default.json`，为主窗口显式授权 `core:default` 与 `notification:default`。
+- 新增 `src-tauri/capabilities.test.ts`，防止后续遗漏桌面通知插件权限。
+- 更新版本号到 `0.40.1`。
+
+### 验证记录
+
+- `cmd /c npx.cmd vitest run --exclude=.worktrees/**` 通过，结果为 12 个测试文件、64 个用例通过。
+- `cmd /c npx.cmd tsc -b` 通过。
+- `cargo test` 通过，结果为 8 个 Rust 测试通过。
+- `cargo check` 通过。
+- 已验证 Tauri 构建输出的 `capabilities.json` 包含 `notification:default`。
+- `cmd /c npm.cmd run tauri:build` 通过，生成：
+  - `src-tauri/target/release/bundle/nsis/轻单_0.40.1_x64-setup.exe`
+  - `src-tauri/target/release/bundle/msi/轻单_0.40.1_x64_zh-CN.msi`
+
+### 下一步建议
+
+- 重新执行正式打包，创建 `v0.40.1` tag 和 GitHub Release，并让用户重新验证桌面系统通知。

@@ -1,1 +1,1 @@
-{}
+{"default":{"identifier":"default","description":"允许主窗口使用应用基础能力和桌面通知插件。","local":true,"windows":["main"],"permissions":["core:default","notification:default"]}}
