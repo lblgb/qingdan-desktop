@@ -25,6 +25,7 @@ dist-ssr
 
 # Codex / local tooling
 .codex/
+.superpowers/
 .worktrees/
 
 # Rust / Tauri build artifacts
