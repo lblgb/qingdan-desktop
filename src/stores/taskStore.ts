@@ -145,7 +145,7 @@ interface TaskState {
 let reminderAutoRefreshTimer: ReturnType<typeof setInterval> | null = null
 let notifiedDesktopReminderKeys = new Set<string>()
 let pendingDesktopReminderKeys = new Set<string>()
-let desktopNotificationPermissionState: 'unknown' | 'granted' = 'unknown'
+let desktopNotificationPermissionState: 'unknown' | 'granted' | 'denied' = 'unknown'
 let lastDesktopPermissionRequestAt = 0
 const DESKTOP_PERMISSION_REQUEST_COOLDOWN_MS = 5 * 60_000
 
@@ -189,8 +189,8 @@ function buildReminderState(tasks: TaskItem[], preferences: ReminderPreferences,
   }
 }
 
-async function ensureDesktopNotificationPermission() {
-  if (desktopNotificationPermissionState === 'granted') {
+async function ensureDesktopNotificationPermission(options: { forceRequest?: boolean } = {}) {
+  if (desktopNotificationPermissionState === 'granted' && !options.forceRequest) {
     return true
   }
 
@@ -200,7 +200,7 @@ async function ensureDesktopNotificationPermission() {
     return true
   }
 
-  if (Date.now() - lastDesktopPermissionRequestAt < DESKTOP_PERMISSION_REQUEST_COOLDOWN_MS) {
+  if (!options.forceRequest && Date.now() - lastDesktopPermissionRequestAt < DESKTOP_PERMISSION_REQUEST_COOLDOWN_MS) {
     return false
   }
 
@@ -211,6 +211,7 @@ async function ensureDesktopNotificationPermission() {
     return true
   }
 
+  desktopNotificationPermissionState = 'denied'
   return false
 }
 
@@ -431,7 +432,13 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       }
 
       const isGranted = await isPermissionGranted()
-      set({ notificationPermissionStatus: isGranted ? 'allowed' : 'not-requested' })
+      set((state) => ({
+        notificationPermissionStatus: isGranted
+          ? 'allowed'
+          : state.notificationPermissionStatus === 'denied'
+            ? 'denied'
+            : 'not-requested',
+      }))
     } catch {
       set({ notificationPermissionStatus: 'error' })
     }
@@ -444,7 +451,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     })
 
     try {
-      const permissionGranted = await ensureDesktopNotificationPermission()
+      const permissionGranted = await ensureDesktopNotificationPermission({ forceRequest: true })
       if (!permissionGranted) {
         set({
           activeAction: null,

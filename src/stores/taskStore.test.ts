@@ -619,6 +619,81 @@ describe('taskStore reset and feedback', () => {
     expect(state.errorDialog).toBeNull()
   })
 
+  it('marks test desktop notification permission as denied when the permission request is denied', async () => {
+    mockIsPermissionGranted.mockResolvedValueOnce(false)
+    mockRequestPermission.mockResolvedValueOnce('denied')
+
+    const { useTaskStore } = await loadStore()
+
+    await useTaskStore.getState().sendTestDesktopNotification()
+
+    const state = useTaskStore.getState()
+    expect(mockSendNotification).not.toHaveBeenCalled()
+    expect(state.notificationPermissionStatus).toBe('denied')
+    expect(state.successToast).toBeNull()
+    expect(state.errorDialog).toMatchObject({ source: 'reminder' })
+  })
+
+  it('marks test desktop notification status as error when sending fails after permission is allowed', async () => {
+    mockSendNotification.mockRejectedValueOnce(new Error('send failed'))
+
+    const { useTaskStore } = await loadStore()
+
+    await useTaskStore.getState().sendTestDesktopNotification()
+
+    const state = useTaskStore.getState()
+    expect(mockIsPermissionGranted).toHaveBeenCalledTimes(1)
+    expect(mockRequestPermission).not.toHaveBeenCalled()
+    expect(mockSendNotification).toHaveBeenCalledTimes(1)
+    expect(state.notificationPermissionStatus).toBe('error')
+    expect(state.successToast).toBeNull()
+    expect(state.errorDialog).toMatchObject({ source: 'reminder' })
+  })
+
+  it('preserves denied notification permission status when refresh sees no system grant', async () => {
+    mockIsPermissionGranted.mockResolvedValueOnce(false)
+
+    const { useTaskStore } = await loadStore()
+
+    useTaskStore.setState({ notificationPermissionStatus: 'denied' })
+    await useTaskStore.getState().refreshNotificationPermissionStatus()
+
+    expect(useTaskStore.getState().notificationPermissionStatus).toBe('denied')
+  })
+
+  it('bypasses background permission cooldown for user-initiated test notifications', async () => {
+    const dueSoonTask = buildTask({
+      id: 'task-due-soon',
+      title: '鍗冲皢鍒版湡浠诲姟',
+      priority: 'urgent',
+      dueAt: '2026-04-16T09:00:00.000Z',
+    })
+    mockIsPermissionGranted.mockResolvedValue(false)
+    mockRequestPermission.mockResolvedValueOnce('denied').mockResolvedValueOnce('granted')
+
+    const { useTaskStore } = await loadStore()
+
+    useTaskStore.setState({
+      tasks: [dueSoonTask],
+      filteredTasks: [dueSoonTask],
+      reminderPreferences: {
+        ...DEFAULT_REMINDER_PREFERENCES,
+        enableDesktop: true,
+      },
+    })
+
+    useTaskStore.getState().refreshReminderBuckets('2026-04-16T08:30:00.000Z')
+    await vi.waitFor(() => {
+      expect(mockRequestPermission).toHaveBeenCalledTimes(1)
+    })
+
+    await useTaskStore.getState().sendTestDesktopNotification()
+
+    expect(mockRequestPermission).toHaveBeenCalledTimes(2)
+    expect(mockSendNotification).toHaveBeenCalledTimes(1)
+    expect(useTaskStore.getState().notificationPermissionStatus).toBe('allowed')
+  })
+
   it('clears success toast and error dialog through explicit actions', async () => {
     const { useTaskStore } = await loadStore()
 
