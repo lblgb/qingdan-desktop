@@ -51,6 +51,7 @@
 - 搜索入口在顶部主控制区。
 - 可以按标题搜索任务。
 - 可以按备注搜索任务。
+- 搜索结果需要同时体现任务标题、状态、优先级和必要时间信息。
 - 点击搜索结果后，会自动切换必要筛选条件。
 - 目标任务会自动滚动到可视区域并短暂高亮。
 - 搜索结果面板应保持与主工作台一致的视觉语言。
@@ -60,5 +61,5 @@
 ```bash
 cmd /c npx.cmd vitest run --exclude=.worktrees/**
 cmd /c npx.cmd tsc -b
-cargo check
+cargo check --manifest-path src-tauri/Cargo.toml
 ```
