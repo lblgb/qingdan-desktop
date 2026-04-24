@@ -24,12 +24,7 @@ export function TaskReminderCenter({
   onOpenChange,
   onSelectTask,
 }: TaskReminderCenterProps) {
-  const pendingCount =
-    buckets.overdue.length +
-    buckets.upcoming.length +
-    buckets.focusWithoutDate.length
-
-  const totalCount = pendingCount + buckets.recentlyReminded.length
+  const pendingCount = buckets.overdue.length + buckets.upcoming.length + buckets.focusWithoutDate.length
 
   return (
     <>
@@ -68,7 +63,7 @@ export function TaskReminderCenter({
             </div>
 
             <div className="task-reminder-center-summary">
-              <strong>{totalCount} 条提醒</strong>
+              <strong>{pendingCount} 条提醒</strong>
               <p>点击任意提醒项会直接定位到对应任务。</p>
             </div>
 
@@ -108,7 +103,7 @@ export function TaskReminderCenter({
                 </section>
               ))}
 
-              {totalCount === 0 ? (
+              {pendingCount === 0 ? (
                 <section className="task-reminder-empty">
                   <strong>当前没有提醒内容</strong>
                   <p>当有逾期事项、即将到期任务或高优先级未排期任务时，这里会自动展示对应分组。</p>

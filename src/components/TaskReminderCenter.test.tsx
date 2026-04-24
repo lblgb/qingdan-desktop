@@ -63,6 +63,32 @@ describe('TaskReminderCenter', () => {
     expect(markup).not.toContain('>2<')
   })
 
+  it('uses pending reminders only for the modal summary and empty-state decision', () => {
+    const markup = renderToStaticMarkup(
+      <TaskReminderCenter
+        buckets={{
+          overdue: [],
+          upcoming: [],
+          focusWithoutDate: [],
+          recentlyReminded: [
+            buildReminderItem({
+              reason: 'recently-reminded',
+              dueLabel: '刚提醒过',
+              task: buildTask({ id: 'task-2', title: '跟进客户回执' }),
+            }),
+          ],
+        }}
+        isOpen
+        onOpenChange={vi.fn()}
+        onSelectTask={vi.fn()}
+      />,
+    )
+
+    expect(markup).toContain('跟进客户回执')
+    expect(markup).toContain('当前没有提醒内容')
+    expect(markup).not.toContain('>1 条提醒<')
+  })
+
   it('renders grouped reminder sections when dialog is open', () => {
     const markup = renderToStaticMarkup(
       <TaskReminderCenter
