@@ -7,9 +7,9 @@
 
 ## 当前活跃基线
 
-- 当前活跃版本：`v0.40.1`
+- 当前活跃版本：`v0.50.0`
 - 当前架构基线：[`docs/ARCHITECTURE.md`](./ARCHITECTURE.md)
-- 当前验收清单：[`docs/V040_ACCEPTANCE.md`](./V040_ACCEPTANCE.md)
+- 当前验收清单：[`docs/V050_ACCEPTANCE.md`](./V050_ACCEPTANCE.md)
 - 历史日志归档：[`docs/WORKLOG_ARCHIVE.md`](./WORKLOG_ARCHIVE.md)
 
 ## 版本索引
@@ -22,10 +22,11 @@
   - [`2026-04-22 第 46 轮`](#2026-04-22-第-46-轮)
   - [`2026-04-23 第 47 轮`](#2026-04-23-第-47-轮)
   - [`2026-04-23 第 48 轮`](#2026-04-23-第-48-轮)
+  - [`2026-04-24 第 49 轮`](#2026-04-24-第-49-轮)
 - 近期关键节点：
   - `v0.1.5` 正式收口：见 [`docs/V015_CLOSEOUT.md`](./V015_CLOSEOUT.md)
   - `v0.1.5` 发布资产补齐：详见 [`docs/WORKLOG_ARCHIVE.md`](./WORKLOG_ARCHIVE.md)
-  - `v0.40.0` 当前实施基线：见 [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) 与 [`docs/V040_ACCEPTANCE.md`](./V040_ACCEPTANCE.md)
+  - `v0.50.0` 当前实施基线：见 [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) 与 [`docs/V050_ACCEPTANCE.md`](./V050_ACCEPTANCE.md)
 
 > 旧轮次不再继续堆叠在本文档内。若需要回溯第 1 至第 35 轮，请查阅归档文档。
 
@@ -480,3 +481,39 @@
 ### 下一步建议
 
 - 重新执行正式打包，创建 `v0.40.1` tag 和 GitHub Release，并让用户重新验证桌面系统通知。
+
+## 2026-04-24 第 49 轮
+
+### 讨论主题
+
+- 建立 `v0.50.0` 文档基线，切换活跃版本指针并补齐验收清单。
+
+### 当前结论
+
+- `v0.50.0` 已成为新的唯一当前实施基线，验收入口切换为 `docs/V050_ACCEPTANCE.md`。
+- 本轮只做文档，不改代码；后续实现按 `ARCHITECTURE.md` 与 `V050_ACCEPTANCE.md` 对齐。
+
+### 决策原因
+
+- 先把 `v0.50.0` 的范围、验收项和日志入口收口，避免后续实现继续依赖 `v0.40.1` 语义。
+- 设计 spec 已明确本轮先建立文档基线，再进入 UI、备份、导出与搜索实现。
+
+### 文档更新
+
+- 新增 [`docs/V050_ACCEPTANCE.md`](./V050_ACCEPTANCE.md)，作为 `v0.50.0` 的唯一手工验收清单。
+- 更新 [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md)，把活跃版本切到 `v0.50.0`，并写入当前实施基线。
+- 更新 [`docs/PROJECT_CONSTRAINTS.md`](./PROJECT_CONSTRAINTS.md)，把当前实施指针切到 `v0.50.0`。
+- 更新 [`docs/WORKLOG.md`](./WORKLOG.md)，记录第 49 轮文档收口动作。
+
+### 实现记录
+
+- 本轮未改代码，仅完成文档基线整理。
+
+### 验证记录
+
+- 先运行了一个缺失基线检查，确认 `docs/V050_ACCEPTANCE.md` 尚不存在时验证失败。
+- 复查了四份目标文档与设计 spec，确认 `v0.50.0` 的范围和验收项一致。
+
+### 下一步建议
+
+- 按 `ARCHITECTURE.md` 与 `V050_ACCEPTANCE.md` 进入 UI 改版和数据安全能力实现。
