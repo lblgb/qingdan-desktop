@@ -63,7 +63,7 @@ describe('TaskReminderCenter', () => {
     expect(markup).not.toContain('>2<')
   })
 
-  it('uses pending reminders only for the modal summary and empty-state decision', () => {
+  it('does not render the empty state when only recently reminded items are present', () => {
     const markup = renderToStaticMarkup(
       <TaskReminderCenter
         buckets={{
@@ -85,7 +85,8 @@ describe('TaskReminderCenter', () => {
     )
 
     expect(markup).toContain('跟进客户回执')
-    expect(markup).toContain('当前没有提醒内容')
+    expect(markup).toContain('最近已提醒')
+    expect(markup).not.toContain('当前没有提醒内容')
     expect(markup).not.toContain('>1 条提醒<')
   })
 

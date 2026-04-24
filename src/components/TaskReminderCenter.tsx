@@ -25,6 +25,7 @@ export function TaskReminderCenter({
   onSelectTask,
 }: TaskReminderCenterProps) {
   const pendingCount = buckets.overdue.length + buckets.upcoming.length + buckets.focusWithoutDate.length
+  const hasAnyReminderGroups = GROUP_META.some((group) => buckets[group.key].length > 0)
 
   return (
     <>
@@ -103,7 +104,7 @@ export function TaskReminderCenter({
                 </section>
               ))}
 
-              {pendingCount === 0 ? (
+              {!hasAnyReminderGroups ? (
                 <section className="task-reminder-empty">
                   <strong>当前没有提醒内容</strong>
                   <p>当有逾期事项、即将到期任务或高优先级未排期任务时，这里会自动展示对应分组。</p>

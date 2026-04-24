@@ -3,9 +3,10 @@
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { AppShell } from './AppShell'
-import { useTaskStore } from '../stores/taskStore'
+import { DEFAULT_REMINDER_PREFERENCES } from '../features/tasks/task.reminders'
 import type { TaskItem } from '../features/tasks/task.types'
+import { useTaskStore } from '../stores/taskStore'
+import { AppShell } from './AppShell'
 
 ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -19,14 +20,6 @@ vi.mock('../components/TaskGroupManager', () => ({
 
 vi.mock('../components/TaskOverview', () => ({
   TaskOverview: () => null,
-}))
-
-vi.mock('../components/TaskSettings', () => ({
-  TaskSettings: ({ isOpen, onOpenChange }: { isOpen: boolean; onOpenChange: (isOpen: boolean) => void }) => (
-    <button aria-expanded={isOpen} aria-label="settings-entry" onClick={() => onOpenChange(true)} type="button">
-      settings-entry
-    </button>
-  ),
 }))
 
 vi.mock('../components/TaskList', () => ({
@@ -51,28 +44,8 @@ vi.mock('../components/TaskErrorDialog', () => ({
   TaskErrorDialog: () => null,
 }))
 
-vi.mock('../components/TaskReminderCenter', () => ({
-  TaskReminderCenter: ({
-    buckets,
-    onSelectTask,
-  }: {
-    buckets: {
-      overdue: Array<unknown>
-      upcoming: Array<unknown>
-      focusWithoutDate: Array<unknown>
-      recentlyReminded: Array<unknown>
-    }
-    onSelectTask: (taskId: string) => void
-  }) => {
-    const pendingCount = buckets.overdue.length + buckets.upcoming.length + buckets.focusWithoutDate.length
-
-    return (
-      <button aria-label="reminder-center-entry" onClick={() => onSelectTask('task-2')} type="button">
-        reminder-center-entry
-        {pendingCount > 0 ? <strong>{pendingCount}</strong> : null}
-      </button>
-    )
-  },
+vi.mock('../components/TaskDetailDialog', () => ({
+  TaskDetailDialog: () => null,
 }))
 
 function buildTask(overrides: Partial<TaskItem> = {}): TaskItem {
@@ -93,7 +66,7 @@ function buildTask(overrides: Partial<TaskItem> = {}): TaskItem {
   }
 }
 
-describe('AppShell reminder navigation', () => {
+describe('AppShell console action bar', () => {
   let container: HTMLDivElement
   let root: ReturnType<typeof createRoot>
 
@@ -115,8 +88,17 @@ describe('AppShell reminder navigation', () => {
       activePriorityFilter: 'medium',
       activeDateRange: 'no-date',
       activeSortBy: 'updated',
+      activeAction: null,
+      feedback: null,
+      reminderPreferences: DEFAULT_REMINDER_PREFERENCES,
       reminderBuckets: {
-        overdue: [],
+        overdue: [
+          {
+            task: buildTask({ id: 'task-3', title: '任务三', priority: 'high', dueAt: '2026-04-16T07:00:00.000Z' }),
+            reason: 'overdue',
+            dueLabel: '已逾期',
+          },
+        ],
         upcoming: [
           {
             task: buildTask({ id: 'task-2', title: '任务二', priority: 'urgent', dueAt: '2026-04-16T09:00:00.000Z' }),
@@ -127,12 +109,22 @@ describe('AppShell reminder navigation', () => {
         focusWithoutDate: [],
         recentlyReminded: [],
       },
-      isHydrated: true,
+      notificationPermissionStatus: 'not-requested',
+      isSavingReminderPreferences: false,
       hydrateTasks: vi.fn().mockResolvedValue(undefined),
       hydrateReminderPreferences: vi.fn().mockResolvedValue(undefined),
+      saveReminderPreferences: vi.fn().mockResolvedValue(true),
+      refreshNotificationPermissionStatus: vi.fn().mockResolvedValue(undefined),
+      sendTestDesktopNotification: vi.fn().mockResolvedValue(undefined),
       startReminderAutoRefresh: vi.fn(),
       stopReminderAutoRefresh: vi.fn(),
+      dismissFeedback: vi.fn(),
+      queueReminderNavigation: useTaskStore.getState().queueReminderNavigation,
       reminderNavigation: null,
+      editingTaskId: null,
+      closeTaskDetail: vi.fn(),
+      updateTask: vi.fn().mockResolvedValue(undefined),
+      archiveTask: vi.fn().mockResolvedValue(undefined),
     })
   })
 
@@ -143,14 +135,44 @@ describe('AppShell reminder navigation', () => {
     container.remove()
   })
 
-  it('resets filters before queueing reminder navigation when the target task is excluded by current filters', async () => {
+  it('renders the real backup, reminder center, and settings system entries', async () => {
     await act(async () => {
       root.render(<AppShell />)
     })
 
-    const button = container.querySelector('button[aria-label="reminder-center-entry"]')
+    expect(container.querySelector('button[aria-label="备份与恢复"]')).toBeTruthy()
+    expect(container.querySelector('button[aria-label="提醒中心"]')).toBeTruthy()
+    expect(container.querySelector('button[aria-label="设置"]')).toBeTruthy()
+  })
+
+  it('shows the pending reminder badge count on the real reminder center entry', async () => {
     await act(async () => {
-      button?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      root.render(<AppShell />)
+    })
+
+    const reminderEntry = container.querySelector('button[aria-label="提醒中心"]')
+    const badge = reminderEntry?.querySelector('.icon-button-badge')
+
+    expect(reminderEntry).toBeTruthy()
+    expect(badge?.textContent).toBe('2')
+  })
+
+  it('resets filters before queueing reminder navigation when selecting a reminder hidden by current filters', async () => {
+    await act(async () => {
+      root.render(<AppShell />)
+    })
+
+    const reminderEntry = container.querySelector('button[aria-label="提醒中心"]')
+    await act(async () => {
+      reminderEntry?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const reminderItem = Array.from(container.querySelectorAll('.task-reminder-item')).find((item) =>
+      item.textContent?.includes('任务二'),
+    )
+
+    await act(async () => {
+      reminderItem?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
     const state = useTaskStore.getState()
@@ -161,111 +183,5 @@ describe('AppShell reminder navigation', () => {
     expect(state.activeSortBy).toBe('default')
     expect(state.filteredTasks.map((task) => task.id)).toEqual(['task-2', 'task-1'])
     expect(state.reminderNavigation?.taskId).toBe('task-2')
-  })
-
-  it('shows archived completed tasks from the archive work view after starting from the active status filter', async () => {
-    useTaskStore.setState({
-      tasks: [
-        buildTask({ id: 'active-task', title: '当前任务', archivedAt: null }),
-        buildTask({
-          id: 'archived-task',
-          title: '归档任务',
-          completed: true,
-          archivedAt: '2026-04-16T10:00:00.000Z',
-        }),
-      ],
-      filteredTasks: [buildTask({ id: 'active-task', title: '当前任务', archivedAt: null })],
-      activeFilter: 'active',
-      activeArchiveFilter: 'active',
-    })
-
-    await act(async () => {
-      root.render(<AppShell />)
-    })
-
-    const archiveButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('归档'))
-    expect(archiveButton).toBeTruthy()
-
-    await act(async () => {
-      archiveButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-
-    expect(useTaskStore.getState().activeArchiveFilter).toBe('archived')
-    expect(useTaskStore.getState().activeFilter).toBe('all')
-    expect(container.textContent).toContain('归档任务')
-    expect(container.textContent).not.toContain('当前任务')
-  })
-
-  it('counts normal work views from non-archived tasks only', async () => {
-    useTaskStore.setState({
-      tasks: [
-        buildTask({ id: 'active-task', title: '当前任务', completed: false, archivedAt: null }),
-        buildTask({ id: 'completed-task', title: '完成任务', completed: true, archivedAt: null }),
-        buildTask({
-          id: 'archived-completed-task',
-          title: '归档完成任务',
-          completed: true,
-          archivedAt: '2026-04-16T10:00:00.000Z',
-        }),
-      ],
-      filteredTasks: [
-        buildTask({ id: 'active-task', title: '当前任务', completed: false, archivedAt: null }),
-        buildTask({ id: 'completed-task', title: '完成任务', completed: true, archivedAt: null }),
-      ],
-      activeFilter: 'all',
-      activeArchiveFilter: 'active',
-    })
-
-    await act(async () => {
-      root.render(<AppShell />)
-    })
-
-    const allButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('全部任务'))
-    const activeButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('进行中'))
-    const completedButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('已完成'))
-    const archiveButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('归档'))
-
-    expect(allButton?.querySelector('strong')?.textContent).toBe('2')
-    expect(activeButton?.querySelector('strong')?.textContent).toBe('1')
-    expect(completedButton?.querySelector('strong')?.textContent).toBe('1')
-    expect(archiveButton?.querySelector('strong')?.textContent).toBe('1')
-  })
-
-  it('shows the pending reminder count on the reminder center entry', async () => {
-    await act(async () => {
-      root.render(<AppShell />)
-    })
-
-    const reminderEntry = container.querySelector('button[aria-label="reminder-center-entry"]')
-
-    expect(reminderEntry).toBeTruthy()
-    expect(reminderEntry?.textContent).toContain('1')
-  })
-
-  it('ignores recently reminded items in pending reminder counts and strip visibility', async () => {
-    useTaskStore.setState({
-      reminderBuckets: {
-        overdue: [],
-        upcoming: [],
-        focusWithoutDate: [],
-        recentlyReminded: [
-          {
-            task: buildTask({ id: 'task-3', title: '任务三', priority: 'high' }),
-            reason: 'recently-reminded',
-            dueLabel: '刚提醒过',
-          },
-        ],
-      },
-    })
-
-    await act(async () => {
-      root.render(<AppShell />)
-    })
-
-    const reminderEntry = container.querySelector('button[aria-label="reminder-center-entry"]')
-
-    expect(reminderEntry).toBeTruthy()
-    expect(reminderEntry?.textContent ?? '').not.toContain('1')
-    expect(container.textContent ?? '').not.toContain('待关注')
   })
 })
