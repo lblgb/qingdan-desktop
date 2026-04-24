@@ -63,7 +63,7 @@ describe('TaskReminderCenter', () => {
     expect(markup).not.toContain('>2<')
   })
 
-  it('does not render the empty state when only recently reminded items are present', () => {
+  it('uses a recently-reminded summary instead of showing zero reminders with a real list', () => {
     const markup = renderToStaticMarkup(
       <TaskReminderCenter
         buckets={{
@@ -85,9 +85,9 @@ describe('TaskReminderCenter', () => {
     )
 
     expect(markup).toContain('跟进客户回执')
-    expect(markup).toContain('最近已提醒')
+    expect(markup).toContain('最近已提醒 1 条')
+    expect(markup).not.toContain('0 条提醒')
     expect(markup).not.toContain('当前没有提醒内容')
-    expect(markup).not.toContain('>1 条提醒<')
   })
 
   it('renders grouped reminder sections when dialog is open', () => {

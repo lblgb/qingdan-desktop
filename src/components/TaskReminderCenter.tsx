@@ -26,6 +26,12 @@ export function TaskReminderCenter({
 }: TaskReminderCenterProps) {
   const pendingCount = buckets.overdue.length + buckets.upcoming.length + buckets.focusWithoutDate.length
   const hasAnyReminderGroups = GROUP_META.some((group) => buckets[group.key].length > 0)
+  const summaryTitle =
+    pendingCount > 0
+      ? `${pendingCount} 条提醒`
+      : buckets.recentlyReminded.length > 0
+        ? `最近已提醒 ${buckets.recentlyReminded.length} 条`
+        : '当前没有提醒内容'
 
   return (
     <>
@@ -64,7 +70,7 @@ export function TaskReminderCenter({
             </div>
 
             <div className="task-reminder-center-summary">
-              <strong>{pendingCount} 条提醒</strong>
+              <strong>{summaryTitle}</strong>
               <p>点击任意提醒项会直接定位到对应任务。</p>
             </div>
 
