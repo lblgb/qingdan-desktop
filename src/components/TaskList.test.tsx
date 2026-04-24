@@ -128,6 +128,28 @@ describe('TaskList reminder navigation', () => {
     expect(helperText).toContain('归档')
   })
 
+  it('renders console module cards with status chips for task rows', async () => {
+    const completedTask = buildTask({ id: 'task-1', title: 'done task', completed: true, priority: 'high' })
+    const activeTask = buildTask({ id: 'task-2', title: 'active task', completed: false, priority: 'urgent' })
+
+    useTaskStore.setState({
+      tasks: [completedTask, activeTask],
+      filteredTasks: [completedTask, activeTask],
+    })
+
+    await act(async () => {
+      root.render(<TaskList />)
+    })
+
+    const moduleCards = container.querySelectorAll('.task-module-card')
+    expect(moduleCards).toHaveLength(2)
+
+    const stateChips = container.querySelectorAll('.task-state-chip')
+    expect(stateChips).toHaveLength(2)
+    expect(container.querySelector('.task-state-chip.is-done')).toBeTruthy()
+    expect(container.querySelector('.task-state-chip.is-active')).toBeTruthy()
+  })
+
   it('scrolls the requested reminder target into view, highlights it, and clears the queued navigation', async () => {
     vi.useFakeTimers()
     const scrollIntoView = vi.fn()

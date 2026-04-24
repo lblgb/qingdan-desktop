@@ -103,7 +103,7 @@ function TaskDetailDialogContent({
         role="dialog"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="task-modal-header">
+        <div className="task-modal-header task-modal-console-header">
           <div>
             <p className="section-tag">任务详情</p>
             <h2 id="task-detail-dialog-title">编辑任务</h2>
@@ -211,11 +211,11 @@ function TaskDetailDialogContent({
             </div>
           ) : null}
 
-          <div className="composer-actions task-modal-actions">
+          <div className="composer-actions task-modal-actions task-modal-console-actions">
             <div className="composer-feedback">
               {isMutating ? <span className="inline-feedback">正在保存任务变更...</span> : null}
             </div>
-            <div className="task-modal-button-row">
+            <div className="task-modal-button-row task-modal-console-button-row">
               {canArchive ? (
                 <button
                   className="secondary-button"

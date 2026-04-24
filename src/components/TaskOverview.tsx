@@ -71,7 +71,7 @@ export function TaskOverview() {
             role="dialog"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="task-modal-header">
+            <div className="task-modal-header task-modal-console-header">
               <div>
                 <p className="section-tag">任务概览</p>
                 <h2 id="task-overview-title">当前任务进展</h2>
@@ -81,9 +81,9 @@ export function TaskOverview() {
               </button>
             </div>
 
-            <div className="overview-layout">
-              <section className="overview-card overview-card-hero">
-                <div className="overview-card-header">
+            <div className="overview-layout overview-console-layout">
+              <section className="overview-card overview-card-hero overview-console-panel">
+                <div className="overview-card-header overview-console-panel-header">
                   <div>
                     <h3>完成情况</h3>
                     <p>基于当前全部任务生成的本地快照，统计口径与列表状态保持一致。</p>
@@ -126,8 +126,8 @@ export function TaskOverview() {
                 </div>
               </section>
 
-              <section className="overview-card">
-                <div className="overview-card-header">
+              <section className="overview-card overview-console-panel">
+                <div className="overview-card-header overview-console-panel-header">
                   <div>
                     <h3>优先级分布</h3>
                     <p>用于快速判断当前清单里高压事项的占比。</p>
@@ -154,8 +154,8 @@ export function TaskOverview() {
                 </div>
               </section>
 
-              <section className="overview-card">
-                <div className="overview-card-header">
+              <section className="overview-card overview-console-panel">
+                <div className="overview-card-header overview-console-panel-header">
                   <div>
                     <h3>最近 7 天趋势</h3>
                     <p>默认只看完成趋势，也可切到新增 / 完成双线对比。</p>
@@ -219,8 +219,8 @@ export function TaskOverview() {
                 </div>
               </section>
 
-              <section className="overview-card">
-                <div className="overview-card-header">
+              <section className="overview-card overview-console-panel">
+                <div className="overview-card-header overview-console-panel-header">
                   <div>
                     <h3>本周摘要</h3>
                     <p>快速查看本周新增、完成和逾期压力变化。</p>
@@ -251,8 +251,8 @@ export function TaskOverview() {
                 </div>
               </section>
 
-              <section className="overview-card overview-review-card">
-                <div className="overview-card-header">
+              <section className="overview-card overview-review-card overview-console-panel">
+                <div className="overview-card-header overview-console-panel-header">
                   <div>
                     <h3>复盘</h3>
                     <p>从完成、归档和任务质量里提炼近期回看线索，帮助判断节奏和沉淀质量。</p>
@@ -343,8 +343,8 @@ export function TaskOverview() {
                 </div>
               </section>
 
-              <section className="overview-card">
-                <div className="overview-card-header">
+              <section className="overview-card overview-console-panel">
+                <div className="overview-card-header overview-console-panel-header">
                   <div>
                     <h3>时间状态</h3>
                     <p>继续沿用主列表的时间语义，辅助判断当前清单压力分布。</p>

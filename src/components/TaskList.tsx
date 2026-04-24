@@ -418,6 +418,7 @@ export function TaskList() {
                       .filter(Boolean)
                       .join(' ')}
                   >
+                    <div className="task-module-card">
                     {isEditing ? (
                       <>
                         <form
@@ -427,8 +428,8 @@ export function TaskList() {
                             void handleSubmitEdit(task)
                           }}
                         >
-                          <div className="task-main-row">
-                            <span className="task-status editing">编辑中</span>
+                          <div className="task-main-row task-module-header">
+                            <span className="task-state-chip is-editing">编辑中</span>
                             <span className={`priority-badge ${editingPriority}`}>{TASK_PRIORITY_META[editingPriority].label}</span>
                           </div>
 
@@ -504,7 +505,7 @@ export function TaskList() {
                           </div>
                         </form>
 
-                        <div className="task-actions">
+                        <div className="task-actions task-actions-console">
                           <button className="secondary-button" onClick={handleCancelEdit} type="button" disabled={isMutating}>
                             取消
                           </button>
@@ -521,7 +522,7 @@ export function TaskList() {
                     ) : (
                       <>
                         <div className="task-body">
-                          <div className="task-main-row">
+                          <div className="task-main-row task-module-header">
                             {isBulkMode ? (
                               <label className="selection-toggle">
                                 <input
@@ -553,7 +554,7 @@ export function TaskList() {
                               >
                                 {TASK_PRIORITY_META[task.priority].label}
                               </button>
-                              <span className={task.completed ? 'task-status done' : 'task-status'}>
+                              <span className={task.completed ? 'task-state-chip is-done' : 'task-state-chip is-active'}>
                                 {task.completed ? '已完成' : '进行中'}
                               </span>
                             </div>
@@ -577,7 +578,7 @@ export function TaskList() {
                         </div>
 
                         {!isBulkMode ? (
-                          <div className="task-actions">
+                          <div className="task-actions task-actions-console">
                             <button className="secondary-button" onClick={() => openTaskDetail(task.id)} type="button" disabled={isMutating}>
                               详情
                             </button>
@@ -596,6 +597,7 @@ export function TaskList() {
                         ) : null}
                       </>
                     )}
+                    </div>
                   </li>
                 )
               })}
