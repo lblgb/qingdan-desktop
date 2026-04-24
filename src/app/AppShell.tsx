@@ -202,13 +202,17 @@ export function AppShell() {
   const statusNotice =
     activeAction === 'hydrate' ? { tone: 'info' as const, message: '正在读取本地任务数据...' } : feedback
 
-  const reminderCount =
-    reminderBuckets.overdue.length +
-    reminderBuckets.upcoming.length +
-    reminderBuckets.focusWithoutDate.length +
-    reminderBuckets.recentlyReminded.length
+  const pendingReminderBuckets = {
+    ...reminderBuckets,
+    recentlyReminded: [],
+  }
 
-  const reminderStripSummary = buildReminderStripSummary(reminderCount, reminderBuckets)
+  const reminderCount =
+    pendingReminderBuckets.overdue.length +
+    pendingReminderBuckets.upcoming.length +
+    pendingReminderBuckets.focusWithoutDate.length
+
+  const reminderStripSummary = buildReminderStripSummary(reminderCount, pendingReminderBuckets)
   const editingTask = tasks.find((task) => task.id === editingTaskId) ?? null
 
   function handleToggleMoreFilters() {

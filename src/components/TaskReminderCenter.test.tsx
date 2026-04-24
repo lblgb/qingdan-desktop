@@ -37,6 +37,32 @@ function buildReminderItem(overrides: Partial<ReminderItem> = {}): ReminderItem 
 }
 
 describe('TaskReminderCenter', () => {
+  it('shows the entry badge count from pending reminders only', () => {
+    const markup = renderToStaticMarkup(
+      <TaskReminderCenter
+        buckets={{
+          overdue: [buildReminderItem()],
+          upcoming: [],
+          focusWithoutDate: [],
+          recentlyReminded: [
+            buildReminderItem({
+              reason: 'recently-reminded',
+              dueLabel: '刚提醒过',
+              task: buildTask({ id: 'task-2', title: '跟进客户回执' }),
+            }),
+          ],
+        }}
+        isOpen={false}
+        onOpenChange={vi.fn()}
+        onSelectTask={vi.fn()}
+      />,
+    )
+
+    expect(markup).toContain('icon-button-badge')
+    expect(markup).toContain('>1<')
+    expect(markup).not.toContain('>2<')
+  })
+
   it('renders grouped reminder sections when dialog is open', () => {
     const markup = renderToStaticMarkup(
       <TaskReminderCenter

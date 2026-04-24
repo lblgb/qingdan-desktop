@@ -24,11 +24,12 @@ export function TaskReminderCenter({
   onOpenChange,
   onSelectTask,
 }: TaskReminderCenterProps) {
-  const totalCount =
+  const pendingCount =
     buckets.overdue.length +
     buckets.upcoming.length +
-    buckets.focusWithoutDate.length +
-    buckets.recentlyReminded.length
+    buckets.focusWithoutDate.length
+
+  const totalCount = pendingCount + buckets.recentlyReminded.length
 
   return (
     <>
@@ -44,7 +45,7 @@ export function TaskReminderCenter({
           铃
         </span>
         <span>提醒</span>
-        {totalCount > 0 ? <strong className="icon-button-badge">{totalCount}</strong> : null}
+        {pendingCount > 0 ? <strong className="icon-button-badge">{pendingCount}</strong> : null}
       </button>
 
       {isOpen ? (
