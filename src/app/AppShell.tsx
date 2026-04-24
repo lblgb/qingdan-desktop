@@ -287,29 +287,41 @@ export function AppShell() {
 
         <div className="topbar-actions">
           <TaskOverview />
-          <TaskSettings
-            isOpen={isSettingsOpen}
-            isSaving={isSavingReminderPreferences}
-            notificationPermissionStatus={notificationPermissionStatus}
-            onOpenChange={setIsSettingsOpen}
-            onPreferencesChange={setDraftReminderPreferences}
-            onRefreshNotificationPermissionStatus={refreshNotificationPermissionStatus}
-            onSave={handleSaveReminderPreferences}
-            onSendTestDesktopNotification={sendTestDesktopNotification}
-            preferences={draftReminderPreferences}
-          />
-          <TaskReminderCenter
-            buckets={reminderBuckets}
-            isOpen={isReminderCenterOpen}
-            onOpenChange={setIsReminderCenterOpen}
-            onSelectTask={(taskId) => {
-              if (!filteredTasks.some((task) => task.id === taskId)) {
-                resetFilters()
-              }
-              queueReminderNavigation(taskId)
-              setIsReminderCenterOpen(false)
-            }}
-          />
+
+          <div className="system-action-bar" aria-label="系统图标组" role="group">
+            <button aria-label="备份与恢复" className="icon-button icon-button-console" type="button">
+              <span aria-hidden="true" className="icon-button-glyph">
+                BR
+              </span>
+              <span className="icon-button-label">备份与恢复</span>
+            </button>
+
+            <TaskReminderCenter
+              buckets={reminderBuckets}
+              isOpen={isReminderCenterOpen}
+              onOpenChange={setIsReminderCenterOpen}
+              onSelectTask={(taskId) => {
+                if (!filteredTasks.some((task) => task.id === taskId)) {
+                  resetFilters()
+                }
+                queueReminderNavigation(taskId)
+                setIsReminderCenterOpen(false)
+              }}
+            />
+
+            <TaskSettings
+              isOpen={isSettingsOpen}
+              isSaving={isSavingReminderPreferences}
+              notificationPermissionStatus={notificationPermissionStatus}
+              onOpenChange={setIsSettingsOpen}
+              onPreferencesChange={setDraftReminderPreferences}
+              onRefreshNotificationPermissionStatus={refreshNotificationPermissionStatus}
+              onSave={handleSaveReminderPreferences}
+              onSendTestDesktopNotification={sendTestDesktopNotification}
+              preferences={draftReminderPreferences}
+            />
+          </div>
+
           <TaskGroupManager />
           <TaskComposer />
         </div>

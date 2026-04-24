@@ -25,6 +25,13 @@
   --accent-soft: rgba(31, 122, 122, 0.1);
   --accent-warm: #1f7a7a;
   --accent-warm-soft: rgba(31, 122, 122, 0.08);
+  --console-panel: rgba(17, 34, 39, 0.84);
+  --console-panel-border: rgba(109, 199, 201, 0.18);
+  --console-icon-surface: rgba(255, 255, 255, 0.9);
+  --console-icon-border: rgba(23, 53, 54, 0.1);
+  --console-icon-glyph: rgba(31, 122, 122, 0.12);
+  --console-icon-badge: #c65d57;
+  --console-icon-badge-text: #fffaf8;
   --danger: #b4544f;
   --warning: #9a5a12;
   --warning-soft: rgba(209, 115, 51, 0.12);
@@ -152,6 +159,7 @@ textarea {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .brand-mark {
@@ -563,6 +571,29 @@ textarea {
   font-weight: 700;
 }
 
+.system-action-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 999px;
+  background: var(--console-panel);
+  border: 1px solid var(--console-panel-border);
+  box-shadow: var(--shadow-md);
+}
+
+.icon-button-console {
+  position: relative;
+  min-width: 0;
+  padding-inline: 0.9rem 1rem;
+  border: 1px solid var(--console-icon-border);
+  background: var(--console-icon-surface);
+}
+
+.icon-button-label {
+  white-space: nowrap;
+}
+
 .icon-button-glyph {
   display: inline-flex;
   align-items: center;
@@ -570,7 +601,7 @@ textarea {
   width: 26px;
   height: 26px;
   border-radius: 999px;
-  background: rgba(31, 122, 122, 0.1);
+  background: var(--console-icon-glyph);
   color: var(--accent-strong);
   font-size: 0.82rem;
 }
@@ -583,9 +614,10 @@ textarea {
   height: 22px;
   padding-inline: 0.4rem;
   border-radius: 999px;
-  background: rgba(180, 84, 79, 0.12);
-  color: var(--danger);
+  background: var(--console-icon-badge);
+  color: var(--console-icon-badge-text);
   font-size: 0.78rem;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.92);
 }
 
 .composer-form label {
@@ -1891,6 +1923,12 @@ select:disabled {
 
   .task-actions {
     justify-content: flex-start;
+  }
+
+  .system-action-bar {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 
   .pagination-bar,

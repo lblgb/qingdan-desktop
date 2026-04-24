@@ -33,9 +33,10 @@ export function TaskReminderCenter({
   return (
     <>
       <button
+        aria-label="提醒中心"
         aria-expanded={isOpen}
         aria-haspopup="dialog"
-        className="icon-button reminder-entry-button"
+        className="icon-button icon-button-console reminder-entry-button"
         onClick={() => onOpenChange(true)}
         type="button"
       >

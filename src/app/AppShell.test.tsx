@@ -22,7 +22,11 @@ vi.mock('../components/TaskOverview', () => ({
 }))
 
 vi.mock('../components/TaskSettings', () => ({
-  TaskSettings: () => null,
+  TaskSettings: ({ isOpen, onOpenChange }: { isOpen: boolean; onOpenChange: (isOpen: boolean) => void }) => (
+    <button aria-expanded={isOpen} aria-label="设置" onClick={() => onOpenChange(true)} type="button">
+      设置
+    </button>
+  ),
 }))
 
 vi.mock('../components/TaskList', () => ({
@@ -48,11 +52,31 @@ vi.mock('../components/TaskErrorDialog', () => ({
 }))
 
 vi.mock('../components/TaskReminderCenter', () => ({
-  TaskReminderCenter: ({ onSelectTask }: { onSelectTask: (taskId: string) => void }) => (
-    <button onClick={() => onSelectTask('task-2')} type="button">
-      选择提醒任务
-    </button>
-  ),
+  TaskReminderCenter: ({
+    buckets,
+    onSelectTask,
+  }: {
+    buckets: {
+      overdue: Array<unknown>
+      upcoming: Array<unknown>
+      focusWithoutDate: Array<unknown>
+      recentlyReminded: Array<unknown>
+    }
+    onSelectTask: (taskId: string) => void
+  }) => {
+    const totalCount =
+      buckets.overdue.length +
+      buckets.upcoming.length +
+      buckets.focusWithoutDate.length +
+      buckets.recentlyReminded.length
+
+    return (
+      <button aria-label="提醒中心" onClick={() => onSelectTask('task-2')} type="button">
+        提醒中心
+        {totalCount > 0 ? <strong>{totalCount}</strong> : null}
+      </button>
+    )
+  },
 }))
 
 function buildTask(overrides: Partial<TaskItem> = {}): TaskItem {
@@ -90,6 +114,7 @@ describe('AppShell reminder navigation', () => {
       filteredTasks: [buildTask({ id: 'task-1', title: '任务一' })],
       taskGroups: [],
       activeFilter: 'active',
+      activeArchiveFilter: 'active',
       activeGroupFilter: 'ungrouped',
       activePriorityFilter: 'medium',
       activeDateRange: 'no-date',
@@ -127,7 +152,7 @@ describe('AppShell reminder navigation', () => {
       root.render(<AppShell />)
     })
 
-    const button = container.querySelector('button')
+    const button = container.querySelector('button[aria-label="提醒中心"]')
     await act(async () => {
       button?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
@@ -208,5 +233,26 @@ describe('AppShell reminder navigation', () => {
     expect(activeButton?.querySelector('strong')?.textContent).toBe('1')
     expect(completedButton?.querySelector('strong')?.textContent).toBe('1')
     expect(archiveButton?.querySelector('strong')?.textContent).toBe('1')
+  })
+
+  it('renders console system action buttons including backup, reminder center, and settings', async () => {
+    await act(async () => {
+      root.render(<AppShell />)
+    })
+
+    expect(container.querySelector('button[aria-label="备份与恢复"]')).toBeTruthy()
+    expect(container.querySelector('button[aria-label="提醒中心"]')).toBeTruthy()
+    expect(container.querySelector('button[aria-label="设置"]')).toBeTruthy()
+  })
+
+  it('shows the pending reminder count on the reminder center entry', async () => {
+    await act(async () => {
+      root.render(<AppShell />)
+    })
+
+    const reminderEntry = container.querySelector('button[aria-label="提醒中心"]')
+
+    expect(reminderEntry).toBeTruthy()
+    expect(reminderEntry?.textContent).toContain('1')
   })
 })

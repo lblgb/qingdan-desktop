@@ -59,9 +59,10 @@ export function TaskSettings({
   return (
     <>
       <button
+        aria-label="设置"
         aria-expanded={isOpen}
         aria-haspopup="dialog"
-        className="icon-button"
+        className="icon-button icon-button-console"
         onClick={() => onOpenChange(true)}
         type="button"
       >
