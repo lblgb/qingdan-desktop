@@ -86,6 +86,8 @@ interface TaskState {
   reminderBuckets: ReminderBuckets
   reminderSnapshotAt: string | null
   notificationPermissionStatus: NotificationPermissionStatus
+  isBackupCenterOpen: boolean
+  lastBackupAt: string | null
   isReminderPreferencesLoading: boolean
   isSavingReminderPreferences: boolean
   isBulkMode: boolean
@@ -115,6 +117,8 @@ interface TaskState {
   closeErrorDialog: () => void
   openTaskDetail: (taskId: string) => void
   closeTaskDetail: () => void
+  setBackupCenterOpen: (isOpen: boolean) => void
+  setLastBackupAt: (value: string | null) => void
   setFilter: (filter: TaskFilter) => void
   setArchiveFilter: (filter: TaskArchiveFilter) => void
   setGroupFilter: (filter: TaskGroupFilter) => void
@@ -298,6 +302,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   reminderBuckets: EMPTY_REMINDER_BUCKETS,
   reminderSnapshotAt: null,
   notificationPermissionStatus: 'not-requested',
+  isBackupCenterOpen: false,
+  lastBackupAt: null,
   isReminderPreferencesLoading: false,
   isSavingReminderPreferences: false,
   isBulkMode: false,
@@ -512,6 +518,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   closeErrorDialog: () => set({ errorDialog: null }),
   openTaskDetail: (taskId) => set({ editingTaskId: taskId }),
   closeTaskDetail: () => set({ editingTaskId: null }),
+  setBackupCenterOpen: (isOpen) => set({ isBackupCenterOpen: isOpen }),
+  setLastBackupAt: (value) => set({ lastBackupAt: value }),
   setFilter: (filter) =>
     set((state) => ({
       activeFilter: filter,

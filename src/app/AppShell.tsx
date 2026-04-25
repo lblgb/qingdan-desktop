@@ -2,6 +2,7 @@
  * 文件说明：应用主界面，负责组织顶部动作、筛选侧栏、提醒入口和任务列表。
  */
 import { useEffect, useMemo, useState } from 'react'
+import { BackupCenter } from '../components/BackupCenter'
 import { TaskComposer } from '../components/TaskComposer'
 import { TaskErrorDialog } from '../components/TaskErrorDialog'
 import { TaskFeedbackToast } from '../components/TaskFeedbackToast'
@@ -99,6 +100,8 @@ export function AppShell() {
   const reminderPreferences = useTaskStore((state) => state.reminderPreferences)
   const reminderBuckets = useTaskStore((state) => state.reminderBuckets)
   const notificationPermissionStatus = useTaskStore((state) => state.notificationPermissionStatus)
+  const isBackupCenterOpen = useTaskStore((state) => state.isBackupCenterOpen)
+  const lastBackupAt = useTaskStore((state) => state.lastBackupAt)
   const isSavingReminderPreferences = useTaskStore((state) => state.isSavingReminderPreferences)
   const hydrateTasks = useTaskStore((state) => state.hydrateTasks)
   const hydrateReminderPreferences = useTaskStore((state) => state.hydrateReminderPreferences)
@@ -120,6 +123,7 @@ export function AppShell() {
   const closeTaskDetail = useTaskStore((state) => state.closeTaskDetail)
   const updateTask = useTaskStore((state) => state.updateTask)
   const archiveTask = useTaskStore((state) => state.archiveTask)
+  const setBackupCenterOpen = useTaskStore((state) => state.setBackupCenterOpen)
 
   const [isMoreFiltersOpen, setIsMoreFiltersOpen] = useState(false)
   const [activeConditionPanel, setActiveConditionPanel] = useState<ConditionPanel>('root')
@@ -293,12 +297,22 @@ export function AppShell() {
           <TaskOverview />
 
           <div className="system-action-bar" aria-label="系统图标组" role="group">
-            <button aria-label="备份与恢复" className="icon-button icon-button-console" disabled title="即将开放" type="button">
+            <button aria-label="备份与恢复" className="icon-button icon-button-console" disabled hidden type="button">
               <span aria-hidden="true" className="icon-button-glyph">
                 BR
               </span>
               <span className="icon-button-label">备份与恢复（即将开放）</span>
             </button>
+
+            <BackupCenter
+              isOpen={isBackupCenterOpen}
+              lastBackupAt={lastBackupAt}
+              onBackupNow={() => {}}
+              onExportCsv={() => {}}
+              onExportJson={() => {}}
+              onOpenChange={setBackupCenterOpen}
+              onRestoreFromBackup={() => {}}
+            />
 
             <TaskReminderCenter
               buckets={reminderBuckets}

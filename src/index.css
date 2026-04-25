@@ -628,10 +628,45 @@ textarea {
 }
 
 .task-settings-form,
+.backup-center-actions,
 .task-reminder-group-list,
 .task-reminder-item-list {
   display: grid;
   gap: 16px;
+}
+
+.backup-center-summary,
+.backup-center-note {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(23, 53, 54, 0.04);
+  border: 1px solid rgba(23, 53, 54, 0.06);
+}
+
+.backup-center-summary strong,
+.backup-center-action strong {
+  color: var(--text-primary);
+}
+
+.backup-center-modal {
+  width: min(720px, 100%);
+}
+
+.backup-center-action {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  width: 100%;
+  padding: 18px;
+  border-radius: 20px;
+  text-align: left;
+}
+
+.backup-center-action span {
+  color: inherit;
+  font-weight: 500;
 }
 
 .task-settings-toggle {

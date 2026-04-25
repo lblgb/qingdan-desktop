@@ -1,0 +1,94 @@
+// @vitest-environment jsdom
+
+import { act } from 'react'
+import { createRoot } from 'react-dom/client'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { describe, expect, it, vi } from 'vitest'
+import { BackupCenter } from './BackupCenter'
+
+;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+
+describe('BackupCenter', () => {
+  it('opens from the standalone entry button', async () => {
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    const onOpenChange = vi.fn()
+
+    await act(async () => {
+      root.render(
+        <BackupCenter
+          isOpen={false}
+          lastBackupAt={null}
+          onBackupNow={vi.fn()}
+          onExportCsv={vi.fn()}
+          onExportJson={vi.fn()}
+          onOpenChange={onOpenChange}
+          onRestoreFromBackup={vi.fn()}
+        />,
+      )
+    })
+
+    container.querySelector('button[aria-label="备份与恢复"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+    expect(onOpenChange).toHaveBeenCalledWith(true)
+
+    await act(async () => {
+      root.unmount()
+    })
+    container.remove()
+  })
+
+  it('shows the last backup timestamp when available', () => {
+    const markup = renderToStaticMarkup(
+      <BackupCenter
+        isOpen
+        lastBackupAt="2026-04-25T10:30:00.000Z"
+        onBackupNow={vi.fn()}
+        onExportCsv={vi.fn()}
+        onExportJson={vi.fn()}
+        onOpenChange={vi.fn()}
+        onRestoreFromBackup={vi.fn()}
+      />,
+    )
+
+    expect(markup).toContain('最近备份')
+    expect(markup).toContain('2026-04-25')
+    expect(markup).toContain('10:30')
+  })
+
+  it('shows the empty state when no backup has been recorded', () => {
+    const markup = renderToStaticMarkup(
+      <BackupCenter
+        isOpen
+        lastBackupAt={null}
+        onBackupNow={vi.fn()}
+        onExportCsv={vi.fn()}
+        onExportJson={vi.fn()}
+        onOpenChange={vi.fn()}
+        onRestoreFromBackup={vi.fn()}
+      />,
+    )
+
+    expect(markup).toContain('尚无备份记录')
+  })
+
+  it('renders all backup and export entry actions in the panel', () => {
+    const markup = renderToStaticMarkup(
+      <BackupCenter
+        isOpen
+        lastBackupAt={null}
+        onBackupNow={vi.fn()}
+        onExportCsv={vi.fn()}
+        onExportJson={vi.fn()}
+        onOpenChange={vi.fn()}
+        onRestoreFromBackup={vi.fn()}
+      />,
+    )
+
+    expect(markup).toContain('立即备份')
+    expect(markup).toContain('从备份恢复')
+    expect(markup).toContain('导出 JSON')
+    expect(markup).toContain('导出 CSV')
+  })
+})

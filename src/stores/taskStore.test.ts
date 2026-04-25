@@ -138,6 +138,20 @@ describe('taskStore reset and feedback', () => {
     expect(useTaskStore.getState().editingTaskId).toBeNull()
   })
 
+
+  it('tracks backup center visibility and the latest backup timestamp', async () => {
+    const { useTaskStore } = await loadStore()
+
+    expect(useTaskStore.getState().isBackupCenterOpen).toBe(false)
+    expect(useTaskStore.getState().lastBackupAt).toBeNull()
+
+    useTaskStore.getState().setBackupCenterOpen(true)
+    useTaskStore.getState().setLastBackupAt('2026-04-25T10:30:00.000Z')
+
+    expect(useTaskStore.getState().isBackupCenterOpen).toBe(true)
+    expect(useTaskStore.getState().lastBackupAt).toBe('2026-04-25T10:30:00.000Z')
+  })
+
   it('filters visible tasks by archive state', async () => {
     const { useTaskStore } = await loadStore()
     const activeTask = buildTask({ id: 'active-task', archivedAt: null })
