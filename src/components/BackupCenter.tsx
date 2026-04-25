@@ -1,4 +1,3 @@
-import { useTaskStore } from '../stores/taskStore'
 import { formatTaskDate } from '../lib/date'
 
 function formatBackupTimestamp(value: string | null) {
@@ -13,8 +12,8 @@ interface BackupCenterProps {
   isOpen: boolean
   lastBackupAt: string | null
   onOpenChange: (isOpen: boolean) => void
-  onBackupNow: () => void
-  onRestoreFromBackup: () => void
+  onBackupNow: (backupPath: string) => Promise<boolean> | boolean
+  onRestoreFromBackup: (backupPath: string) => Promise<boolean> | boolean
   onExportJson: () => void
   onExportCsv: () => void
 }
@@ -29,8 +28,6 @@ export function BackupCenter({
   onExportCsv,
 }: BackupCenterProps) {
   const formattedLastBackupAt = formatBackupTimestamp(lastBackupAt)
-  const createBackup = useTaskStore((state) => state.createBackup)
-  const restoreBackup = useTaskStore((state) => state.restoreBackup)
 
   async function handleBackupNow() {
     const backupPath = window.prompt('请输入备份文件路径', 'C:\\backup\\qingdan.db')
@@ -38,10 +35,7 @@ export function BackupCenter({
       return
     }
 
-    const isSuccess = await createBackup(backupPath.trim())
-    if (isSuccess) {
-      onBackupNow()
-    }
+    await onBackupNow(backupPath.trim())
   }
 
   async function handleRestoreFromBackup() {
@@ -55,9 +49,8 @@ export function BackupCenter({
       return
     }
 
-    const isSuccess = await restoreBackup(backupPath.trim())
+    const isSuccess = await onRestoreFromBackup(backupPath.trim())
     if (isSuccess) {
-      onRestoreFromBackup()
       onOpenChange(false)
     }
   }

@@ -6,17 +6,6 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { formatTaskDate } from '../lib/date'
 
-const mockCreateBackup = vi.hoisted(() => vi.fn())
-const mockRestoreBackup = vi.hoisted(() => vi.fn())
-
-vi.mock('../stores/taskStore', () => ({
-  useTaskStore: (selector: (state: { createBackup: typeof mockCreateBackup; restoreBackup: typeof mockRestoreBackup }) => unknown) =>
-    selector({
-      createBackup: mockCreateBackup,
-      restoreBackup: mockRestoreBackup,
-    }),
-}))
-
 import { BackupCenter } from './BackupCenter'
 
 ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -24,8 +13,6 @@ import { BackupCenter } from './BackupCenter'
 describe('BackupCenter', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockCreateBackup.mockResolvedValue(true)
-    mockRestoreBackup.mockResolvedValue(true)
   })
 
   it('opens from the standalone entry button', async () => {
@@ -93,6 +80,7 @@ describe('BackupCenter', () => {
 
   it('runs backup action after collecting a backup path', async () => {
     const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('C:\\backup\\qingdan.db')
+    const onBackupNow = vi.fn().mockResolvedValue(true)
     const container = document.createElement('div')
     document.body.appendChild(container)
     const root = createRoot(container)
@@ -102,7 +90,7 @@ describe('BackupCenter', () => {
         <BackupCenter
           isOpen
           lastBackupAt={null}
-          onBackupNow={vi.fn()}
+          onBackupNow={onBackupNow}
           onExportCsv={vi.fn()}
           onExportJson={vi.fn()}
           onOpenChange={vi.fn()}
@@ -117,7 +105,7 @@ describe('BackupCenter', () => {
     })
 
     expect(promptSpy).toHaveBeenCalled()
-    expect(mockCreateBackup).toHaveBeenCalledWith('C:\\backup\\qingdan.db')
+    expect(onBackupNow).toHaveBeenCalledWith('C:\\backup\\qingdan.db')
 
     await act(async () => {
       root.unmount()
@@ -130,6 +118,7 @@ describe('BackupCenter', () => {
     const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('C:\\backup\\qingdan.db')
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
     const onOpenChange = vi.fn()
+    const onRestoreFromBackup = vi.fn().mockResolvedValue(true)
     const container = document.createElement('div')
     document.body.appendChild(container)
     const root = createRoot(container)
@@ -143,7 +132,7 @@ describe('BackupCenter', () => {
           onExportCsv={vi.fn()}
           onExportJson={vi.fn()}
           onOpenChange={onOpenChange}
-          onRestoreFromBackup={vi.fn()}
+          onRestoreFromBackup={onRestoreFromBackup}
         />,
       )
     })
@@ -155,7 +144,7 @@ describe('BackupCenter', () => {
 
     expect(promptSpy).toHaveBeenCalled()
     expect(confirmSpy).toHaveBeenCalled()
-    expect(mockRestoreBackup).toHaveBeenCalledWith('C:\\backup\\qingdan.db')
+    expect(onRestoreFromBackup).toHaveBeenCalledWith('C:\\backup\\qingdan.db')
     expect(onOpenChange).toHaveBeenCalledWith(false)
 
     await act(async () => {

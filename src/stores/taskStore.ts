@@ -569,7 +569,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
 
     try {
       await restoreBackupSnapshot(backupPath)
-      const [taskGroups, tasks] = await Promise.all([loadTaskGroups(), queryTasks(buildQuery(get()))])
+      const [taskGroups, tasks] = await Promise.all([loadTaskGroups(), loadTasks()])
       set((state) => {
         const activeGroupFilter = normalizeGroupFilter(taskGroups, state.activeGroupFilter)
         const nextQuery = buildQuery({

@@ -177,7 +177,7 @@ describe('taskStore reset and feedback', () => {
   it('refreshes tasks after restoring from backup', async () => {
     const restoredTasks = [buildTask({ id: 'restored-task', title: 'Restored task' })]
     const restoredGroups = [buildGroup({ id: 'restored-group' })]
-    mockQueryTasks.mockResolvedValue(restoredTasks)
+    mockLoadTasks.mockResolvedValue(restoredTasks)
     mockLoadTaskGroups.mockResolvedValue(restoredGroups)
 
     const { useTaskStore } = await loadStore()
@@ -197,17 +197,45 @@ describe('taskStore reset and feedback', () => {
 
     expect(result).toBe(true)
     expect(mockRestoreBackup).toHaveBeenCalledWith('C:\\backup\\qingdan.db')
-    expect(mockQueryTasks).toHaveBeenCalledWith({
-      status: 'all',
-      archive: 'active',
-      group: 'all-groups',
-      priority: 'all-priorities',
-      dateRange: 'all-time',
-      sortBy: 'default',
-    })
+    expect(mockLoadTasks).toHaveBeenCalledTimes(1)
     expect(useTaskStore.getState().tasks).toEqual(restoredTasks)
     expect(useTaskStore.getState().taskGroups).toEqual(restoredGroups)
     expect(useTaskStore.getState().filteredTasks).toEqual(restoredTasks)
+  })
+
+  it('keeps the full task set after restore when current filters are non-default', async () => {
+    const restoredAllTasks = [
+      buildTask({ id: 'active-task', title: 'Active task', completed: false }),
+      buildTask({
+        id: 'completed-task',
+        title: 'Completed task',
+        completed: true,
+        completedAt: '2026-04-16T02:00:00.000Z',
+      }),
+    ]
+    mockLoadTasks.mockResolvedValue(restoredAllTasks)
+    mockLoadTaskGroups.mockResolvedValue([])
+    mockQueryTasks.mockResolvedValue([restoredAllTasks[1]])
+
+    const { useTaskStore } = await loadStore()
+
+    useTaskStore.setState({
+      tasks: [buildTask({ id: 'old-task' })],
+      filteredTasks: [buildTask({ id: 'old-task' })],
+      activeFilter: 'completed',
+      activeArchiveFilter: 'active',
+      activeGroupFilter: 'all-groups',
+      activePriorityFilter: 'all-priorities',
+      activeDateRange: 'all-time',
+      activeSortBy: 'default',
+    })
+
+    const result = await useTaskStore.getState().restoreBackup('C:\\backup\\qingdan.db')
+
+    expect(result).toBe(true)
+    expect(mockLoadTasks).toHaveBeenCalledTimes(1)
+    expect(useTaskStore.getState().tasks).toEqual(restoredAllTasks)
+    expect(useTaskStore.getState().filteredTasks).toEqual([restoredAllTasks[1]])
   })
 
   it('filters visible tasks by archive state', async () => {

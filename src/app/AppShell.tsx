@@ -124,6 +124,8 @@ export function AppShell() {
   const updateTask = useTaskStore((state) => state.updateTask)
   const archiveTask = useTaskStore((state) => state.archiveTask)
   const setBackupCenterOpen = useTaskStore((state) => state.setBackupCenterOpen)
+  const createBackup = useTaskStore((state) => state.createBackup)
+  const restoreBackup = useTaskStore((state) => state.restoreBackup)
 
   const [isMoreFiltersOpen, setIsMoreFiltersOpen] = useState(false)
   const [activeConditionPanel, setActiveConditionPanel] = useState<ConditionPanel>('root')
@@ -300,11 +302,11 @@ export function AppShell() {
             <BackupCenter
               isOpen={isBackupCenterOpen}
               lastBackupAt={lastBackupAt}
-              onBackupNow={() => {}}
+              onBackupNow={createBackup}
               onExportCsv={() => {}}
               onExportJson={() => {}}
               onOpenChange={setBackupCenterOpen}
-              onRestoreFromBackup={() => {}}
+              onRestoreFromBackup={restoreBackup}
             />
 
             <TaskReminderCenter
