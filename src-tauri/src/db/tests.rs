@@ -288,3 +288,47 @@ fn restore_backup_replaces_database_file_contents() {
 
     assert_eq!(titles, vec!["before restore".to_string()]);
 }
+
+#[test]
+fn restore_backup_with_invalid_file_keeps_existing_database_intact() {
+    let db_path = legacy_database_path();
+    let backup_path = std::env::temp_dir().join(format!("qingdan-invalid-restore-{}.db", Uuid::new_v4()));
+    fs::create_dir_all(db_path.parent().expect("temp path has a parent"))
+        .expect("create temp directory");
+
+    init_database(&db_path).expect("initialize database");
+
+    let connection = Connection::open(&db_path).expect("open database");
+    connection
+        .execute(
+            "
+            INSERT INTO tasks (
+                id, title, description, note, completed, completed_at, archived_at, priority,
+                group_id, due_at, created_at, updated_at
+            ) VALUES (?1, 'live task', '', '', 0, NULL, NULL, 'medium', NULL, NULL, ?2, ?3)
+            ",
+            params![
+                Uuid::new_v4().to_string(),
+                "2026-04-25T00:00:00Z",
+                "2026-04-25T00:00:00Z"
+            ],
+        )
+        .expect("seed live database");
+    drop(connection);
+
+    fs::write(&backup_path, "not-a-sqlite-database").expect("write invalid backup");
+
+    let error = restore_backup_file(&db_path, &backup_path).expect_err("invalid backup should fail");
+    assert!(!error.is_empty());
+
+    let restored_connection = Connection::open(&db_path).expect("reopen live database");
+    let titles = restored_connection
+        .prepare("SELECT title FROM tasks ORDER BY created_at ASC")
+        .expect("prepare live query")
+        .query_map([], |row| row.get::<_, String>(0))
+        .expect("query live titles")
+        .collect::<Result<Vec<_>, _>>()
+        .expect("collect live titles");
+
+    assert_eq!(titles, vec!["live task".to_string()]);
+}

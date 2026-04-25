@@ -6,7 +6,7 @@ use tauri::State;
 
 use crate::{
     db::{create_backup_file, restore_backup_file, DatabaseState},
-    models::{BackupFileResult, CreateBackupInput, RestoreBackupInput},
+    models::{BackupCommandResult, CreateBackupInput, RestoreBackupInput},
 };
 
 /// 返回基础健康检查信息。
@@ -18,22 +18,22 @@ pub fn ping() -> String {
 fn create_backup_inner(
     state: &DatabaseState,
     input: CreateBackupInput,
-) -> Result<BackupFileResult, String> {
+) -> Result<BackupCommandResult, String> {
     let backup_path = PathBuf::from(&input.backup_path);
     create_backup_file(&state.db_path, &backup_path)?;
-    Ok(BackupFileResult {
-        path: input.backup_path,
+    Ok(BackupCommandResult {
+        backup_path: input.backup_path,
     })
 }
 
 fn restore_backup_inner(
     state: &DatabaseState,
     input: RestoreBackupInput,
-) -> Result<BackupFileResult, String> {
+) -> Result<BackupCommandResult, String> {
     let backup_path = PathBuf::from(&input.backup_path);
     restore_backup_file(&state.db_path, &backup_path)?;
-    Ok(BackupFileResult {
-        path: state.db_path.to_string_lossy().into_owned(),
+    Ok(BackupCommandResult {
+        backup_path: input.backup_path,
     })
 }
 
@@ -41,7 +41,7 @@ fn restore_backup_inner(
 pub fn create_backup(
     input: CreateBackupInput,
     state: State<'_, DatabaseState>,
-) -> Result<BackupFileResult, String> {
+) -> Result<BackupCommandResult, String> {
     create_backup_inner(&state, input)
 }
 
@@ -49,7 +49,7 @@ pub fn create_backup(
 pub fn restore_backup(
     input: RestoreBackupInput,
     state: State<'_, DatabaseState>,
-) -> Result<BackupFileResult, String> {
+) -> Result<BackupCommandResult, String> {
     restore_backup_inner(&state, input)
 }
 
@@ -105,12 +105,12 @@ mod tests {
         )
         .expect("create backup command");
 
-        assert_eq!(result.path, backup_path.to_string_lossy());
+        assert_eq!(result.backup_path, backup_path.to_string_lossy());
         assert!(backup_path.exists());
     }
 
     #[test]
-    fn restore_backup_command_returns_database_path_after_restore() {
+    fn restore_backup_command_returns_backup_path_after_restore() {
         let db_path = temp_db_path();
         let backup_path = std::env::temp_dir().join(format!("qingdan-system-restore-{}.db", Uuid::new_v4()));
         fs::remove_file(&db_path).ok();
@@ -174,7 +174,7 @@ mod tests {
             .query_row("SELECT title FROM tasks LIMIT 1", [], |row| row.get::<_, String>(0))
             .expect("read restored task");
 
-        assert_eq!(result.path, db_path.to_string_lossy());
+        assert_eq!(result.backup_path, backup_path.to_string_lossy());
         assert_eq!(title, "original");
     }
 }

@@ -160,6 +160,6 @@ pub struct RestoreBackupInput {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct BackupFileResult {
-    pub path: String,
+pub struct BackupCommandResult {
+    pub backup_path: String,
 }

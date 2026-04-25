@@ -3,6 +3,7 @@
 use std::{fs, path::PathBuf};
 
 use rusqlite::Connection;
+use uuid::Uuid;
 
 /// SQLite 文件名。
 pub const SQLITE_FILE_NAME: &str = "qingdan.db";
@@ -98,8 +99,18 @@ pub fn restore_backup_file(db_path: &PathBuf, backup_path: &PathBuf) -> Result<(
         fs::create_dir_all(parent).map_err(|error| format!("创建数据库目录失败：{error}"))?;
     }
 
-    fs::copy(backup_path, db_path).map_err(|error| format!("恢复数据库备份失败：{error}"))?;
-    init_database(db_path)?;
+    let temp_restore_path = std::env::temp_dir().join(format!("qingdan-restore-verify-{}.db", Uuid::new_v4()));
+    fs::copy(backup_path, &temp_restore_path)
+        .map_err(|error| format!("创建备份验证副本失败：{error}"))?;
+
+    let validation_result = init_database(&temp_restore_path);
+    if let Err(error) = validation_result {
+        fs::remove_file(&temp_restore_path).ok();
+        return Err(format!("备份文件校验失败：{error}"));
+    }
+
+    fs::copy(&temp_restore_path, db_path).map_err(|error| format!("恢复数据库备份失败：{error}"))?;
+    fs::remove_file(&temp_restore_path).ok();
     Ok(())
 }
 
