@@ -1,7 +1,5 @@
 // @vitest-environment jsdom
 
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -214,12 +212,34 @@ describe('TaskDetailDialog', () => {
     expect(onArchive).toHaveBeenCalledWith(task.id)
   })
 
-  it('keeps detail meta panels on the dark console palette in css', () => {
-    const cssSource = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8')
+  it('renders detail meta information inside console-style semantic panels', async () => {
+    const task = buildTask({
+      completed: true,
+      completedAt: '2026-04-17T09:30:00.000Z',
+      archivedAt: '2026-04-18T10:00:00.000Z',
+    })
 
-    expect(cssSource).toMatch(/\.task-detail-meta div\s*\{[^}]*rgba\(8,\s*16,\s*24,\s*0\.[0-9]+\)/)
-    expect(cssSource).toMatch(/\.task-detail-meta dd\s*\{[^}]*#f3fbff|\.task-detail-meta dd\s*\{[^}]*rgba\(217,\s*237,\s*245,\s*0\.[0-9]+\)/)
-    expect(cssSource).not.toMatch(/\.task-detail-meta div\s*\{[^}]*rgba\(31,\s*122,\s*122,\s*0\.05\)/)
-    expect(cssSource).not.toMatch(/\.task-detail-meta dd\s*\{[^}]*var\(--text-primary\)/)
+    await act(async () => {
+      root.render(
+        <TaskDetailDialog
+          isOpen
+          task={task}
+          tasks={[task]}
+          taskGroups={[buildGroup()]}
+          isMutating={false}
+          onClose={vi.fn()}
+          onSave={vi.fn()}
+          onArchive={vi.fn()}
+        />,
+      )
+    })
+
+    const modal = container.querySelector('.task-modal')
+    expect(modal).toBeTruthy()
+    expect(modal?.querySelector('.task-modal-console-header')).toBeTruthy()
+
+    const metaPanels = Array.from(modal?.querySelectorAll('.task-detail-meta-panel') ?? [])
+    expect(metaPanels).toHaveLength(4)
+    expect(metaPanels.every((panel) => panel.querySelector('.task-detail-meta-value'))).toBe(true)
   })
 })

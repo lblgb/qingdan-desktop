@@ -185,21 +185,21 @@ function TaskDetailDialogContent({
           </div>
 
           <dl className="task-detail-meta">
-            <div>
+            <div className="task-detail-meta-panel">
               <dt>创建时间</dt>
-              <dd>{formatTaskDate(task.createdAt, 'YYYY-MM-DD HH:mm')}</dd>
+              <dd className="task-detail-meta-value">{formatTaskDate(task.createdAt, 'YYYY-MM-DD HH:mm')}</dd>
             </div>
-            <div>
+            <div className="task-detail-meta-panel">
               <dt>更新时间</dt>
-              <dd>{formatTaskDate(task.updatedAt, 'YYYY-MM-DD HH:mm')}</dd>
+              <dd className="task-detail-meta-value">{formatTaskDate(task.updatedAt, 'YYYY-MM-DD HH:mm')}</dd>
             </div>
-            <div>
+            <div className="task-detail-meta-panel">
               <dt>完成时间</dt>
-              <dd>{formatTaskDate(task.completedAt, 'YYYY-MM-DD HH:mm')}</dd>
+              <dd className="task-detail-meta-value">{formatTaskDate(task.completedAt, 'YYYY-MM-DD HH:mm')}</dd>
             </div>
-            <div>
+            <div className="task-detail-meta-panel">
               <dt>归档时间</dt>
-              <dd>{formatTaskDate(task.archivedAt, 'YYYY-MM-DD HH:mm')}</dd>
+              <dd className="task-detail-meta-value">{formatTaskDate(task.archivedAt, 'YYYY-MM-DD HH:mm')}</dd>
             </div>
           </dl>
 

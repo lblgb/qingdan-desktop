@@ -1,11 +1,10 @@
 // @vitest-environment jsdom
 
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TaskList } from './TaskList'
+import { TaskOverview } from './TaskOverview'
 import { useTaskStore } from '../stores/taskStore'
 import type { TaskGroup, TaskItem } from '../features/tasks/task.types'
 
@@ -70,6 +69,7 @@ describe('TaskList reminder navigation', () => {
       root.unmount()
     })
     container.remove()
+    vi.useRealTimers()
     vi.restoreAllMocks()
   })
 
@@ -201,30 +201,56 @@ describe('TaskList reminder navigation', () => {
     expect(headerChips.length).toBe(2)
   })
 
-  it('keeps task cards and overview panels on a dark console palette in css', () => {
-    const cssSource = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8')
+  it('renders overview panels with console chips and monthly trend bars', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-04-25T09:00:00.000Z'))
 
-    expect(cssSource).toMatch(/\.task-modal\s*\{[\s\S]*rgba\(8,\s*16,\s*24,\s*0\.9[0-9]*\)/)
-    expect(cssSource).toMatch(/\.task-module-card\s*\{[\s\S]*rgba\(8,\s*16,\s*24,\s*0\.9[0-9]*\)/)
-    expect(cssSource).toMatch(/\.overview-console-panel\s*\{[\s\S]*rgba\(8,\s*16,\s*24,\s*0\.9[0-9]*\)/)
-    expect(cssSource).not.toMatch(/\.task-modal\s*\{[\s\S]*rgba\(255,\s*255,\s*255,\s*0\.98\)/)
-    expect(cssSource).not.toMatch(/\.task-module-card\s*\{[\s\S]*rgba\(251,\s*253,\s*252/)
-    expect(cssSource).not.toMatch(/\.overview-console-panel\s*\{[\s\S]*rgba\(251,\s*253,\s*252/)
-  })
+    const openTask = buildTask({
+      id: 'task-open',
+      title: 'Open urgent task',
+      priority: 'urgent',
+      dueAt: '2026-04-26T08:00:00.000Z',
+      createdAt: '2026-04-24T08:00:00.000Z',
+      updatedAt: '2026-04-24T08:00:00.000Z',
+    })
+    const completedTask = buildTask({
+      id: 'task-done',
+      title: 'Done high task',
+      completed: true,
+      completedAt: '2026-04-24T11:00:00.000Z',
+      priority: 'high',
+      createdAt: '2026-04-01T08:00:00.000Z',
+      updatedAt: '2026-04-24T11:00:00.000Z',
+    })
 
-  it('keeps TaskOverview priority labels on the task-console-chip system', () => {
-    const overviewSource = readFileSync(resolve(process.cwd(), 'src/components/TaskOverview.tsx'), 'utf8')
+    useTaskStore.setState({
+      tasks: [openTask, completedTask],
+      filteredTasks: [openTask, completedTask],
+      isHydrated: true,
+      activeAction: null,
+    })
 
-    expect(overviewSource).toMatch(/task-console-chip/)
-    expect(overviewSource).toMatch(/highestOpenPriority[\s\S]*task-console-chip/)
-    expect(overviewSource).toMatch(/recentCompleted\.map[\s\S]*task-console-chip/)
-    expect(overviewSource).not.toMatch(/priority-badge/)
-  })
+    await act(async () => {
+      root.render(<TaskOverview />)
+    })
 
-  it('keeps overview monthly trend widths expressed with percent units', () => {
-    const overviewSource = readFileSync(resolve(process.cwd(), 'src/components/TaskOverview.tsx'), 'utf8')
+    const trigger = container.querySelector('button.overview-trigger-button')
+    expect(trigger).toBeTruthy()
 
-    expect(overviewSource).toMatch(/overview-monthly-fill[\s\S]*width:\s*`\$\{Math\.max\(Math\.round\(\(item\.completed \/ reviewMonthlyMax\) \* 100\), item\.completed > 0 \? 8 : 0\)}%`,/)
+    await act(async () => {
+      trigger?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const modal = container.querySelector('.task-modal.overview-modal')
+    expect(modal).toBeTruthy()
+    expect(modal?.querySelectorAll('.overview-console-panel').length).toBeGreaterThan(0)
+    expect(modal?.querySelector('.overview-weekly-grid .task-console-chip.is-priority')).toBeTruthy()
+    expect(modal?.querySelector('.overview-review-list .task-console-chip.is-priority')).toBeTruthy()
+    expect(modal?.querySelector('.priority-badge')).toBeNull()
+
+    const monthlyBars = Array.from(modal?.querySelectorAll<HTMLElement>('.overview-monthly-fill') ?? [])
+    expect(monthlyBars).toHaveLength(6)
+    expect(monthlyBars.every((bar) => bar.style.width.endsWith('%'))).toBe(true)
   })
 
   it('scrolls the requested reminder target into view, highlights it, and clears the queued navigation', async () => {
