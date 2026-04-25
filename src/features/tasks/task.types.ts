@@ -122,3 +122,7 @@ export interface BulkUpdateTasksInput {
   markCompleted?: boolean
   archive?: boolean
 }
+
+export interface BackupCommandResult {
+  backupPath: string
+}

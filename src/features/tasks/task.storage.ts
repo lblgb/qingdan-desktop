@@ -7,6 +7,7 @@ import { applyTaskQuery } from './task.filters'
 import { DEFAULT_REMINDER_PREFERENCES } from './task.reminders'
 import { defaultTasks } from './task.mock'
 import type {
+  BackupCommandResult,
   BulkUpdateTasksInput,
   CreateTaskGroupInput,
   CreateTaskInput,
@@ -51,6 +52,10 @@ const reminderPreferencesSchema = z.object({
   priorityThreshold: z.enum(['urgent', 'high', 'medium']).catch('high'),
   offsetPreset: z.enum(['at-time', '10-minutes', '1-hour', '1-day', 'custom']).catch('1-hour'),
   customOffsetMinutes: z.number().int().nonnegative().catch(120),
+})
+
+const backupCommandResultSchema = z.object({
+  backupPath: z.string(),
 })
 
 const taskListSchema = z.array(taskSchema)
@@ -336,6 +341,34 @@ export async function saveReminderPreferences(
 
   saveLocalReminderPreferences(preferences)
   return preferences
+}
+
+export async function createBackup(backupPath: string): Promise<string> {
+  if (!isTauriRuntime()) {
+    throw new Error('Backup commands require desktop runtime')
+  }
+
+  const result = await invoke<BackupCommandResult>('create_backup', {
+    input: {
+      backupPath,
+    },
+  })
+
+  return backupCommandResultSchema.parse(result).backupPath
+}
+
+export async function restoreBackup(backupPath: string): Promise<string> {
+  if (!isTauriRuntime()) {
+    throw new Error('Backup commands require desktop runtime')
+  }
+
+  const result = await invoke<BackupCommandResult>('restore_backup', {
+    input: {
+      backupPath,
+    },
+  })
+
+  return backupCommandResultSchema.parse(result).backupPath
 }
 
 /**

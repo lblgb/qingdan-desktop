@@ -17,6 +17,8 @@ const mockLoadTasks = vi.fn()
 const mockBulkUpdateTasks = vi.fn()
 const mockLoadReminderPreferences = vi.fn()
 const mockSaveReminderPreferences = vi.fn()
+const mockCreateBackup = vi.fn()
+const mockRestoreBackup = vi.fn()
 const mockIsPermissionGranted = vi.fn()
 const mockRequestPermission = vi.fn()
 const mockSendNotification = vi.fn()
@@ -36,6 +38,8 @@ vi.mock('../features/tasks/task.storage', () => ({
   bulkUpdateTasks: mockBulkUpdateTasks,
   loadReminderPreferences: mockLoadReminderPreferences,
   saveReminderPreferences: mockSaveReminderPreferences,
+  createBackup: mockCreateBackup,
+  restoreBackup: mockRestoreBackup,
 }))
 
 vi.mock('@tauri-apps/plugin-notification', () => ({
@@ -94,6 +98,8 @@ beforeEach(() => {
   mockBulkUpdateTasks.mockResolvedValue([])
   mockLoadReminderPreferences.mockResolvedValue(DEFAULT_REMINDER_PREFERENCES)
   mockSaveReminderPreferences.mockImplementation(async (input: ReminderPreferences) => input)
+  mockCreateBackup.mockResolvedValue('C:\\backup\\qingdan.db')
+  mockRestoreBackup.mockResolvedValue('C:\\backup\\qingdan.db')
   mockIsPermissionGranted.mockResolvedValue(true)
   mockRequestPermission.mockResolvedValue('granted')
   mockSendNotification.mockResolvedValue(undefined)
@@ -150,6 +156,58 @@ describe('taskStore reset and feedback', () => {
 
     expect(useTaskStore.getState().isBackupCenterOpen).toBe(true)
     expect(useTaskStore.getState().lastBackupAt).toBe('2026-04-25T10:30:00.000Z')
+  })
+
+  it('updates lastBackupAt after a successful backup', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-04-25T10:30:00.000Z'))
+
+    const { useTaskStore } = await loadStore()
+
+    const result = await useTaskStore.getState().createBackup('C:\\backup\\qingdan.db')
+
+    expect(result).toBe(true)
+    expect(mockCreateBackup).toHaveBeenCalledWith('C:\\backup\\qingdan.db')
+    expect(useTaskStore.getState().lastBackupAt).toBe('2026-04-25T10:30:00.000Z')
+    expect(useTaskStore.getState().successToast).toMatchObject({ source: 'backup' })
+
+    vi.useRealTimers()
+  })
+
+  it('refreshes tasks after restoring from backup', async () => {
+    const restoredTasks = [buildTask({ id: 'restored-task', title: 'Restored task' })]
+    const restoredGroups = [buildGroup({ id: 'restored-group' })]
+    mockQueryTasks.mockResolvedValue(restoredTasks)
+    mockLoadTaskGroups.mockResolvedValue(restoredGroups)
+
+    const { useTaskStore } = await loadStore()
+
+    useTaskStore.setState({
+      tasks: [buildTask({ id: 'old-task', title: 'Old task' })],
+      filteredTasks: [buildTask({ id: 'old-task', title: 'Old task' })],
+      activeFilter: 'all',
+      activeArchiveFilter: 'active',
+      activeGroupFilter: 'all-groups',
+      activePriorityFilter: 'all-priorities',
+      activeDateRange: 'all-time',
+      activeSortBy: 'default',
+    })
+
+    const result = await useTaskStore.getState().restoreBackup('C:\\backup\\qingdan.db')
+
+    expect(result).toBe(true)
+    expect(mockRestoreBackup).toHaveBeenCalledWith('C:\\backup\\qingdan.db')
+    expect(mockQueryTasks).toHaveBeenCalledWith({
+      status: 'all',
+      archive: 'active',
+      group: 'all-groups',
+      priority: 'all-priorities',
+      dateRange: 'all-time',
+      sortBy: 'default',
+    })
+    expect(useTaskStore.getState().tasks).toEqual(restoredTasks)
+    expect(useTaskStore.getState().taskGroups).toEqual(restoredGroups)
+    expect(useTaskStore.getState().filteredTasks).toEqual(restoredTasks)
   })
 
   it('filters visible tasks by archive state', async () => {

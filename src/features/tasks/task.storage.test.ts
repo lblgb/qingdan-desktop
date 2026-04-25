@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   bulkUpdateTasks,
+  createBackup,
   loadReminderPreferences,
   loadTasks,
   queryTasks,
+  restoreBackup,
   saveReminderPreferences,
   updateTask,
 } from './task.storage'
@@ -334,5 +336,39 @@ describe('task query storage', () => {
 
     expect(tasks.find((task) => task.id === 'completed-task')?.archivedAt).not.toBeNull()
     expect(tasks.find((task) => task.id === 'active-task')?.archivedAt).toBeNull()
+  })
+
+  it('maps create backup to the Tauri command payload', async () => {
+    ;(globalThis as typeof globalThis & { window: Window & { __TAURI_INTERNALS__: unknown } }).window = {
+      localStorage: createLocalStorage() as never,
+      __TAURI_INTERNALS__: {},
+    } as never
+    mockInvoke.mockResolvedValue({ backupPath: 'C:\\backup\\qingdan.db' })
+
+    const result = await createBackup('C:\\backup\\qingdan.db')
+
+    expect(mockInvoke).toHaveBeenCalledWith('create_backup', {
+      input: {
+        backupPath: 'C:\\backup\\qingdan.db',
+      },
+    })
+    expect(result).toBe('C:\\backup\\qingdan.db')
+  })
+
+  it('maps restore backup to the Tauri command payload', async () => {
+    ;(globalThis as typeof globalThis & { window: Window & { __TAURI_INTERNALS__: unknown } }).window = {
+      localStorage: createLocalStorage() as never,
+      __TAURI_INTERNALS__: {},
+    } as never
+    mockInvoke.mockResolvedValue({ backupPath: 'C:\\backup\\qingdan.db' })
+
+    const result = await restoreBackup('C:\\backup\\qingdan.db')
+
+    expect(mockInvoke).toHaveBeenCalledWith('restore_backup', {
+      input: {
+        backupPath: 'C:\\backup\\qingdan.db',
+      },
+    })
+    expect(result).toBe('C:\\backup\\qingdan.db')
   })
 })

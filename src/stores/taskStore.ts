@@ -14,6 +14,7 @@ import {
 import {
   assignTaskGroup,
   bulkUpdateTasks,
+  createBackup as createBackupSnapshot,
   createTask,
   createTaskGroup,
   deleteTask,
@@ -22,6 +23,7 @@ import {
   loadTaskGroups,
   loadTasks,
   queryTasks,
+  restoreBackup as restoreBackupSnapshot,
   saveReminderPreferences as persistReminderPreferences,
   toggleTask,
   updateTask,
@@ -46,7 +48,7 @@ import type {
   UpdateTaskInput,
 } from '../features/tasks/task.types'
 
-type TaskAction = 'hydrate' | 'create' | 'update' | 'toggle' | 'remove' | 'group' | 'bulk' | 'reminder'
+type TaskAction = 'hydrate' | 'create' | 'update' | 'toggle' | 'remove' | 'group' | 'bulk' | 'reminder' | 'backup'
 type TaskFeedbackTone = 'success' | 'error'
 
 interface TaskFeedback {
@@ -119,6 +121,8 @@ interface TaskState {
   closeTaskDetail: () => void
   setBackupCenterOpen: (isOpen: boolean) => void
   setLastBackupAt: (value: string | null) => void
+  createBackup: (backupPath: string) => Promise<boolean>
+  restoreBackup: (backupPath: string) => Promise<boolean>
   setFilter: (filter: TaskFilter) => void
   setArchiveFilter: (filter: TaskArchiveFilter) => void
   setGroupFilter: (filter: TaskGroupFilter) => void
@@ -520,6 +524,90 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   closeTaskDetail: () => set({ editingTaskId: null }),
   setBackupCenterOpen: (isOpen) => set({ isBackupCenterOpen: isOpen }),
   setLastBackupAt: (value) => set({ lastBackupAt: value }),
+  createBackup: async (backupPath) => {
+    set({
+      isMutating: true,
+      activeAction: 'backup',
+      successToast: null,
+      errorDialog: null,
+    })
+
+    try {
+      await createBackupSnapshot(backupPath)
+      const lastBackupAt = new Date().toISOString()
+      set({
+        lastBackupAt,
+        isMutating: false,
+        activeAction: null,
+        successToast: {
+          tone: 'success',
+          message: '本地备份已创建。',
+          source: 'backup',
+        },
+      })
+      return true
+    } catch (error) {
+      set({
+        isMutating: false,
+        activeAction: null,
+        errorDialog: {
+          title: '备份失败',
+          message: getErrorMessage(error, '创建本地备份失败，请稍后重试。'),
+          source: 'backup',
+        },
+      })
+      return false
+    }
+  },
+  restoreBackup: async (backupPath) => {
+    set({
+      isMutating: true,
+      activeAction: 'backup',
+      successToast: null,
+      errorDialog: null,
+    })
+
+    try {
+      await restoreBackupSnapshot(backupPath)
+      const [taskGroups, tasks] = await Promise.all([loadTaskGroups(), queryTasks(buildQuery(get()))])
+      set((state) => {
+        const activeGroupFilter = normalizeGroupFilter(taskGroups, state.activeGroupFilter)
+        const nextQuery = buildQuery({
+          ...state,
+          activeGroupFilter,
+        })
+
+        return {
+          tasks,
+          taskGroups,
+          activeGroupFilter,
+          filteredTasks: buildVisibleTasks(tasks, nextQuery),
+          isHydrated: true,
+          isMutating: false,
+          activeAction: null,
+          successToast: {
+            tone: 'success',
+            message: '已从备份恢复任务数据。',
+            source: 'backup',
+          },
+          ...buildReminderState(tasks, state.reminderPreferences),
+        }
+      })
+      void syncDesktopNotifications(tasks, get().reminderPreferences)
+      return true
+    } catch (error) {
+      set({
+        isMutating: false,
+        activeAction: null,
+        errorDialog: {
+          title: '恢复失败',
+          message: getErrorMessage(error, '从备份恢复任务数据失败，请稍后重试。'),
+          source: 'backup',
+        },
+      })
+      return false
+    }
+  },
   setFilter: (filter) =>
     set((state) => ({
       activeFilter: filter,
