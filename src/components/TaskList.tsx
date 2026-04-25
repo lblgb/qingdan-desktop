@@ -404,6 +404,9 @@ export function TaskList() {
               {group.tasks.map((task) => {
                 const isEditing = editingTaskId === task.id
                 const isSelected = selectedTaskIds.includes(task.id)
+                const taskGroupLabel = task.groupId
+                  ? `任务组：${availableTaskGroups.find((groupItem) => groupItem.id === task.groupId)?.name ?? '未知分组'}`
+                  : '未分组'
 
                 return (
                   <li
@@ -429,8 +432,8 @@ export function TaskList() {
                           }}
                         >
                           <div className="task-main-row task-module-header">
-                            <span className="task-state-chip is-editing">编辑中</span>
-                            <span className={`priority-badge ${editingPriority}`}>{TASK_PRIORITY_META[editingPriority].label}</span>
+                            <span className="task-console-chip task-state-chip is-editing">编辑中</span>
+                            <span className={`task-console-chip is-priority is-${editingPriority}`}>{TASK_PRIORITY_META[editingPriority].label}</span>
                           </div>
 
                           <label className="task-edit-field" htmlFor={`edit-title-${task.id}`}>
@@ -500,8 +503,8 @@ export function TaskList() {
                           </div>
 
                           <div className="task-meta">
-                            <span>{formatTaskDate(task.createdAt, '创建于 YYYY-MM-DD')}</span>
-                            <span>{formatTaskDate(task.updatedAt, '最近更新于 YYYY-MM-DD')}</span>
+                            <span className="task-console-chip is-meta">{formatTaskDate(task.createdAt, '创建于 YYYY-MM-DD')}</span>
+                            <span className="task-console-chip is-meta">{formatTaskDate(task.updatedAt, '最近更新于 YYYY-MM-DD')}</span>
                           </div>
                         </form>
 
@@ -547,14 +550,14 @@ export function TaskList() {
 
                             <div className="task-tag-row">
                               <button
-                                className={`priority-badge priority-badge-button ${task.priority}`}
+                                className={`task-console-chip task-console-chip-button is-priority is-${task.priority}`}
                                 onClick={() => void handleCyclePriority(task)}
                                 type="button"
                                 disabled={isMutating}
                               >
                                 {TASK_PRIORITY_META[task.priority].label}
                               </button>
-                              <span className={task.completed ? 'task-state-chip is-done' : 'task-state-chip is-active'}>
+                              <span className={task.completed ? 'task-console-chip task-state-chip is-done' : 'task-console-chip task-state-chip is-active'}>
                                 {task.completed ? '已完成' : '进行中'}
                               </span>
                             </div>
@@ -567,13 +570,9 @@ export function TaskList() {
                           </div>
 
                           <div className="task-meta">
-                            <span>
-                              {task.groupId
-                                ? `任务组：${availableTaskGroups.find((groupItem) => groupItem.id === task.groupId)?.name ?? '未知分组'}`
-                                : '未分组'}
-                            </span>
-                            <span>{formatTaskDate(task.dueAt)}</span>
-                            <span>{formatTaskDate(task.createdAt, '创建于 YYYY-MM-DD')}</span>
+                            <span className="task-console-chip is-meta is-group">{taskGroupLabel}</span>
+                            <span className="task-console-chip is-meta is-due">{formatTaskDate(task.dueAt)}</span>
+                            <span className="task-console-chip is-meta is-created">{formatTaskDate(task.createdAt, '创建于 YYYY-MM-DD')}</span>
                           </div>
                         </div>
 

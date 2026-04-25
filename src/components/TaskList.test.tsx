@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -148,6 +150,56 @@ describe('TaskList reminder navigation', () => {
     expect(stateChips).toHaveLength(2)
     expect(container.querySelector('.task-state-chip.is-done')).toBeTruthy()
     expect(container.querySelector('.task-state-chip.is-active')).toBeTruthy()
+  })
+
+  it('renders priority, group, due date, and status as one unified console chip system', async () => {
+    useTaskStore.setState({
+      tasks: [
+        buildTask({
+          id: 'task-1',
+          title: 'chip task',
+          completed: false,
+          priority: 'urgent',
+          groupId: 'group-1',
+          dueAt: '2026-04-21T08:00:00.000Z',
+        }),
+      ],
+      filteredTasks: [
+        buildTask({
+          id: 'task-1',
+          title: 'chip task',
+          completed: false,
+          priority: 'urgent',
+          groupId: 'group-1',
+          dueAt: '2026-04-21T08:00:00.000Z',
+        }),
+      ],
+      taskGroups: [{ id: 'group-1', name: 'Console Group' }],
+    })
+
+    await act(async () => {
+      root.render(<TaskList />)
+    })
+
+    const taskRow = container.querySelector('[data-task-id="task-1"]')
+    expect(taskRow).toBeTruthy()
+    expect(taskRow?.querySelector('.priority-badge')).toBeNull()
+
+    const metaChips = Array.from(taskRow?.querySelectorAll('.task-meta > *') ?? [])
+    expect(metaChips.length).toBeGreaterThanOrEqual(3)
+    expect(metaChips.every((chip) => chip.classList.contains('task-console-chip'))).toBe(true)
+
+    const headerChips = Array.from(taskRow?.querySelectorAll('.task-tag-row .task-console-chip') ?? [])
+    expect(headerChips.length).toBe(2)
+  })
+
+  it('keeps task cards and overview panels on a dark console palette in css', () => {
+    const cssSource = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8')
+
+    expect(cssSource).toMatch(/\.task-module-card\s*\{[\s\S]*rgba\(8,\s*16,\s*24,\s*0\.9[0-9]*\)/)
+    expect(cssSource).toMatch(/\.overview-console-panel\s*\{[\s\S]*rgba\(8,\s*16,\s*24,\s*0\.9[0-9]*\)/)
+    expect(cssSource).not.toMatch(/\.task-module-card\s*\{[\s\S]*rgba\(251,\s*253,\s*252/)
+    expect(cssSource).not.toMatch(/\.overview-console-panel\s*\{[\s\S]*rgba\(251,\s*253,\s*252/)
   })
 
   it('scrolls the requested reminder target into view, highlights it, and clears the queued navigation', async () => {
