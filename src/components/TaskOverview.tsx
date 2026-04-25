@@ -10,9 +10,6 @@ import { useTaskStore } from '../stores/taskStore'
 
 const PRIORITY_ORDER: TaskPriority[] = ['urgent', 'high', 'medium', 'low']
 
-/**
- * 任务概览弹窗入口。
- */
 export function TaskOverview() {
   const tasks = useTaskStore((state) => state.tasks)
   const isHydrated = useTaskStore((state) => state.isHydrated)
@@ -242,11 +239,15 @@ export function TaskOverview() {
                   </article>
                   <article className="overview-weekly-item">
                     <span>最高未完成优先级</span>
-                    <strong>
-                      {overview.weeklySummary.highestOpenPriority
-                        ? TASK_PRIORITY_META[overview.weeklySummary.highestOpenPriority].label
-                        : '无'}
-                    </strong>
+                    <div>
+                      {overview.weeklySummary.highestOpenPriority ? (
+                        <span className={`task-console-chip is-priority is-${overview.weeklySummary.highestOpenPriority}`}>
+                          {TASK_PRIORITY_META[overview.weeklySummary.highestOpenPriority].label}
+                        </span>
+                      ) : (
+                        '无'
+                      )}
+                    </div>
                   </article>
                 </div>
               </section>
@@ -272,11 +273,9 @@ export function TaskOverview() {
                           <li key={task.id}>
                             <div>
                               <strong>{task.title}</strong>
-                              <small>
-                                {task.completedAt ? dayjs(task.completedAt).format('MM-DD HH:mm') : '无完成时间'} ·{' '}
-                                {TASK_PRIORITY_META[task.priority].label}
-                              </small>
+                              <small>{task.completedAt ? dayjs(task.completedAt).format('MM-DD HH:mm') : '无完成时间'}</small>
                             </div>
+                            <span className={`task-console-chip is-priority is-${task.priority}`}>{TASK_PRIORITY_META[task.priority].label}</span>
                             {task.archivedAt ? <span>已归档</span> : null}
                           </li>
                         ))}
@@ -315,7 +314,7 @@ export function TaskOverview() {
                             <span
                               className="overview-monthly-fill"
                               style={{
-                                width: `${Math.max(Math.round((item.completed / reviewMonthlyMax) * 100), item.completed > 0 ? 8 : 0)}%`,
+                                width: `${Math.max(Math.round((item.completed / reviewMonthlyMax) * 100), item.completed > 0 ? 8 : 0)}`,
                               }}
                             />
                           </div>

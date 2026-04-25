@@ -216,6 +216,8 @@ describe('TaskList reminder navigation', () => {
     const overviewSource = readFileSync(resolve(process.cwd(), 'src/components/TaskOverview.tsx'), 'utf8')
 
     expect(overviewSource).toMatch(/task-console-chip/)
+    expect(overviewSource).toMatch(/highestOpenPriority[\s\S]*task-console-chip/)
+    expect(overviewSource).toMatch(/recentCompleted\.map[\s\S]*task-console-chip/)
     expect(overviewSource).not.toMatch(/priority-badge/)
   })
 

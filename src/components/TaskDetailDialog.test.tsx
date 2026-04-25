@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -210,5 +212,14 @@ describe('TaskDetailDialog', () => {
     })
 
     expect(onArchive).toHaveBeenCalledWith(task.id)
+  })
+
+  it('keeps detail meta panels on the dark console palette in css', () => {
+    const cssSource = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8')
+
+    expect(cssSource).toMatch(/\.task-detail-meta div\s*\{[^}]*rgba\(8,\s*16,\s*24,\s*0\.[0-9]+\)/)
+    expect(cssSource).toMatch(/\.task-detail-meta dd\s*\{[^}]*#f3fbff|\.task-detail-meta dd\s*\{[^}]*rgba\(217,\s*237,\s*245,\s*0\.[0-9]+\)/)
+    expect(cssSource).not.toMatch(/\.task-detail-meta div\s*\{[^}]*rgba\(31,\s*122,\s*122,\s*0\.05\)/)
+    expect(cssSource).not.toMatch(/\.task-detail-meta dd\s*\{[^}]*var\(--text-primary\)/)
   })
 })

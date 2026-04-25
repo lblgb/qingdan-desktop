@@ -1350,18 +1350,18 @@ textarea {
   gap: 4px;
   padding: 12px 14px;
   border-radius: var(--radius-md);
-  background: rgba(31, 122, 122, 0.05);
-  border: 1px solid rgba(31, 122, 122, 0.08);
+  background: rgba(8, 16, 24, 0.82);
+  border: 1px solid rgba(109, 199, 201, 0.14);
 }
 
 .task-detail-meta dt {
-  color: var(--text-secondary);
+  color: rgba(217, 237, 245, 0.68);
   font-size: 0.82rem;
 }
 
 .task-detail-meta dd {
   margin: 0;
-  color: var(--text-primary);
+  color: #f3fbff;
   font-weight: 700;
 }
 
