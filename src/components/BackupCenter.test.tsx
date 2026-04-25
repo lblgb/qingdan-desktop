@@ -53,8 +53,7 @@ describe('BackupCenter', () => {
     )
 
     expect(markup).toContain('最近备份')
-    expect(markup).toContain('2026-04-25')
-    expect(markup).toContain('10:30')
+    expect(markup).toContain('2026-04-25 10:30 UTC')
   })
 
   it('shows the empty state when no backup has been recorded', () => {
@@ -74,6 +73,40 @@ describe('BackupCenter', () => {
   })
 
   it('renders all backup and export entry actions in the panel', () => {
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+
+    act(() => {
+      root.render(
+        <BackupCenter
+          isOpen
+          lastBackupAt={null}
+          onBackupNow={vi.fn()}
+          onExportCsv={vi.fn()}
+          onExportJson={vi.fn()}
+          onOpenChange={vi.fn()}
+          onRestoreFromBackup={vi.fn()}
+        />,
+      )
+    })
+
+    const actionButtons = Array.from(container.querySelectorAll('.backup-center-action'))
+
+    expect(actionButtons).toHaveLength(4)
+    expect(actionButtons.every((button) => (button as HTMLButtonElement).disabled)).toBe(true)
+    expect(container.textContent).toContain('立即备份')
+    expect(container.textContent).toContain('从备份恢复')
+    expect(container.textContent).toContain('导出 JSON')
+    expect(container.textContent).toContain('导出 CSV')
+
+    act(() => {
+      root.unmount()
+    })
+    container.remove()
+  })
+
+  it('keeps backup actions in placeholder state during the frontend-only phase', () => {
     const markup = renderToStaticMarkup(
       <BackupCenter
         isOpen
@@ -86,9 +119,6 @@ describe('BackupCenter', () => {
       />,
     )
 
-    expect(markup).toContain('立即备份')
-    expect(markup).toContain('从备份恢复')
-    expect(markup).toContain('导出 JSON')
-    expect(markup).toContain('导出 CSV')
+    expect(markup).toContain('当前仅展示入口，不执行真实命令')
   })
 })

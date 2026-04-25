@@ -3,7 +3,13 @@ function formatBackupTimestamp(value: string | null) {
     return null
   }
 
-  return value.replace('T', ' ').slice(0, 16)
+  const parsed = new Date(value)
+
+  if (Number.isNaN(parsed.getTime())) {
+    return value
+  }
+
+  return `${parsed.toISOString().replace('T', ' ').slice(0, 16)} UTC`
 }
 
 interface BackupCenterProps {
@@ -72,22 +78,42 @@ export function BackupCenter({
             </div>
 
             <div className="backup-center-actions">
-              <button className="primary-button backup-center-action" onClick={onBackupNow} type="button">
+              <button
+                className="primary-button backup-center-action"
+                disabled
+                onClick={onBackupNow}
+                type="button"
+              >
                 <strong>立即备份</strong>
                 <span>创建新的本地备份快照。当前仅展示入口，不执行真实命令。</span>
               </button>
 
-              <button className="secondary-button backup-center-action" onClick={onRestoreFromBackup} type="button">
+              <button
+                className="secondary-button backup-center-action"
+                disabled
+                onClick={onRestoreFromBackup}
+                type="button"
+              >
                 <strong>从备份恢复</strong>
                 <span>选择已有备份并恢复数据。当前仅展示入口，不执行真实命令。</span>
               </button>
 
-              <button className="secondary-button backup-center-action" onClick={onExportJson} type="button">
+              <button
+                className="secondary-button backup-center-action"
+                disabled
+                onClick={onExportJson}
+                type="button"
+              >
                 <strong>导出 JSON</strong>
                 <span>导出结构化数据文件，便于迁移或外部归档。</span>
               </button>
 
-              <button className="secondary-button backup-center-action" onClick={onExportCsv} type="button">
+              <button
+                className="secondary-button backup-center-action"
+                disabled
+                onClick={onExportCsv}
+                type="button"
+              >
                 <strong>导出 CSV</strong>
                 <span>导出表格格式数据，便于在电子表格工具中查看。</span>
               </button>
