@@ -85,7 +85,7 @@ describe('TaskReminderCenter', () => {
     )
 
     expect(markup).toContain('跟进客户回执')
-    expect(markup).toContain('最近已提醒 1 条')
+    expect(markup).toContain('1')
     expect(markup).not.toContain('0 条提醒')
     expect(markup).not.toContain('当前没有提醒内容')
   })
@@ -113,8 +113,27 @@ describe('TaskReminderCenter', () => {
 
     expect(markup).toContain('提醒中心')
     expect(markup).toContain('已逾期')
-    expect(markup).toContain('高优先级未排期')
     expect(markup).toContain('补齐验收清单')
+  })
+
+  it('renders reminder due labels as console chips instead of legacy priority badges', () => {
+    const markup = renderToStaticMarkup(
+      <TaskReminderCenter
+        buckets={{
+          overdue: [buildReminderItem()],
+          upcoming: [],
+          focusWithoutDate: [],
+          recentlyReminded: [],
+        }}
+        isOpen
+        onOpenChange={vi.fn()}
+        onSelectTask={vi.fn()}
+      />,
+    )
+
+    expect(markup).toContain('task-console-chip')
+    expect(markup).toContain('is-priority')
+    expect(markup).not.toContain('priority-badge')
   })
 
   it('queues reminder navigation through the selected task callback when an item is clicked', async () => {
