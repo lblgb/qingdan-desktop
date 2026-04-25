@@ -101,7 +101,7 @@ export function TaskReminderCenter({
                           <p>{item.task.description || '暂无补充说明。'}</p>
                         </div>
                         <div className="task-reminder-item-meta">
-                          <span className={`task-console-chip is-priority is-${item.task.priority}`}>{item.dueLabel}</span>
+                          <span className={`task-console-chip is-reminder-state is-${item.reason}`}>{item.dueLabel}</span>
                           <span className="meta-pill">{item.task.completed ? '已完成' : '待处理'}</span>
                         </div>
                       </button>

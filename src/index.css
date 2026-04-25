@@ -1873,6 +1873,35 @@ textarea {
   letter-spacing: 0.01em;
 }
 
+.task-console-chip.is-reminder-state {
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+
+.task-console-chip.is-reminder-state.is-overdue {
+  background: rgba(255, 92, 92, 0.14);
+  border-color: rgba(255, 92, 92, 0.22);
+  color: #ffb0b0;
+}
+
+.task-console-chip.is-reminder-state.is-upcoming {
+  background: rgba(255, 184, 76, 0.14);
+  border-color: rgba(255, 184, 76, 0.22);
+  color: #ffd28a;
+}
+
+.task-console-chip.is-reminder-state.is-focus-without-date {
+  background: rgba(80, 223, 255, 0.12);
+  border-color: rgba(80, 223, 255, 0.22);
+  color: #8ef3ff;
+}
+
+.task-console-chip.is-reminder-state.is-recently-reminded {
+  background: rgba(151, 179, 199, 0.14);
+  border-color: rgba(151, 179, 199, 0.2);
+  color: #d2e2ee;
+}
+
 .task-console-chip.is-priority.is-urgent {
   background: rgba(255, 92, 92, 0.14);
   border-color: rgba(255, 92, 92, 0.22);

@@ -85,7 +85,7 @@ describe('TaskReminderCenter', () => {
     )
 
     expect(markup).toContain('跟进客户回执')
-    expect(markup).toContain('1')
+    expect(markup).toContain('最近已提醒 1 条')
     expect(markup).not.toContain('0 条提醒')
     expect(markup).not.toContain('当前没有提醒内容')
   })
@@ -116,7 +116,7 @@ describe('TaskReminderCenter', () => {
     expect(markup).toContain('补齐验收清单')
   })
 
-  it('renders reminder due labels as console chips instead of legacy priority badges', () => {
+  it('renders reminder due labels as neutral reminder chips instead of priority chips', () => {
     const markup = renderToStaticMarkup(
       <TaskReminderCenter
         buckets={{
@@ -132,7 +132,8 @@ describe('TaskReminderCenter', () => {
     )
 
     expect(markup).toContain('task-console-chip')
-    expect(markup).toContain('is-priority')
+    expect(markup).toContain('is-reminder-state')
+    expect(markup).not.toContain('is-priority')
     expect(markup).not.toContain('priority-badge')
   })
 
