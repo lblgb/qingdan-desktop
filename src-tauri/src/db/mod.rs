@@ -103,7 +103,8 @@ pub fn restore_backup_file(db_path: &PathBuf, backup_path: &PathBuf) -> Result<(
     fs::copy(backup_path, &temp_restore_path)
         .map_err(|error| format!("创建备份验证副本失败：{error}"))?;
 
-    let validation_result = init_database(&temp_restore_path);
+    let validation_result = validate_backup_database_structure(&temp_restore_path)
+        .and_then(|_| init_database(&temp_restore_path));
     if let Err(error) = validation_result {
         fs::remove_file(&temp_restore_path).ok();
         return Err(format!("备份文件校验失败：{error}"));
@@ -111,6 +112,49 @@ pub fn restore_backup_file(db_path: &PathBuf, backup_path: &PathBuf) -> Result<(
 
     fs::copy(&temp_restore_path, db_path).map_err(|error| format!("恢复数据库备份失败：{error}"))?;
     fs::remove_file(&temp_restore_path).ok();
+    Ok(())
+}
+
+fn validate_backup_database_structure(db_path: &PathBuf) -> Result<(), String> {
+    let connection = open_connection(db_path)?;
+    ensure_required_table_columns(
+        &connection,
+        "tasks",
+        &["id", "title", "description", "completed", "created_at", "updated_at"],
+    )?;
+    ensure_required_table_columns(
+        &connection,
+        "task_groups",
+        &["id", "name", "description", "created_at", "updated_at"],
+    )?;
+    Ok(())
+}
+
+fn ensure_required_table_columns(
+    connection: &Connection,
+    table_name: &str,
+    required_columns: &[&str],
+) -> Result<(), String> {
+    let mut statement = connection
+        .prepare(&format!("PRAGMA table_info({table_name})"))
+        .map_err(|error| format!("读取 {table_name} 表结构失败：{error}"))?;
+
+    let columns = statement
+        .query_map([], |row| row.get::<_, String>(1))
+        .map_err(|error| format!("查询 {table_name} 表字段失败：{error}"))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|error| format!("读取 {table_name} 表字段结果失败：{error}"))?;
+
+    if columns.is_empty() {
+        return Err(format!("缺少 {table_name} 表"));
+    }
+
+    for required_column in required_columns {
+        if !columns.iter().any(|column| column == required_column) {
+            return Err(format!("{table_name} 表缺少必要字段 {required_column}"));
+        }
+    }
+
     Ok(())
 }
 
