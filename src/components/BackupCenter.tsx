@@ -1,15 +1,11 @@
+import { formatTaskDate } from '../lib/date'
+
 function formatBackupTimestamp(value: string | null) {
   if (!value) {
     return null
   }
 
-  const parsed = new Date(value)
-
-  if (Number.isNaN(parsed.getTime())) {
-    return value
-  }
-
-  return `${parsed.toISOString().replace('T', ' ').slice(0, 16)} UTC`
+  return formatTaskDate(value, 'YYYY-MM-DD HH:mm')
 }
 
 interface BackupCenterProps {
@@ -105,7 +101,7 @@ export function BackupCenter({
                 type="button"
               >
                 <strong>导出 JSON</strong>
-                <span>导出结构化数据文件，便于迁移或外部归档。</span>
+                <span>导出结构化数据文件。当前仅展示入口，不执行真实命令。</span>
               </button>
 
               <button
@@ -115,7 +111,7 @@ export function BackupCenter({
                 type="button"
               >
                 <strong>导出 CSV</strong>
-                <span>导出表格格式数据，便于在电子表格工具中查看。</span>
+                <span>导出表格格式数据。当前仅展示入口，不执行真实命令。</span>
               </button>
             </div>
 

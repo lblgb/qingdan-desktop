@@ -53,7 +53,7 @@ describe('BackupCenter', () => {
     )
 
     expect(markup).toContain('最近备份')
-    expect(markup).toContain('2026-04-25 10:30 UTC')
+    expect(markup).toContain('最近一次本地备份时间：2026-04-25 18:30')
   })
 
   it('shows the empty state when no backup has been recorded', () => {
@@ -119,6 +119,36 @@ describe('BackupCenter', () => {
       />,
     )
 
-    expect(markup).toContain('当前仅展示入口，不执行真实命令')
+    expect(markup.match(/当前仅展示入口，不执行真实命令/g)?.length).toBe(4)
+  })
+
+  it('closes the panel from the close button', async () => {
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    const onOpenChange = vi.fn()
+
+    await act(async () => {
+      root.render(
+        <BackupCenter
+          isOpen
+          lastBackupAt={null}
+          onBackupNow={vi.fn()}
+          onExportCsv={vi.fn()}
+          onExportJson={vi.fn()}
+          onOpenChange={onOpenChange}
+          onRestoreFromBackup={vi.fn()}
+        />,
+      )
+    })
+
+    container.querySelector('.modal-close-button')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+
+    await act(async () => {
+      root.unmount()
+    })
+    container.remove()
   })
 })
