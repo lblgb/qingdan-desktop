@@ -221,6 +221,12 @@ describe('TaskList reminder navigation', () => {
     expect(overviewSource).not.toMatch(/priority-badge/)
   })
 
+  it('keeps overview monthly trend widths expressed with percent units', () => {
+    const overviewSource = readFileSync(resolve(process.cwd(), 'src/components/TaskOverview.tsx'), 'utf8')
+
+    expect(overviewSource).toMatch(/overview-monthly-fill[\s\S]*width:\s*`\$\{Math\.max\(Math\.round\(\(item\.completed \/ reviewMonthlyMax\) \* 100\), item\.completed > 0 \? 8 : 0\)}%`,/)
+  })
+
   it('scrolls the requested reminder target into view, highlights it, and clears the queued navigation', async () => {
     vi.useFakeTimers()
     const scrollIntoView = vi.fn()

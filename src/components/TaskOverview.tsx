@@ -314,7 +314,7 @@ export function TaskOverview() {
                             <span
                               className="overview-monthly-fill"
                               style={{
-                                width: `${Math.max(Math.round((item.completed / reviewMonthlyMax) * 100), item.completed > 0 ? 8 : 0)}`,
+                                width: `${Math.max(Math.round((item.completed / reviewMonthlyMax) * 100), item.completed > 0 ? 8 : 0)}%`,
                               }}
                             />
                           </div>
