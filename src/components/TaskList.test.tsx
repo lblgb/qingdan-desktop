@@ -7,7 +7,7 @@ import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TaskList } from './TaskList'
 import { useTaskStore } from '../stores/taskStore'
-import type { TaskItem } from '../features/tasks/task.types'
+import type { TaskGroup, TaskItem } from '../features/tasks/task.types'
 
 ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -153,6 +153,14 @@ describe('TaskList reminder navigation', () => {
   })
 
   it('renders priority, group, due date, and status as one unified console chip system', async () => {
+    const taskGroup: TaskGroup = {
+      id: 'group-1',
+      name: 'Console Group',
+      description: 'Console test group',
+      createdAt: '2026-04-16T08:00:00.000Z',
+      updatedAt: '2026-04-16T08:00:00.000Z',
+    }
+
     useTaskStore.setState({
       tasks: [
         buildTask({
@@ -174,7 +182,7 @@ describe('TaskList reminder navigation', () => {
           dueAt: '2026-04-21T08:00:00.000Z',
         }),
       ],
-      taskGroups: [{ id: 'group-1', name: 'Console Group' }],
+      taskGroups: [taskGroup],
     })
 
     await act(async () => {
@@ -196,10 +204,19 @@ describe('TaskList reminder navigation', () => {
   it('keeps task cards and overview panels on a dark console palette in css', () => {
     const cssSource = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8')
 
+    expect(cssSource).toMatch(/\.task-modal\s*\{[\s\S]*rgba\(8,\s*16,\s*24,\s*0\.9[0-9]*\)/)
     expect(cssSource).toMatch(/\.task-module-card\s*\{[\s\S]*rgba\(8,\s*16,\s*24,\s*0\.9[0-9]*\)/)
     expect(cssSource).toMatch(/\.overview-console-panel\s*\{[\s\S]*rgba\(8,\s*16,\s*24,\s*0\.9[0-9]*\)/)
+    expect(cssSource).not.toMatch(/\.task-modal\s*\{[\s\S]*rgba\(255,\s*255,\s*255,\s*0\.98\)/)
     expect(cssSource).not.toMatch(/\.task-module-card\s*\{[\s\S]*rgba\(251,\s*253,\s*252/)
     expect(cssSource).not.toMatch(/\.overview-console-panel\s*\{[\s\S]*rgba\(251,\s*253,\s*252/)
+  })
+
+  it('keeps TaskOverview priority labels on the task-console-chip system', () => {
+    const overviewSource = readFileSync(resolve(process.cwd(), 'src/components/TaskOverview.tsx'), 'utf8')
+
+    expect(overviewSource).toMatch(/task-console-chip/)
+    expect(overviewSource).not.toMatch(/priority-badge/)
   })
 
   it('scrolls the requested reminder target into view, highlights it, and clears the queued navigation', async () => {

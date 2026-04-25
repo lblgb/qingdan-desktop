@@ -141,7 +141,7 @@ export function TaskOverview() {
                     return (
                       <article key={priority} className="overview-priority-item">
                         <div className="overview-priority-header">
-                          <span className={`priority-badge ${priority}`}>{TASK_PRIORITY_META[priority].label}</span>
+                          <span className={`task-console-chip is-priority is-${priority}`}>{TASK_PRIORITY_META[priority].label}</span>
                           <strong>{item.count}</strong>
                         </div>
                         <div className="overview-priority-track" aria-hidden="true">
