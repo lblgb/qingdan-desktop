@@ -72,6 +72,37 @@ pub fn open_connection(db_path: &PathBuf) -> Result<Connection, String> {
     Connection::open(db_path).map_err(|error| format!("打开数据库连接失败：{error}"))
 }
 
+pub fn create_backup_file(db_path: &PathBuf, backup_path: &PathBuf) -> Result<(), String> {
+    let source_metadata =
+        fs::metadata(db_path).map_err(|error| format!("读取数据库文件信息失败：{error}"))?;
+    if !source_metadata.is_file() {
+        return Err("数据库文件不存在".to_string());
+    }
+
+    if let Some(parent) = backup_path.parent() {
+        fs::create_dir_all(parent).map_err(|error| format!("创建备份目录失败：{error}"))?;
+    }
+
+    fs::copy(db_path, backup_path).map_err(|error| format!("创建数据库备份失败：{error}"))?;
+    Ok(())
+}
+
+pub fn restore_backup_file(db_path: &PathBuf, backup_path: &PathBuf) -> Result<(), String> {
+    let backup_metadata =
+        fs::metadata(backup_path).map_err(|error| format!("读取备份文件信息失败：{error}"))?;
+    if !backup_metadata.is_file() {
+        return Err("备份文件不存在".to_string());
+    }
+
+    if let Some(parent) = db_path.parent() {
+        fs::create_dir_all(parent).map_err(|error| format!("创建数据库目录失败：{error}"))?;
+    }
+
+    fs::copy(backup_path, db_path).map_err(|error| format!("恢复数据库备份失败：{error}"))?;
+    init_database(db_path)?;
+    Ok(())
+}
+
 fn ensure_tasks_group_column(connection: &Connection) -> Result<(), String> {
     let mut statement = connection
         .prepare("PRAGMA table_info(tasks)")

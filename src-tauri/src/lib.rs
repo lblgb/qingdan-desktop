@@ -14,6 +14,8 @@ pub fn run() {
         .plugin(tauri_plugin_sql::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
             commands::system::ping,
+            commands::system::create_backup,
+            commands::system::restore_backup,
             commands::tasks::list_tasks,
             commands::tasks::query_tasks,
             commands::tasks::list_task_groups,

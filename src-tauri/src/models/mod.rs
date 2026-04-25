@@ -145,3 +145,21 @@ pub struct UpdateTaskGroupInput {
     pub name: String,
     pub description: String,
 }
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateBackupInput {
+    pub backup_path: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RestoreBackupInput {
+    pub backup_path: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BackupFileResult {
+    pub path: String,
+}
