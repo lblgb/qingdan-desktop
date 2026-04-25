@@ -297,13 +297,6 @@ export function AppShell() {
           <TaskOverview />
 
           <div className="system-action-bar" aria-label="系统图标组" role="group">
-            <button aria-label="备份与恢复" className="icon-button icon-button-console" disabled hidden type="button">
-              <span aria-hidden="true" className="icon-button-glyph">
-                BR
-              </span>
-              <span className="icon-button-label">备份与恢复（即将开放）</span>
-            </button>
-
             <BackupCenter
               isOpen={isBackupCenterOpen}
               lastBackupAt={lastBackupAt}

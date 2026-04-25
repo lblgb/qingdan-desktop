@@ -145,7 +145,7 @@ describe('AppShell console action bar', () => {
     expect(container.querySelector('button[aria-label="设置"]')).toBeTruthy()
   })
 
-  it('marks backup and restore as an unavailable placeholder instead of an active feature', async () => {
+  it('mounts the real backup center entry and opens the panel', async () => {
     await act(async () => {
       root.render(<AppShell />)
     })
@@ -153,8 +153,13 @@ describe('AppShell console action bar', () => {
     const backupEntry = container.querySelector('button[aria-label="备份与恢复"]')
 
     expect(backupEntry).toBeTruthy()
-    expect(backupEntry?.hasAttribute('disabled')).toBe(true)
-    expect(backupEntry?.textContent).toContain('即将开放')
+
+    await act(async () => {
+      backupEntry?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(container.textContent).toContain('备份与恢复中心')
+    expect(container.textContent).toContain('立即备份')
   })
 
   it('shows the pending reminder badge count on the real reminder center entry', async () => {
