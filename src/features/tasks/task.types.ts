@@ -129,7 +129,7 @@ export interface BackupCommandResult {
 
 export type TaskExportFormat = 'json' | 'csv'
 
-export type TaskExportScope = 'all'
+export type TaskExportScope = 'all' | 'filtered'
 
 export interface ExportCommandResult {
   exportPath: string

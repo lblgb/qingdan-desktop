@@ -6,6 +6,7 @@ use rusqlite::Connection;
 use tauri::State;
 
 use crate::{
+    commands::tasks::{list_task_groups_inner, query_tasks_inner},
     db::{create_backup_file, open_connection, restore_backup_file, DatabaseState},
     models::{
         BackupCommandResult, CreateBackupInput, ExportCommandResult, ExportFormat,
@@ -92,33 +93,6 @@ fn load_all_tasks_for_export(connection: &Connection) -> Result<Vec<TaskItem>, S
         .map_err(|error| format!("read export task rows failed: {error}"))
 }
 
-fn load_all_task_groups_for_export(connection: &Connection) -> Result<Vec<TaskGroup>, String> {
-    let mut statement = connection
-        .prepare(
-            "
-            SELECT id, name, description, created_at, updated_at
-            FROM task_groups
-            ORDER BY updated_at DESC, created_at DESC
-            ",
-        )
-        .map_err(|error| format!("prepare export task-group query failed: {error}"))?;
-
-    let rows = statement
-        .query_map([], |row| {
-            Ok(TaskGroup {
-                id: row.get(0)?,
-                name: row.get(1)?,
-                description: row.get(2)?,
-                created_at: row.get(3)?,
-                updated_at: row.get(4)?,
-            })
-        })
-        .map_err(|error| format!("run export task-group query failed: {error}"))?;
-
-    rows.collect::<Result<Vec<_>, _>>()
-        .map_err(|error| format!("read export task-group rows failed: {error}"))
-}
-
 fn escape_csv_field(value: &str) -> String {
     if value.contains([',', '"', '\n', '\r']) {
         format!("\"{}\"", value.replace('"', "\"\""))
@@ -163,10 +137,6 @@ fn export_tasks_inner(
     state: &DatabaseState,
     input: ExportTasksInput,
 ) -> Result<ExportCommandResult, String> {
-    match input.scope {
-        ExportScope::All => {}
-    }
-
     let export_path = PathBuf::from(&input.export_path);
     if let Some(parent) = export_path.parent() {
         if !parent.as_os_str().is_empty() {
@@ -175,9 +145,27 @@ fn export_tasks_inner(
         }
     }
 
-    let connection = open_connection(&state.db_path)?;
-    let tasks = load_all_tasks_for_export(&connection)?;
-    let task_groups = load_all_task_groups_for_export(&connection)?;
+    let tasks = match input.scope {
+        ExportScope::All => {
+            let connection = open_connection(&state.db_path)?;
+            load_all_tasks_for_export(&connection)?
+        }
+        ExportScope::Filtered => {
+            let query = input
+                .query
+                .clone()
+                .ok_or_else(|| "filtered export requires query payload".to_string())?;
+            query_tasks_inner(state, &query)?
+        }
+    };
+    let all_task_groups = list_task_groups_inner(state)?;
+    let task_groups = match input.scope {
+        ExportScope::All => all_task_groups,
+        ExportScope::Filtered => all_task_groups
+            .into_iter()
+            .filter(|group| tasks.iter().any(|task| task.group_id.as_deref() == Some(group.id.as_str())))
+            .collect::<Vec<_>>(),
+    };
     let csv_rows = tasks
         .iter()
         .cloned()
@@ -403,6 +391,7 @@ mod tests {
                     offset_preset: "1-hour".to_string(),
                     custom_offset_minutes: 60,
                 },
+                query: None,
             },
         )
         .expect("export tasks command");
@@ -468,6 +457,7 @@ mod tests {
                     offset_preset: "at-time".to_string(),
                     custom_offset_minutes: 0,
                 },
+                query: None,
             },
         )
         .expect("export tasks command");
@@ -477,5 +467,82 @@ mod tests {
         assert!(exported.contains("groupName"));
         assert!(exported.contains("export csv task"));
         assert!(exported.contains("Alpha Group"));
+    }
+
+    #[test]
+    fn export_tasks_command_writes_filtered_csv_export() {
+        let db_path = temp_db_path();
+        let export_path =
+            std::env::temp_dir().join(format!("qingdan-export-filtered-{}.csv", Uuid::new_v4()));
+        fs::remove_file(&db_path).ok();
+        fs::remove_file(&export_path).ok();
+        init_database(&db_path).expect("initialize database");
+
+        let connection = Connection::open(&db_path).expect("open database");
+        connection
+            .execute(
+                "
+                INSERT INTO tasks (
+                    id, title, description, note, completed, completed_at, archived_at, priority,
+                    group_id, due_at, created_at, updated_at
+                ) VALUES (?1, 'active task', '', '', 0, NULL, NULL, 'high', NULL, NULL, ?2, ?3)
+                ",
+                params![
+                    Uuid::new_v4().to_string(),
+                    "2026-04-25T00:00:00Z",
+                    "2026-04-25T00:00:00Z"
+                ],
+            )
+            .expect("seed active task");
+        connection
+            .execute(
+                "
+                INSERT INTO tasks (
+                    id, title, description, note, completed, completed_at, archived_at, priority,
+                    group_id, due_at, created_at, updated_at
+                ) VALUES (?1, 'completed task', '', '', 1, ?2, NULL, 'high', NULL, NULL, ?3, ?4)
+                ",
+                params![
+                    Uuid::new_v4().to_string(),
+                    "2026-04-25T01:00:00Z",
+                    "2026-04-25T00:00:00Z",
+                    "2026-04-25T01:00:00Z"
+                ],
+            )
+            .expect("seed completed task");
+        drop(connection);
+
+        let state = DatabaseState {
+            db_path: db_path.clone(),
+        };
+        let result = super::export_tasks_inner(
+            &state,
+            ExportTasksInput {
+                export_path: export_path.to_string_lossy().into_owned(),
+                format: crate::models::ExportFormat::Csv,
+                scope: crate::models::ExportScope::Filtered,
+                reminder_preferences: ReminderPreferencesExport {
+                    enable_in_app: true,
+                    enable_desktop: false,
+                    priority_threshold: "high".to_string(),
+                    offset_preset: "1-hour".to_string(),
+                    custom_offset_minutes: 60,
+                },
+                query: Some(crate::models::TaskQueryInput {
+                    status: Some(crate::models::TaskQueryStatus::Completed),
+                    group_id: None,
+                    priority: Some(crate::models::TaskPriority::High),
+                    date_range: None,
+                    sort_by: Some(crate::models::TaskQuerySortBy::Default),
+                    archive: Some(crate::models::TaskArchiveFilter::Active),
+                }),
+            },
+        )
+        .expect("export filtered tasks command");
+
+        let exported = fs::read_to_string(&export_path).expect("read export");
+        assert_eq!(result.export_path, export_path.to_string_lossy());
+        assert!(exported.contains("completed task"));
+        assert!(!exported.contains("active task"));
     }
 }

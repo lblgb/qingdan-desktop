@@ -548,6 +548,38 @@
 
 - 进入下一项 `v0.50.0` 数据导出剩余能力或搜索主线实现前，优先提交并推送本轮闭环结果。
 
+## 2026-04-26 第 52 轮
+
+### 讨论主题
+
+- 完成任务列表工具条的“导出当前结果”快捷出口，并让导出命令支持按当前筛选条件输出。
+
+### 当前结论
+
+- 任务列表工具条已增加 `导出当前结果` 按钮。
+- 当前结果导出沿用现有导出命令边界，不额外在前端拼文件。
+- 导出命令现已支持 `filtered` scope，可按当前筛选条件导出 CSV 结果。
+
+### 文档更新
+
+- 更新 [`docs/WORKLOG.md`](./WORKLOG.md)，记录本轮当前结果导出闭环。
+
+### 实现记录
+
+- 更新 [src/components/TaskList.tsx](E:/CodeBase/.worktrees/v050/src/components/TaskList.tsx) 与 [src/components/TaskList.test.tsx](E:/CodeBase/.worktrees/v050/src/components/TaskList.test.tsx)，为列表工具条接入 `导出当前结果` 入口与交互测试。
+- 更新 [src/stores/taskStore.ts](E:/CodeBase/.worktrees/v050/src/stores/taskStore.ts) 与 [src/stores/taskStore.test.ts](E:/CodeBase/.worktrees/v050/src/stores/taskStore.test.ts)，新增 `exportCurrentResults` 动作并覆盖当前查询载荷。
+- 更新 [src/features/tasks/task.storage.ts](E:/CodeBase/.worktrees/v050/src/features/tasks/task.storage.ts)、[src/features/tasks/task.storage.test.ts](E:/CodeBase/.worktrees/v050/src/features/tasks/task.storage.test.ts)、[src/features/tasks/task.types.ts](E:/CodeBase/.worktrees/v050/src/features/tasks/task.types.ts)、[src-tauri/src/models/mod.rs](E:/CodeBase/.worktrees/v050/src-tauri/src/models/mod.rs)、[src-tauri/src/commands/tasks.rs](E:/CodeBase/.worktrees/v050/src-tauri/src/commands/tasks.rs) 与 [src-tauri/src/commands/system.rs](E:/CodeBase/.worktrees/v050/src-tauri/src/commands/system.rs)，补齐 `filtered` 导出 scope 与查询映射。
+
+### 验证记录
+
+- `cmd /c npx.cmd vitest run src/features/tasks/task.storage.test.ts src/stores/taskStore.test.ts src/components/TaskList.test.tsx` 通过，结果为 3 个测试文件、54 个用例通过。
+- `cargo test export_tasks_command` 通过，结果为 3 个导出命令定向测试通过。
+- `cmd /c npm.cmd run build` 通过。
+
+### 下一步建议
+
+- 进入 `Task 9 / Task 10`，开始顶部搜索与快速定位闭环实现。
+
 ## 2026-04-24 第 49 轮
 
 ### 讨论主题

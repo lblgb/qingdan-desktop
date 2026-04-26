@@ -57,6 +57,7 @@ export function TaskList() {
   const clearTaskSelection = useTaskStore((state) => state.clearTaskSelection)
   const applyBulkUpdate = useTaskStore((state) => state.applyBulkUpdate)
   const applyBulkArchive = useTaskStore((state) => state.applyBulkArchive)
+  const exportCurrentResults = useTaskStore((state) => state.exportCurrentResults)
   const openTaskDetail = useTaskStore((state) => state.openTaskDetail)
   const reminderNavigation = useTaskStore((state) => state.reminderNavigation)
   const clearReminderNavigation = useTaskStore((state) => state.clearReminderNavigation)
@@ -258,6 +259,15 @@ export function TaskList() {
     await applyBulkArchive()
   }
 
+  async function handleExportCurrentResults() {
+    const exportPath = window.prompt('请输入当前结果导出文件路径', 'C:\\backup\\qingdan-current-results.csv')
+    if (!exportPath?.trim()) {
+      return
+    }
+
+    await exportCurrentResults(exportPath.trim())
+  }
+
   if (filteredTasks.length === 0) {
     return (
       <section className="task-list-card empty-state">
@@ -289,6 +299,9 @@ export function TaskList() {
         </div>
 
         <div className="task-list-toolbar-actions">
+          <button className="secondary-button" onClick={() => void handleExportCurrentResults()} type="button" disabled={isMutating}>
+            导出当前结果
+          </button>
           {isBulkMode ? (
             <button className="secondary-button" onClick={toggleBulkMode} type="button" disabled={isMutating}>
               退出批量

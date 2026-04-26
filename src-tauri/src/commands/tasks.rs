@@ -12,7 +12,7 @@ use crate::{
     },
 };
 
-fn task_row_to_item(row: &rusqlite::Row<'_>) -> Result<TaskItem, rusqlite::Error> {
+pub(crate) fn task_row_to_item(row: &rusqlite::Row<'_>) -> Result<TaskItem, rusqlite::Error> {
     Ok(TaskItem {
         id: row.get(0)?,
         title: row.get(1)?,
@@ -44,7 +44,7 @@ fn task_sort_clause(sort_by: TaskQuerySortBy) -> &'static str {
     }
 }
 
-fn build_task_query(query: &TaskQueryInput) -> Result<(String, Vec<Value>), String> {
+pub(crate) fn build_task_query(query: &TaskQueryInput) -> Result<(String, Vec<Value>), String> {
     let mut sql = String::from(
         "SELECT id, title, description, note, completed, completed_at, archived_at, priority, group_id, due_at, created_at, updated_at FROM tasks",
     );
@@ -103,7 +103,7 @@ fn build_task_query(query: &TaskQueryInput) -> Result<(String, Vec<Value>), Stri
     Ok((sql, values))
 }
 
-fn query_tasks_inner(state: &DatabaseState, query: &TaskQueryInput) -> Result<Vec<TaskItem>, String> {
+pub(crate) fn query_tasks_inner(state: &DatabaseState, query: &TaskQueryInput) -> Result<Vec<TaskItem>, String> {
     let connection = open_connection(&state.db_path)?;
     let (sql, values) = build_task_query(query)?;
     let mut statement = connection
@@ -134,7 +134,7 @@ fn now_iso_string() -> Result<String, String> {
         .map_err(|error| format!("生成时间戳失败：{error}"))
 }
 
-fn list_task_groups_inner(state: &DatabaseState) -> Result<Vec<TaskGroup>, String> {
+pub(crate) fn list_task_groups_inner(state: &DatabaseState) -> Result<Vec<TaskGroup>, String> {
     let connection = open_connection(&state.db_path)?;
     let mut statement = connection
         .prepare(

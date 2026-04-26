@@ -76,6 +76,18 @@ function isTauriRuntime() {
   return '__TAURI_INTERNALS__' in window
 }
 
+function buildTauriTaskQueryInput(input: TaskQueryInput) {
+  return {
+    status: input.status === 'all' ? null : input.status,
+    archive: input.archive,
+    groupId: input.group === 'all-groups' ? null : input.group,
+    priority: input.priority === 'all-priorities' ? null : input.priority,
+    dateRange:
+      input.dateRange === 'all-time' || input.dateRange === 'no-date' ? null : buildDateRangePayload(input.dateRange),
+    sortBy: input.sortBy,
+  }
+}
+
 function loadLocalTasks(): TaskItem[] {
   const rawValue = window.localStorage.getItem(STORAGE_KEY)
   if (!rawValue) {
@@ -144,17 +156,7 @@ export async function loadTasks(): Promise<TaskItem[]> {
  */
 export async function queryTasks(input: TaskQueryInput): Promise<TaskItem[]> {
   if (isTauriRuntime()) {
-    const tauriInput = {
-      status: input.status === 'all' ? null : input.status,
-      archive: input.archive,
-      groupId: input.group === 'all-groups' ? null : input.group,
-      priority: input.priority === 'all-priorities' ? null : input.priority,
-      dateRange:
-        input.dateRange === 'all-time' || input.dateRange === 'no-date'
-          ? null
-          : buildDateRangePayload(input.dateRange),
-      sortBy: input.sortBy,
-    }
+    const tauriInput = buildTauriTaskQueryInput(input)
 
     if (input.dateRange === 'no-date') {
       const tasks = await invoke<TaskItem[]>('query_tasks', {
@@ -383,6 +385,7 @@ export async function exportTasks(
   format: TaskExportFormat,
   scope: TaskExportScope = 'all',
   reminderPreferences: ReminderPreferences = DEFAULT_REMINDER_PREFERENCES,
+  query?: TaskQueryInput,
 ): Promise<string> {
   if (!isTauriRuntime()) {
     throw new Error('Export commands require desktop runtime')
@@ -394,6 +397,7 @@ export async function exportTasks(
       format,
       scope,
       reminderPreferences,
+      query: scope === 'filtered' && query ? buildTauriTaskQueryInput(query) : null,
     },
   })
 

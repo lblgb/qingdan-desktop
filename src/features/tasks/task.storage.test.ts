@@ -389,8 +389,53 @@ describe('task query storage', () => {
         format: 'json',
         scope: 'all',
         reminderPreferences: DEFAULT_REMINDER_PREFERENCES,
+        query: null,
       },
     })
     expect(result).toBe('C:\\backup\\qingdan-export.json')
+  })
+
+  it('maps filtered csv export with the current query payload', async () => {
+    ;(globalThis as typeof globalThis & { window: Window & { __TAURI_INTERNALS__: unknown } }).window = {
+      localStorage: createLocalStorage() as never,
+      __TAURI_INTERNALS__: {},
+    } as never
+    mockInvoke.mockResolvedValue({ exportPath: 'C:\\backup\\qingdan-current-results.csv' })
+
+    const result = await exportTasks(
+      'C:\\backup\\qingdan-current-results.csv',
+      'csv',
+      'filtered',
+      DEFAULT_REMINDER_PREFERENCES,
+      {
+        status: 'completed',
+        archive: 'all',
+        group: 'ungrouped',
+        priority: 'high',
+        dateRange: 'today',
+        sortBy: 'updated',
+      },
+    )
+
+    expect(mockInvoke).toHaveBeenCalledWith('export_tasks', {
+      input: {
+        exportPath: 'C:\\backup\\qingdan-current-results.csv',
+        format: 'csv',
+        scope: 'filtered',
+        reminderPreferences: DEFAULT_REMINDER_PREFERENCES,
+        query: {
+          status: 'completed',
+          archive: 'all',
+          groupId: 'ungrouped',
+          priority: 'high',
+          dateRange: {
+            start: '2026-04-26',
+            end: '2026-04-26',
+          },
+          sortBy: 'updated',
+        },
+      },
+    })
+    expect(result).toBe('C:\\backup\\qingdan-current-results.csv')
   })
 })

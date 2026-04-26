@@ -185,6 +185,7 @@ pub enum ExportFormat {
 #[serde(rename_all = "lowercase")]
 pub enum ExportScope {
     All,
+    Filtered,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -194,6 +195,7 @@ pub struct ExportTasksInput {
     pub format: ExportFormat,
     pub scope: ExportScope,
     pub reminder_preferences: ReminderPreferencesExport,
+    pub query: Option<TaskQueryInput>,
 }
 
 #[derive(Debug, Clone, Serialize)]

@@ -126,6 +126,7 @@ interface TaskState {
   createBackup: (backupPath: string) => Promise<boolean>
   restoreBackup: (backupPath: string) => Promise<boolean>
   exportTasks: (exportPath: string, format: TaskExportFormat) => Promise<boolean>
+  exportCurrentResults: (exportPath: string) => Promise<boolean>
   setFilter: (filter: TaskFilter) => void
   setArchiveFilter: (filter: TaskArchiveFilter) => void
   setGroupFilter: (filter: TaskGroupFilter) => void
@@ -653,6 +654,39 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         errorDialog: {
           title: '导出失败',
           message: getErrorMessage(error, '导出工作台数据失败，请稍后重试。'),
+          source: 'backup',
+        },
+      })
+      return false
+    }
+  },
+  exportCurrentResults: async (exportPath) => {
+    set({
+      isMutating: true,
+      activeAction: 'backup',
+      successToast: null,
+      errorDialog: null,
+    })
+
+    try {
+      await exportTaskSnapshot(exportPath, 'csv', 'filtered', get().reminderPreferences, buildQuery(get()))
+      set({
+        isMutating: false,
+        activeAction: null,
+        successToast: {
+          tone: 'success',
+          message: '当前结果已导出到本地文件。',
+          source: 'backup',
+        },
+      })
+      return true
+    } catch (error) {
+      set({
+        isMutating: false,
+        activeAction: null,
+        errorDialog: {
+          title: '导出失败',
+          message: getErrorMessage(error, '导出当前结果失败，请稍后重试。'),
           source: 'backup',
         },
       })

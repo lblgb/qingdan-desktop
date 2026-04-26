@@ -225,6 +225,42 @@ describe('taskStore reset and feedback', () => {
     })
   })
 
+  it('exports current filtered results through storage with the active query', async () => {
+    const { useTaskStore } = await loadStore()
+
+    useTaskStore.setState({
+      activeFilter: 'completed',
+      activeArchiveFilter: 'all',
+      activeGroupFilter: 'ungrouped',
+      activePriorityFilter: 'high',
+      activeDateRange: 'today',
+      activeSortBy: 'updated',
+    })
+
+    const result = await useTaskStore.getState().exportCurrentResults('C:\\backup\\qingdan-current-results.csv')
+
+    expect(result).toBe(true)
+    expect(mockExportTasks).toHaveBeenCalledWith(
+      'C:\\backup\\qingdan-current-results.csv',
+      'csv',
+      'filtered',
+      DEFAULT_REMINDER_PREFERENCES,
+      {
+        status: 'completed',
+        archive: 'all',
+        group: 'ungrouped',
+        priority: 'high',
+        dateRange: 'today',
+        sortBy: 'updated',
+      },
+    )
+    expect(useTaskStore.getState().successToast).toEqual({
+      tone: 'success',
+      message: '当前结果已导出到本地文件。',
+      source: 'backup',
+    })
+  })
+
   it('surfaces a truthful message when restore succeeds on disk but reload fails', async () => {
     mockLoadTasks.mockRejectedValueOnce(new Error('刷新失败'))
 

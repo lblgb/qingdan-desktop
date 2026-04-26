@@ -33,6 +33,7 @@ describe('TaskList reminder navigation', () => {
   let root: ReturnType<typeof createRoot>
   const originalOpenTaskDetail = useTaskStore.getState().openTaskDetail
   const originalApplyBulkArchive = useTaskStore.getState().applyBulkArchive
+  const originalExportCurrentResults = useTaskStore.getState().exportCurrentResults
 
   beforeEach(() => {
     container = document.createElement('div')
@@ -61,6 +62,7 @@ describe('TaskList reminder navigation', () => {
       activeAction: null,
       openTaskDetail: originalOpenTaskDetail,
       applyBulkArchive: originalApplyBulkArchive,
+      exportCurrentResults: originalExportCurrentResults,
     })
   })
 
@@ -89,6 +91,39 @@ describe('TaskList reminder navigation', () => {
     })
 
     expect(openTaskDetail).toHaveBeenCalledWith('task-1')
+  })
+
+  it('renders export current results action in task toolbar', async () => {
+    await act(async () => {
+      root.render(<TaskList />)
+    })
+
+    const exportButton = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent === '导出当前结果',
+    )
+    expect(exportButton).toBeTruthy()
+  })
+
+  it('prompts for a path and exports current filtered results from the toolbar', async () => {
+    const exportCurrentResults = vi.fn().mockResolvedValue(true)
+    const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('C:\\backup\\qingdan-current-results.csv')
+    useTaskStore.setState({ exportCurrentResults })
+
+    await act(async () => {
+      root.render(<TaskList />)
+    })
+
+    const exportButton = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent === '导出当前结果',
+    )
+    expect(exportButton).toBeTruthy()
+
+    await act(async () => {
+      exportButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(promptSpy).toHaveBeenCalled()
+    expect(exportCurrentResults).toHaveBeenCalledWith('C:\\backup\\qingdan-current-results.csv')
   })
 
   it('disables bulk archive when selection contains active tasks', async () => {
