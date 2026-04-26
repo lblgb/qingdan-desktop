@@ -11,8 +11,11 @@ import type {
   BulkUpdateTasksInput,
   CreateTaskGroupInput,
   CreateTaskInput,
+  ExportCommandResult,
   ReminderPreferences,
   TaskGroup,
+  TaskExportFormat,
+  TaskExportScope,
   TaskItem,
   TaskQueryInput,
   UpdateTaskGroupInput,
@@ -56,6 +59,10 @@ const reminderPreferencesSchema = z.object({
 
 const backupCommandResultSchema = z.object({
   backupPath: z.string(),
+})
+
+const exportCommandResultSchema = z.object({
+  exportPath: z.string(),
 })
 
 const taskListSchema = z.array(taskSchema)
@@ -369,6 +376,28 @@ export async function restoreBackup(backupPath: string): Promise<string> {
   })
 
   return backupCommandResultSchema.parse(result).backupPath
+}
+
+export async function exportTasks(
+  exportPath: string,
+  format: TaskExportFormat,
+  scope: TaskExportScope = 'all',
+  reminderPreferences: ReminderPreferences = DEFAULT_REMINDER_PREFERENCES,
+): Promise<string> {
+  if (!isTauriRuntime()) {
+    throw new Error('Export commands require desktop runtime')
+  }
+
+  const result = await invoke<ExportCommandResult>('export_tasks', {
+    input: {
+      exportPath,
+      format,
+      scope,
+      reminderPreferences,
+    },
+  })
+
+  return exportCommandResultSchema.parse(result).exportPath
 }
 
 /**

@@ -19,6 +19,7 @@ import {
   createTaskGroup,
   deleteTask,
   deleteTaskGroup,
+  exportTasks as exportTaskSnapshot,
   loadReminderPreferences,
   loadTaskGroups,
   loadTasks,
@@ -37,6 +38,7 @@ import type {
   ReminderPreferences,
   TaskArchiveFilter,
   TaskDateRangeFilter,
+  TaskExportFormat,
   TaskFilter,
   TaskGroup,
   TaskGroupFilter,
@@ -123,6 +125,7 @@ interface TaskState {
   setLastBackupAt: (value: string | null) => void
   createBackup: (backupPath: string) => Promise<boolean>
   restoreBackup: (backupPath: string) => Promise<boolean>
+  exportTasks: (exportPath: string, format: TaskExportFormat) => Promise<boolean>
   setFilter: (filter: TaskFilter) => void
   setArchiveFilter: (filter: TaskArchiveFilter) => void
   setGroupFilter: (filter: TaskGroupFilter) => void
@@ -360,7 +363,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         activeAction: null,
         errorDialog: {
           title: '任务列表读取失败',
-          message: getErrorMessage(error, '读取任务列表失败，请重试。'),
+          message: getErrorMessage(error, '读取任务列表失败，请稍后重试。'),
           source: 'hydrate',
         },
       })
@@ -569,6 +572,20 @@ export const useTaskStore = create<TaskState>((set, get) => ({
 
     try {
       await restoreBackupSnapshot(backupPath)
+    } catch (error) {
+      set({
+        isMutating: false,
+        activeAction: null,
+        errorDialog: {
+          title: '恢复失败',
+          message: getErrorMessage(error, '从备份恢复任务数据失败，请稍后重试。'),
+          source: 'backup',
+        },
+      })
+      return false
+    }
+
+    try {
       const [taskGroups, tasks] = await Promise.all([loadTaskGroups(), loadTasks()])
       set((state) => {
         const activeGroupFilter = normalizeGroupFilter(taskGroups, state.activeGroupFilter)
@@ -597,11 +614,45 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       return true
     } catch (error) {
       set({
+        isHydrated: false,
         isMutating: false,
         activeAction: null,
         errorDialog: {
-          title: '恢复失败',
-          message: getErrorMessage(error, '从备份恢复任务数据失败，请稍后重试。'),
+          title: '恢复后刷新失败',
+          message: getErrorMessage(error, '备份已恢复到本地数据库，但当前视图刷新失败，请重新打开应用后确认。'),
+          source: 'backup',
+        },
+      })
+      return false
+    }
+  },
+  exportTasks: async (exportPath, format) => {
+    set({
+      isMutating: true,
+      activeAction: 'backup',
+      successToast: null,
+      errorDialog: null,
+    })
+
+    try {
+      await exportTaskSnapshot(exportPath, format, 'all', get().reminderPreferences)
+      set({
+        isMutating: false,
+        activeAction: null,
+        successToast: {
+          tone: 'success',
+          message: format === 'json' ? '工作台快照已导出到本地文件。' : '任务清单已导出到本地文件。',
+          source: 'backup',
+        },
+      })
+      return true
+    } catch (error) {
+      set({
+        isMutating: false,
+        activeAction: null,
+        errorDialog: {
+          title: '导出失败',
+          message: getErrorMessage(error, '导出工作台数据失败，请稍后重试。'),
           source: 'backup',
         },
       })

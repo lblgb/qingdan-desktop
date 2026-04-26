@@ -163,3 +163,41 @@ pub struct RestoreBackupInput {
 pub struct BackupCommandResult {
     pub backup_path: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ReminderPreferencesExport {
+    pub enable_in_app: bool,
+    pub enable_desktop: bool,
+    pub priority_threshold: String,
+    pub offset_preset: String,
+    pub custom_offset_minutes: i64,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ExportFormat {
+    Json,
+    Csv,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ExportScope {
+    All,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExportTasksInput {
+    pub export_path: String,
+    pub format: ExportFormat,
+    pub scope: ExportScope,
+    pub reminder_preferences: ReminderPreferencesExport,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExportCommandResult {
+    pub export_path: String,
+}

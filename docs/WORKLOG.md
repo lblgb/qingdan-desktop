@@ -482,6 +482,72 @@
 
 - 重新执行正式打包，创建 `v0.40.1` tag 和 GitHub Release，并让用户重新验证桌面系统通知。
 
+## 2026-04-26 第 50 轮
+
+### 讨论主题
+
+- 将近期暴露出的中文编码/乱码问题上升为项目级硬约束，避免后续继续出现“功能正常但文案和注释被转坏”的情况。
+
+### 当前结论
+
+- 编码问题不再视为普通格式瑕疵，而是阻断提交的工程问题。
+- 项目文本文件默认统一为 `UTF-8` 无 BOM，覆盖源码、测试、文档、脚本和配置文件。
+- 对中文文件进行脚本化改写或批量替换后，必须复查 diff，确认没有乱码、BOM 污染或错误转码。
+
+### 文档更新
+
+- 更新 [`docs/PROJECT_CONSTRAINTS.md`](./PROJECT_CONSTRAINTS.md)，把编码要求提升为硬规范。
+- 新增 [`.editorconfig`](../.editorconfig)，在仓库级别固定常用文本文件的编码和换行规则。
+- 更新 [`docs/WORKLOG.md`](./WORKLOG.md)，记录本轮约束升级。
+
+### 实现记录
+
+- 为 `v0.50.0` 当前实现分支补充仓库级编码约束，后续合并回 `master` 后将成为项目默认规范。
+
+### 验证记录
+
+- 已检查仓库根目录此前不存在 `.editorconfig` 与 `.gitattributes` 编码约束文件。
+- 已将编码规范写入文档，并补充仓库级 `.editorconfig`。
+
+### 下一步建议
+
+- 后续所有涉及中文文件的实现与重构，提交前都应把“diff 中文是否正常”作为固定检查项。
+
+## 2026-04-26 第 51 轮
+
+### 讨论主题
+
+- 完成 `v0.50.0` 备份中心全量导出接线，并修正恢复后刷新失败时的反馈语义。
+
+### 当前结论
+
+- 备份中心的 `导出 JSON / 导出 CSV` 已从占位态切到真实可执行。
+- JSON 导出不再只导出任务表，而是导出 `tasks / taskGroups / reminderPreferences` 工作台快照。
+- CSV 导出补充 `groupName` 列，避免只留下无法直接识别的 `groupId`。
+- 恢复动作改为两段式反馈：备份文件恢复失败与“恢复已完成但当前视图刷新失败”分开表达，不再误报为同一种失败。
+
+### 文档更新
+
+- 更新 [`docs/WORKLOG.md`](./WORKLOG.md)，记录本轮备份中心导出接线与恢复语义修正。
+
+### 实现记录
+
+- 更新 [src/components/BackupCenter.tsx](E:/CodeBase/.worktrees/v050/src/components/BackupCenter.tsx)、[src/app/AppShell.tsx](E:/CodeBase/.worktrees/v050/src/app/AppShell.tsx) 与 [src/stores/taskStore.ts](E:/CodeBase/.worktrees/v050/src/stores/taskStore.ts)，接通备份中心真实导出行为并修正恢复反馈。
+- 更新 [src/features/tasks/task.storage.ts](E:/CodeBase/.worktrees/v050/src/features/tasks/task.storage.ts)、[src/features/tasks/task.types.ts](E:/CodeBase/.worktrees/v050/src/features/tasks/task.types.ts)、[src-tauri/src/models/mod.rs](E:/CodeBase/.worktrees/v050/src-tauri/src/models/mod.rs)、[src-tauri/src/commands/system.rs](E:/CodeBase/.worktrees/v050/src-tauri/src/commands/system.rs) 和 [src-tauri/src/lib.rs](E:/CodeBase/.worktrees/v050/src-tauri/src/lib.rs)，补齐导出命令模型、命令注册以及 JSON/CSV 导出内容。
+- 更新 [src/components/BackupCenter.test.tsx](E:/CodeBase/.worktrees/v050/src/components/BackupCenter.test.tsx)、[src/features/tasks/task.storage.test.ts](E:/CodeBase/.worktrees/v050/src/features/tasks/task.storage.test.ts) 与 [src/stores/taskStore.test.ts](E:/CodeBase/.worktrees/v050/src/stores/taskStore.test.ts)，覆盖导出路径、恢复后刷新失败语义和相关提示。
+
+### 验证记录
+
+- `cmd /c npx.cmd vitest run` 通过，结果为 13 个测试文件、90 个用例通过。
+- `cmd /c npm.cmd run build` 通过。
+- `cargo test` 通过，结果为 16 个 Rust 测试通过。
+- `cargo check` 通过。
+- 额外执行 `cargo test export_tasks_command`，确认 JSON/CSV 导出命令定向测试通过。
+
+### 下一步建议
+
+- 进入下一项 `v0.50.0` 数据导出剩余能力或搜索主线实现前，优先提交并推送本轮闭环结果。
+
 ## 2026-04-24 第 49 轮
 
 ### 讨论主题

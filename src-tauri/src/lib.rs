@@ -16,6 +16,7 @@ pub fn run() {
             commands::system::ping,
             commands::system::create_backup,
             commands::system::restore_backup,
+            commands::system::export_tasks,
             commands::tasks::list_tasks,
             commands::tasks::query_tasks,
             commands::tasks::list_task_groups,

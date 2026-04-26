@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+﻿import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_REMINDER_PREFERENCES } from '../features/tasks/task.reminders'
 import { DEFAULT_TASK_QUERY } from '../features/tasks/task.filters'
 import type { ReminderPreferences, TaskGroup, TaskItem } from '../features/tasks/task.types'
@@ -19,6 +19,7 @@ const mockLoadReminderPreferences = vi.fn()
 const mockSaveReminderPreferences = vi.fn()
 const mockCreateBackup = vi.fn()
 const mockRestoreBackup = vi.fn()
+const mockExportTasks = vi.fn()
 const mockIsPermissionGranted = vi.fn()
 const mockRequestPermission = vi.fn()
 const mockSendNotification = vi.fn()
@@ -40,6 +41,7 @@ vi.mock('../features/tasks/task.storage', () => ({
   saveReminderPreferences: mockSaveReminderPreferences,
   createBackup: mockCreateBackup,
   restoreBackup: mockRestoreBackup,
+  exportTasks: mockExportTasks,
 }))
 
 vi.mock('@tauri-apps/plugin-notification', () => ({
@@ -100,6 +102,7 @@ beforeEach(() => {
   mockSaveReminderPreferences.mockImplementation(async (input: ReminderPreferences) => input)
   mockCreateBackup.mockResolvedValue('C:\\backup\\qingdan.db')
   mockRestoreBackup.mockResolvedValue('C:\\backup\\qingdan.db')
+  mockExportTasks.mockResolvedValue('C:\\backup\\qingdan-export.json')
   mockIsPermissionGranted.mockResolvedValue(true)
   mockRequestPermission.mockResolvedValue('granted')
   mockSendNotification.mockResolvedValue(undefined)
@@ -201,6 +204,42 @@ describe('taskStore reset and feedback', () => {
     expect(useTaskStore.getState().tasks).toEqual(restoredTasks)
     expect(useTaskStore.getState().taskGroups).toEqual(restoredGroups)
     expect(useTaskStore.getState().filteredTasks).toEqual(restoredTasks)
+  })
+
+  it('exports all tasks through storage and shows success feedback', async () => {
+    const { useTaskStore } = await loadStore()
+
+    const result = await useTaskStore.getState().exportTasks('C:\\backup\\qingdan-export.json', 'json')
+
+    expect(result).toBe(true)
+    expect(mockExportTasks).toHaveBeenCalledWith(
+      'C:\\backup\\qingdan-export.json',
+      'json',
+      'all',
+      DEFAULT_REMINDER_PREFERENCES,
+    )
+    expect(useTaskStore.getState().successToast).toEqual({
+      tone: 'success',
+      message: '工作台快照已导出到本地文件。',
+      source: 'backup',
+    })
+  })
+
+  it('surfaces a truthful message when restore succeeds on disk but reload fails', async () => {
+    mockLoadTasks.mockRejectedValueOnce(new Error('刷新失败'))
+
+    const { useTaskStore } = await loadStore()
+
+    const result = await useTaskStore.getState().restoreBackup('C:\\backup\\qingdan.db')
+
+    expect(result).toBe(false)
+    expect(mockRestoreBackup).toHaveBeenCalledWith('C:\\backup\\qingdan.db')
+    expect(useTaskStore.getState().errorDialog).toEqual({
+      title: '恢复后刷新失败',
+      message: '刷新失败',
+      source: 'backup',
+    })
+    expect(useTaskStore.getState().isHydrated).toBe(false)
   })
 
   it('keeps the full task set after restore when current filters are non-default', async () => {
@@ -764,7 +803,7 @@ describe('taskStore reset and feedback', () => {
   it('bypasses background permission cooldown for user-initiated test notifications', async () => {
     const dueSoonTask = buildTask({
       id: 'task-due-soon',
-      title: '鍗冲皢鍒版湡浠诲姟',
+      title: '即将到期任务',
       priority: 'urgent',
       dueAt: '2026-04-16T09:00:00.000Z',
     })

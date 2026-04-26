@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { DEFAULT_REMINDER_PREFERENCES } from './task.reminders'
 import {
   bulkUpdateTasks,
   createBackup,
+  exportTasks,
   loadReminderPreferences,
   loadTasks,
   queryTasks,
@@ -370,5 +372,25 @@ describe('task query storage', () => {
       },
     })
     expect(result).toBe('C:\\backup\\qingdan.db')
+  })
+
+  it('maps export tasks to the Tauri command payload for full json export', async () => {
+    ;(globalThis as typeof globalThis & { window: Window & { __TAURI_INTERNALS__: unknown } }).window = {
+      localStorage: createLocalStorage() as never,
+      __TAURI_INTERNALS__: {},
+    } as never
+    mockInvoke.mockResolvedValue({ exportPath: 'C:\\backup\\qingdan-export.json' })
+
+    const result = await exportTasks('C:\\backup\\qingdan-export.json', 'json', 'all', DEFAULT_REMINDER_PREFERENCES)
+
+    expect(mockInvoke).toHaveBeenCalledWith('export_tasks', {
+      input: {
+        exportPath: 'C:\\backup\\qingdan-export.json',
+        format: 'json',
+        scope: 'all',
+        reminderPreferences: DEFAULT_REMINDER_PREFERENCES,
+      },
+    })
+    expect(result).toBe('C:\\backup\\qingdan-export.json')
   })
 })

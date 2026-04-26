@@ -1,4 +1,4 @@
-// @vitest-environment jsdom
+﻿// @vitest-environment jsdom
 
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -75,7 +75,7 @@ describe('BackupCenter', () => {
       />,
     )
 
-    expect(markup).toContain('灏氭棤澶囦唤璁板綍')
+    expect(markup).toContain('尚未创建备份')
   })
 
   it('runs backup action after collecting a backup path', async () => {
@@ -106,6 +106,78 @@ describe('BackupCenter', () => {
 
     expect(promptSpy).toHaveBeenCalled()
     expect(onBackupNow).toHaveBeenCalledWith('C:\\backup\\qingdan.db')
+
+    await act(async () => {
+      root.unmount()
+    })
+    promptSpy.mockRestore()
+    container.remove()
+  })
+
+  it('runs full json export after collecting an export path', async () => {
+    const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('C:\\backup\\qingdan-export.json')
+    const onExportJson = vi.fn().mockResolvedValue(true)
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(
+        <BackupCenter
+          isOpen
+          lastBackupAt={null}
+          onBackupNow={vi.fn()}
+          onExportCsv={vi.fn()}
+          onExportJson={onExportJson}
+          onOpenChange={vi.fn()}
+          onRestoreFromBackup={vi.fn()}
+        />,
+      )
+    })
+
+    const buttons = Array.from(container.querySelectorAll('.backup-center-action'))
+    await act(async () => {
+      buttons[2]?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(promptSpy).toHaveBeenCalled()
+    expect(onExportJson).toHaveBeenCalledWith('C:\\backup\\qingdan-export.json')
+
+    await act(async () => {
+      root.unmount()
+    })
+    promptSpy.mockRestore()
+    container.remove()
+  })
+
+  it('runs full csv export after collecting an export path', async () => {
+    const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('C:\\backup\\qingdan-export.csv')
+    const onExportCsv = vi.fn().mockResolvedValue(true)
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(
+        <BackupCenter
+          isOpen
+          lastBackupAt={null}
+          onBackupNow={vi.fn()}
+          onExportCsv={onExportCsv}
+          onExportJson={vi.fn()}
+          onOpenChange={vi.fn()}
+          onRestoreFromBackup={vi.fn()}
+        />,
+      )
+    })
+
+    const buttons = Array.from(container.querySelectorAll('.backup-center-action'))
+    await act(async () => {
+      buttons[3]?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(promptSpy).toHaveBeenCalled()
+    expect(onExportCsv).toHaveBeenCalledWith('C:\\backup\\qingdan-export.csv')
 
     await act(async () => {
       root.unmount()
@@ -155,7 +227,7 @@ describe('BackupCenter', () => {
     container.remove()
   })
 
-  it('keeps export actions disabled in the current phase', () => {
+  it('keeps backup and export actions enabled when the panel is open', () => {
     const container = document.createElement('div')
     document.body.appendChild(container)
     const root = createRoot(container)
@@ -179,8 +251,8 @@ describe('BackupCenter', () => {
     expect(actionButtons).toHaveLength(4)
     expect(actionButtons[0]?.disabled).toBe(false)
     expect(actionButtons[1]?.disabled).toBe(false)
-    expect(actionButtons[2]?.disabled).toBe(true)
-    expect(actionButtons[3]?.disabled).toBe(true)
+    expect(actionButtons[2]?.disabled).toBe(false)
+    expect(actionButtons[3]?.disabled).toBe(false)
 
     act(() => {
       root.unmount()

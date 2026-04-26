@@ -126,3 +126,11 @@ export interface BulkUpdateTasksInput {
 export interface BackupCommandResult {
   backupPath: string
 }
+
+export type TaskExportFormat = 'json' | 'csv'
+
+export type TaskExportScope = 'all'
+
+export interface ExportCommandResult {
+  exportPath: string
+}
