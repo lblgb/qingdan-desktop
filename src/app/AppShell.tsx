@@ -3,6 +3,7 @@
  */
 import { useEffect, useMemo, useState } from 'react'
 import { BackupCenter } from '../components/BackupCenter'
+import { GlobalTaskSearch } from '../components/GlobalTaskSearch'
 import { TaskComposer } from '../components/TaskComposer'
 import { TaskErrorDialog } from '../components/TaskErrorDialog'
 import { TaskFeedbackToast } from '../components/TaskFeedbackToast'
@@ -127,6 +128,10 @@ export function AppShell() {
   const createBackup = useTaskStore((state) => state.createBackup)
   const restoreBackup = useTaskStore((state) => state.restoreBackup)
   const exportTasks = useTaskStore((state) => state.exportTasks)
+  const searchKeyword = useTaskStore((state) => state.searchKeyword)
+  const searchResults = useTaskStore((state) => state.searchResults)
+  const setSearchKeyword = useTaskStore((state) => state.setSearchKeyword)
+  const focusTaskFromSearch = useTaskStore((state) => state.focusTaskFromSearch)
 
   const [isMoreFiltersOpen, setIsMoreFiltersOpen] = useState(false)
   const [activeConditionPanel, setActiveConditionPanel] = useState<ConditionPanel>('root')
@@ -297,6 +302,13 @@ export function AppShell() {
         </div>
 
         <div className="topbar-actions">
+          <GlobalTaskSearch
+            keyword={searchKeyword}
+            onKeywordChange={setSearchKeyword}
+            onSelect={(taskId) => void focusTaskFromSearch(taskId)}
+            results={searchResults}
+          />
+
           <TaskOverview />
 
           <div className="system-action-bar" aria-label="系统图标组" role="group">

@@ -278,6 +278,79 @@ describe('taskStore reset and feedback', () => {
     expect(useTaskStore.getState().isHydrated).toBe(false)
   })
 
+  it('updates search results from title and note matches', async () => {
+    const { useTaskStore } = await loadStore()
+
+    useTaskStore.setState({
+      tasks: [
+        buildTask({ id: 'task-a', title: '备份中心', note: '恢复入口', updatedAt: '2026-04-26T08:00:00.000Z' }),
+        buildTask({ id: 'task-b', title: '列表优化', note: '控制台视觉', updatedAt: '2026-04-26T09:00:00.000Z' }),
+      ],
+    })
+
+    useTaskStore.getState().setSearchKeyword('恢复')
+
+    expect(useTaskStore.getState().searchResults.map((item) => item.task.id)).toEqual(['task-a'])
+    expect(useTaskStore.getState().searchResults[0]?.matchedField).toBe('note')
+  })
+
+  it('refreshes active search results when task data changes', async () => {
+    const { useTaskStore } = await loadStore()
+    const nextTasks = [buildTask({ id: 'task-created', title: '新建备份任务', note: '' })]
+    mockCreateTask.mockResolvedValue(nextTasks)
+
+    useTaskStore.setState({
+      searchKeyword: '备份',
+      searchResults: [],
+    })
+
+    await useTaskStore.getState().addTask({
+      title: '新建备份任务',
+      description: '',
+      priority: 'medium',
+      dueAt: null,
+      groupId: null,
+    })
+
+    expect(useTaskStore.getState().searchResults.map((item) => item.task.id)).toEqual(['task-created'])
+  })
+
+  it('resets filters and queues reminder-style navigation when selecting a search result', async () => {
+    const { useTaskStore } = await loadStore()
+    useTaskStore.setState({
+      tasks: [
+        buildTask({ id: 'target-task', title: '备份中心', archivedAt: '2026-04-26T10:00:00.000Z' }),
+        buildTask({ id: 'other-task', title: '别的任务' }),
+      ],
+      activeFilter: 'completed',
+      activeArchiveFilter: 'active',
+      activeGroupFilter: 'ungrouped',
+      activePriorityFilter: 'high',
+      activeDateRange: 'today',
+      activeSortBy: 'updated',
+      searchKeyword: '备份',
+      searchResults: [
+        {
+          task: buildTask({ id: 'target-task', title: '备份中心', archivedAt: '2026-04-26T10:00:00.000Z' }),
+          matchedField: 'title',
+        },
+      ],
+    })
+
+    useTaskStore.getState().focusTaskFromSearch('target-task')
+
+    expect(useTaskStore.getState().activeFilter).toBe('all')
+    expect(useTaskStore.getState().activeArchiveFilter).toBe('all')
+    expect(useTaskStore.getState().activeGroupFilter).toBe('all-groups')
+    expect(useTaskStore.getState().activePriorityFilter).toBe('all-priorities')
+    expect(useTaskStore.getState().activeDateRange).toBe('all-time')
+    expect(useTaskStore.getState().activeSortBy).toBe('default')
+    expect(useTaskStore.getState().filteredTasks.map((task) => task.id)).toContain('target-task')
+    expect(useTaskStore.getState().searchKeyword).toBe('')
+    expect(useTaskStore.getState().searchResults).toEqual([])
+    expect(useTaskStore.getState().reminderNavigation?.taskId).toBe('target-task')
+  })
+
   it('keeps the full task set after restore when current filters are non-default', async () => {
     const restoredAllTasks = [
       buildTask({ id: 'active-task', title: 'Active task', completed: false }),

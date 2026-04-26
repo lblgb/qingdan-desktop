@@ -4,6 +4,7 @@
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification'
 import { create } from 'zustand'
 import { applyTaskQuery, DEFAULT_TASK_QUERY } from '../features/tasks/task.filters'
+import { searchTasks } from '../features/tasks/task.search'
 import {
   DEFAULT_REMINDER_PREFERENCES,
   deriveDesktopNotificationItems,
@@ -46,6 +47,7 @@ import type {
   TaskPriorityFilter,
   TaskQueryInput,
   TaskSortBy,
+  TaskSearchResult,
   UpdateTaskGroupInput,
   UpdateTaskInput,
 } from '../features/tasks/task.types'
@@ -84,6 +86,8 @@ interface TaskState {
   activePriorityFilter: TaskPriorityFilter
   activeDateRange: TaskDateRangeFilter
   activeSortBy: TaskSortBy
+  searchKeyword: string
+  searchResults: TaskSearchResult[]
   editingTaskId: string | null
   filteredTasks: TaskItem[]
   reminderPreferences: ReminderPreferences
@@ -127,6 +131,8 @@ interface TaskState {
   restoreBackup: (backupPath: string) => Promise<boolean>
   exportTasks: (exportPath: string, format: TaskExportFormat) => Promise<boolean>
   exportCurrentResults: (exportPath: string) => Promise<boolean>
+  setSearchKeyword: (keyword: string) => void
+  focusTaskFromSearch: (taskId: string) => void
   setFilter: (filter: TaskFilter) => void
   setArchiveFilter: (filter: TaskArchiveFilter) => void
   setGroupFilter: (filter: TaskGroupFilter) => void
@@ -198,6 +204,13 @@ function buildReminderState(tasks: TaskItem[], preferences: ReminderPreferences,
   return {
     reminderSnapshotAt: snapshotAt,
     reminderBuckets: deriveReminderBuckets(tasks, preferences, snapshotAt),
+  }
+}
+
+function buildSearchState(tasks: TaskItem[], keyword: string) {
+  return {
+    searchKeyword: keyword,
+    searchResults: searchTasks(tasks, keyword),
   }
 }
 
@@ -304,6 +317,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   activePriorityFilter: DEFAULT_TASK_QUERY.priority,
   activeDateRange: DEFAULT_TASK_QUERY.dateRange,
   activeSortBy: DEFAULT_TASK_QUERY.sortBy,
+  searchKeyword: '',
+  searchResults: [],
   editingTaskId: null,
   filteredTasks: [],
   reminderPreferences: DEFAULT_REMINDER_PREFERENCES,
@@ -351,6 +366,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           taskGroups,
           activeGroupFilter,
           filteredTasks: buildVisibleTasks(tasks, nextQuery),
+          ...buildSearchState(tasks, state.searchKeyword),
           isHydrated: true,
           isLoading: false,
           activeAction: null,
@@ -600,6 +616,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           taskGroups,
           activeGroupFilter,
           filteredTasks: buildVisibleTasks(tasks, nextQuery),
+          ...buildSearchState(tasks, state.searchKeyword),
           isHydrated: true,
           isMutating: false,
           activeAction: null,
@@ -693,6 +710,33 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       return false
     }
   },
+  setSearchKeyword: (keyword) =>
+    set((state) => ({
+      ...buildSearchState(state.tasks, keyword),
+    })),
+  focusTaskFromSearch: (taskId) =>
+    set((state) => {
+      const nextQuery = {
+        ...DEFAULT_TASK_QUERY,
+        archive: 'all' as const,
+      }
+
+      return {
+        activeFilter: nextQuery.status,
+        activeArchiveFilter: nextQuery.archive,
+        activeGroupFilter: nextQuery.group,
+        activePriorityFilter: nextQuery.priority,
+        activeDateRange: nextQuery.dateRange,
+        activeSortBy: nextQuery.sortBy,
+        filteredTasks: buildVisibleTasks(state.tasks, nextQuery),
+        searchKeyword: '',
+        searchResults: [],
+        reminderNavigation: {
+          taskId,
+          requestedAt: Date.now(),
+        },
+      }
+    }),
   setFilter: (filter) =>
     set((state) => ({
       activeFilter: filter,
@@ -765,6 +809,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       set((state) => ({
         tasks,
         filteredTasks: buildVisibleTasks(tasks, buildQuery(state)),
+        ...buildSearchState(tasks, state.searchKeyword),
         isHydrated: true,
         activeAction: null,
         successToast: {
@@ -802,6 +847,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       set((state) => ({
         tasks,
         filteredTasks: buildVisibleTasks(tasks, buildQuery(state)),
+        ...buildSearchState(tasks, state.searchKeyword),
         isHydrated: true,
         activeAction: null,
         successToast: {
@@ -840,6 +886,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       set((state) => ({
         tasks,
         filteredTasks: buildVisibleTasks(tasks, buildQuery(state)),
+        ...buildSearchState(tasks, state.searchKeyword),
         isHydrated: true,
         activeAction: null,
         successToast: {
@@ -877,6 +924,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       set((state) => ({
         tasks,
         filteredTasks: buildVisibleTasks(tasks, buildQuery(state)),
+        ...buildSearchState(tasks, state.searchKeyword),
         isHydrated: true,
         activeAction: null,
         successToast: {
@@ -914,6 +962,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       set((state) => ({
         tasks,
         filteredTasks: buildVisibleTasks(tasks, buildQuery(state)),
+        ...buildSearchState(tasks, state.searchKeyword),
         isHydrated: true,
         activeAction: null,
         successToast: {
@@ -1077,6 +1126,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
             ...buildQuery(state),
             group: activeGroupFilter,
           }),
+          ...buildSearchState(tasks, state.searchKeyword),
           activeAction: null,
           successToast: {
             tone: 'success',
@@ -1131,6 +1181,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       set((state) => ({
         tasks,
         filteredTasks: buildVisibleTasks(tasks, buildQuery(state)),
+        ...buildSearchState(tasks, state.searchKeyword),
         isBulkMode: false,
         selectedTaskIds: [],
         activeAction: null,
@@ -1169,6 +1220,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       set((state) => ({
         tasks,
         filteredTasks: buildVisibleTasks(tasks, buildQuery(state)),
+        ...buildSearchState(tasks, state.searchKeyword),
         isBulkMode: false,
         selectedTaskIds: [],
         activeAction: null,

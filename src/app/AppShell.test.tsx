@@ -88,6 +88,8 @@ describe('AppShell console action bar', () => {
       activePriorityFilter: 'medium',
       activeDateRange: 'no-date',
       activeSortBy: 'updated',
+      searchKeyword: '',
+      searchResults: [],
       activeAction: null,
       feedback: null,
       reminderPreferences: DEFAULT_REMINDER_PREFERENCES,
@@ -125,6 +127,8 @@ describe('AppShell console action bar', () => {
       closeTaskDetail: vi.fn(),
       updateTask: vi.fn().mockResolvedValue(undefined),
       archiveTask: vi.fn().mockResolvedValue(undefined),
+      setSearchKeyword: useTaskStore.getState().setSearchKeyword,
+      focusTaskFromSearch: useTaskStore.getState().focusTaskFromSearch,
     })
   })
 
@@ -200,5 +204,33 @@ describe('AppShell console action bar', () => {
     expect(state.activeSortBy).toBe('default')
     expect(state.filteredTasks.map((task) => task.id)).toEqual(['task-2', 'task-1'])
     expect(state.reminderNavigation?.taskId).toBe('task-2')
+  })
+
+  it('mounts the global search input and clears search state after selecting a result', async () => {
+    await act(async () => {
+      root.render(<AppShell />)
+    })
+
+    const input = container.querySelector('input[aria-label="搜索任务"]') as HTMLInputElement
+    expect(input).toBeTruthy()
+
+    await act(async () => {
+      useTaskStore.getState().setSearchKeyword('任务二')
+    })
+
+    const resultButton = Array.from(container.querySelectorAll('.global-task-search-result')).find((item) =>
+      item.textContent?.includes('任务二'),
+    )
+    expect(resultButton).toBeTruthy()
+
+    await act(async () => {
+      resultButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const state = useTaskStore.getState()
+    expect(state.searchKeyword).toBe('')
+    expect(state.searchResults).toEqual([])
+    expect(state.reminderNavigation?.taskId).toBe('task-2')
+    expect(state.activeArchiveFilter).toBe('all')
   })
 })

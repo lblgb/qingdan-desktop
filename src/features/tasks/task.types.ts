@@ -134,3 +134,8 @@ export type TaskExportScope = 'all' | 'filtered'
 export interface ExportCommandResult {
   exportPath: string
 }
+
+export interface TaskSearchResult {
+  task: TaskItem
+  matchedField: 'title' | 'note'
+}
