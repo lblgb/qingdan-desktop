@@ -79,14 +79,14 @@ export function BackupCenter({
         aria-label="备份与恢复"
         aria-expanded={isOpen}
         aria-haspopup="dialog"
-        className="icon-button icon-button-console"
+        className="icon-button icon-button-console icon-button-compact"
         onClick={() => onOpenChange(true)}
+        title="备份与恢复"
         type="button"
       >
         <span aria-hidden="true" className="icon-button-glyph">
           BR
         </span>
-        <span>备份</span>
       </button>
 
       {isOpen ? (

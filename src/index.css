@@ -1,43 +1,44 @@
 /* 文件说明：应用全局样式，定义第一版桌面工作台的配色、布局和交互反馈。 */
 :root {
-  font-family: 'Plus Jakarta Sans', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+  font-family: 'Fira Sans', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #173536;
+  color: #e6edf7;
   background:
-    radial-gradient(circle at top left, rgba(24, 119, 124, 0.06), transparent 28%),
-    linear-gradient(180deg, #fbfdfd 0%, #f4f8f8 100%);
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.1), transparent 18%),
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.1), transparent 24%),
+    linear-gradient(180deg, #020617 0%, #06101d 100%);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color-scheme: light;
-  --surface: rgba(255, 255, 255, 0.98);
-  --surface-strong: linear-gradient(145deg, rgba(27, 84, 88, 0.96), rgba(36, 108, 113, 0.94));
-  --surface-muted: linear-gradient(180deg, rgba(248, 252, 252, 0.98), rgba(240, 246, 246, 0.96));
-  --surface-border: rgba(23, 53, 54, 0.08);
-  --surface-border-strong: rgba(255, 255, 255, 0.12);
-  --text-primary: #173536;
-  --text-secondary: #5f7778;
-  --text-on-dark: #f4fbf9;
-  --accent: #1f7a7a;
-  --accent-strong: #1a6669;
-  --accent-soft: rgba(31, 122, 122, 0.1);
-  --accent-warm: #1f7a7a;
-  --accent-warm-soft: rgba(31, 122, 122, 0.08);
-  --console-panel: rgba(17, 34, 39, 0.84);
-  --console-panel-border: rgba(109, 199, 201, 0.18);
-  --console-icon-surface: rgba(255, 255, 255, 0.9);
-  --console-icon-border: rgba(23, 53, 54, 0.1);
-  --console-icon-glyph: rgba(31, 122, 122, 0.12);
-  --console-icon-badge: #c65d57;
+  color-scheme: dark;
+  --surface: linear-gradient(180deg, rgba(6, 14, 27, 0.96), rgba(8, 19, 35, 0.94));
+  --surface-strong: linear-gradient(180deg, rgba(5, 12, 24, 0.98), rgba(8, 18, 32, 0.96));
+  --surface-muted: linear-gradient(180deg, rgba(7, 17, 31, 0.92), rgba(10, 23, 40, 0.9));
+  --surface-border: rgba(125, 211, 252, 0.14);
+  --surface-border-strong: rgba(125, 211, 252, 0.18);
+  --text-primary: #f8fbff;
+  --text-secondary: #8ea7bd;
+  --text-on-dark: #f8fbff;
+  --accent: #38bdf8;
+  --accent-strong: #7dd3fc;
+  --accent-soft: rgba(56, 189, 248, 0.12);
+  --accent-warm: #38bdf8;
+  --accent-warm-soft: rgba(56, 189, 248, 0.12);
+  --console-panel: rgba(5, 12, 24, 0.92);
+  --console-panel-border: rgba(125, 211, 252, 0.18);
+  --console-icon-surface: rgba(9, 18, 34, 0.96);
+  --console-icon-border: rgba(125, 211, 252, 0.16);
+  --console-icon-glyph: rgba(56, 189, 248, 0.12);
+  --console-icon-badge: #fb7185;
   --console-icon-badge-text: #fffaf8;
-  --danger: #b4544f;
-  --warning: #9a5a12;
-  --warning-soft: rgba(209, 115, 51, 0.12);
-  --warning-border: rgba(209, 115, 51, 0.24);
-  --shadow-lg: 0 10px 28px rgba(17, 54, 49, 0.06);
-  --shadow-md: 0 6px 18px rgba(17, 54, 49, 0.04);
+  --danger: #fb7185;
+  --warning: #f59e0b;
+  --warning-soft: rgba(245, 158, 11, 0.12);
+  --warning-border: rgba(245, 158, 11, 0.24);
+  --shadow-lg: 0 22px 48px rgba(2, 8, 23, 0.36);
+  --shadow-md: 0 16px 32px rgba(2, 8, 23, 0.28);
   --radius-xl: 24px;
   --radius-lg: 18px;
   --radius-md: 14px;
@@ -55,6 +56,11 @@ body,
 
 body {
   margin: 0;
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.08), transparent 20%),
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 24%),
+    linear-gradient(180deg, #020617 0%, #06101d 100%);
 }
 
 body::before {
@@ -63,10 +69,10 @@ body::before {
   inset: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(rgba(23, 53, 54, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(23, 53, 54, 0.025) 1px, transparent 1px);
+    linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
   background-size: 28px 28px;
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.12), transparent 78%);
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.18), transparent 78%);
 }
 
 a,
@@ -97,17 +103,17 @@ input,
 textarea,
 select {
   width: 100%;
-  border: 1px solid rgba(23, 53, 54, 0.12);
+  border: 1px solid rgba(125, 211, 252, 0.12);
   border-radius: var(--radius-md);
   padding: 0.95rem 1rem;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(9, 18, 34, 0.92);
   color: var(--text-primary);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: #6c8782;
+  color: #6f88a3;
 }
 
 input:focus-visible,
@@ -115,8 +121,8 @@ textarea:focus-visible,
 select:focus-visible,
 button:focus-visible {
   outline: 0;
-  border-color: rgba(13, 148, 136, 0.5);
-  box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.14);
+  border-color: rgba(56, 189, 248, 0.42);
+  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.12);
 }
 
 textarea {
@@ -125,9 +131,9 @@ textarea {
 }
 
 .app-shell {
-  width: min(1280px, calc(100% - 40px));
+  width: min(1520px, calc(100% - 40px));
   margin: 0 auto;
-  padding: 24px 0 36px;
+  padding: 24px 0 40px;
 }
 
 .topbar,
@@ -2152,6 +2158,214 @@ select:disabled {
   box-shadow: 0 18px 40px rgba(4, 10, 18, 0.36);
 }
 
+.app-shell-console {
+  display: grid;
+  gap: 18px;
+}
+
+.console-header {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 20px;
+}
+
+.console-header-main {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.console-primary-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.workspace-panel-console {
+  grid-template-columns: 280px minmax(0, 1fr) 300px;
+}
+
+.console-rail,
+.console-system-bay {
+  align-content: start;
+}
+
+.console-panel {
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    var(--shadow-md);
+}
+
+.console-board {
+  min-height: 100%;
+}
+
+.console-header .eyebrow,
+.console-panel .section-tag {
+  color: var(--accent-strong);
+}
+
+.console-header h1,
+.console-panel h2,
+.console-panel h3,
+.console-panel strong {
+  color: var(--text-primary);
+}
+
+.console-header .brand-mark {
+  background: linear-gradient(135deg, #38bdf8, #7dd3fc);
+  color: #031320;
+  box-shadow: 0 0 32px rgba(56, 189, 248, 0.18);
+}
+
+.console-header .global-task-search {
+  min-width: 0;
+}
+
+.console-header .global-task-search-input {
+  min-width: 0;
+  border-color: rgba(125, 211, 252, 0.16);
+  background: rgba(8, 17, 31, 0.94);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.system-action-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 999px;
+  background: rgba(5, 12, 24, 0.86);
+  border: 1px solid rgba(125, 211, 252, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.icon-button-console {
+  position: relative;
+  min-width: 42px;
+  min-height: 42px;
+  padding: 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--console-icon-border);
+  background: var(--console-icon-surface);
+  color: var(--text-primary);
+}
+
+.icon-button-compact {
+  gap: 0;
+  padding: 0.55rem;
+}
+
+.icon-button-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--console-icon-glyph);
+  color: var(--accent-strong);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.icon-button-badge {
+  box-shadow: 0 0 0 2px rgba(3, 10, 24, 0.96);
+}
+
+.console-panel .filter-button,
+.console-panel .nested-filter-button,
+.console-panel .group-filter-empty,
+.console-panel .task-reminder-center-summary,
+.console-panel .task-reminder-group,
+.console-panel .task-reminder-empty,
+.console-panel .backup-center-summary,
+.console-panel .backup-center-note {
+  background: rgba(9, 18, 34, 0.88);
+  border-color: rgba(125, 211, 252, 0.12);
+  color: var(--text-primary);
+}
+
+.console-panel .filter-button small,
+.console-panel .nested-filter-button small,
+.console-panel .group-filter-empty,
+.console-panel .task-reminder-center-summary p,
+.console-panel .task-reminder-group-header p,
+.console-panel .task-reminder-item p,
+.console-panel .backup-center-summary p,
+.console-panel .task-settings-note p {
+  color: var(--text-secondary);
+}
+
+.console-panel .filter-button.active,
+.console-panel .nested-filter-button.active {
+  background: rgba(56, 189, 248, 0.14);
+  border-color: rgba(125, 211, 252, 0.28);
+  box-shadow: 0 0 24px rgba(56, 189, 248, 0.08);
+}
+
+.console-panel .secondary-button {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+}
+
+.console-panel .primary-button {
+  background: linear-gradient(90deg, #38bdf8, #7dd3fc);
+  color: #031320;
+}
+
+.system-bay-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.system-bay-card {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(9, 18, 34, 0.88);
+  border: 1px solid rgba(125, 211, 252, 0.12);
+}
+
+.system-bay-card p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.system-bay-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.system-status-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.system-status-list div {
+  display: grid;
+  gap: 4px;
+}
+
+.system-status-list dt {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.system-status-list dd {
+  margin: 0;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -2165,6 +2379,11 @@ select:disabled {
 
 @media (max-width: 1080px) {
   .workspace-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .console-header,
+  .workspace-panel-console {
     grid-template-columns: 1fr;
   }
 
@@ -2197,8 +2416,10 @@ select:disabled {
   }
 
   .topbar,
+  .console-header,
   .sidebar-stack,
   .workspace-panel,
+  .workspace-panel-console,
   .task-detail-grid,
   .task-detail-meta,
   .task-modal-grid,
@@ -2210,6 +2431,7 @@ select:disabled {
   }
 
   .topbar-actions,
+  .console-primary-actions,
   .nested-filter-toolbar,
   .composer-actions,
   .section-heading,
@@ -2252,6 +2474,10 @@ select:disabled {
     width: 100%;
     justify-content: flex-start;
     flex-wrap: wrap;
+  }
+
+  .console-header-main {
+    min-width: 0;
   }
 
   .pagination-bar,

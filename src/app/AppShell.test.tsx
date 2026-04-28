@@ -19,7 +19,7 @@ vi.mock('../components/TaskGroupManager', () => ({
 }))
 
 vi.mock('../components/TaskOverview', () => ({
-  TaskOverview: () => null,
+  TaskOverview: () => <button type="button">任务概览</button>,
 }))
 
 vi.mock('../components/TaskList', () => ({
@@ -66,7 +66,7 @@ function buildTask(overrides: Partial<TaskItem> = {}): TaskItem {
   }
 }
 
-describe('AppShell console action bar', () => {
+describe('AppShell console workspace', () => {
   let container: HTMLDivElement
   let root: ReturnType<typeof createRoot>
 
@@ -139,14 +139,35 @@ describe('AppShell console action bar', () => {
     container.remove()
   })
 
-  it('renders the real backup, reminder center, and settings system entries', async () => {
+  it('renders a compact system icon group for backup, reminder center, and settings', async () => {
     await act(async () => {
       root.render(<AppShell />)
     })
 
-    expect(container.querySelector('button[aria-label="备份与恢复"]')).toBeTruthy()
-    expect(container.querySelector('button[aria-label="提醒中心"]')).toBeTruthy()
-    expect(container.querySelector('button[aria-label="设置"]')).toBeTruthy()
+    const systemActions = container.querySelector('[aria-label="系统入口"]')
+    const backupEntry = container.querySelector('button[aria-label="备份与恢复"]')
+    const reminderEntry = container.querySelector('button[aria-label="提醒中心"]')
+    const settingsEntry = container.querySelector('button[aria-label="设置"]')
+
+    expect(systemActions).toBeTruthy()
+    expect(backupEntry).toBeTruthy()
+    expect(reminderEntry).toBeTruthy()
+    expect(settingsEntry).toBeTruthy()
+    expect(backupEntry?.querySelector('.icon-button-label')).toBeNull()
+    expect(reminderEntry?.querySelector('.icon-button-label')).toBeNull()
+    expect(settingsEntry?.querySelector('.icon-button-label')).toBeNull()
+  })
+
+  it('splits the workspace into left navigation, center board, and right system bay', async () => {
+    await act(async () => {
+      root.render(<AppShell />)
+    })
+
+    expect(container.querySelector('[aria-label="工作区布局"]')).toBeTruthy()
+    expect(container.querySelector('[aria-label="导航矩阵"]')).toBeTruthy()
+    expect(container.querySelector('[aria-label="任务主战场"]')).toBeTruthy()
+    expect(container.querySelector('[aria-label="系统仓"]')).toBeTruthy()
+    expect(container.textContent).toContain('系统状态')
   })
 
   it('mounts the real backup center entry and opens the panel', async () => {
@@ -166,7 +187,7 @@ describe('AppShell console action bar', () => {
     expect(container.textContent).toContain('立即备份')
   })
 
-  it('shows the pending reminder badge count on the real reminder center entry', async () => {
+  it('shows the pending reminder badge count on the reminder entry', async () => {
     await act(async () => {
       root.render(<AppShell />)
     })

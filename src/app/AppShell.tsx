@@ -1,14 +1,14 @@
 /**
- * 文件说明：应用主界面，负责组织顶部动作、筛选侧栏、提醒入口和任务列表。
+ * 文件说明：应用主界面，负责组织顶部主控制条、三仓式工作区、系统入口和任务列表。
  */
 import { useEffect, useMemo, useState } from 'react'
 import { BackupCenter } from '../components/BackupCenter'
 import { GlobalTaskSearch } from '../components/GlobalTaskSearch'
 import { TaskComposer } from '../components/TaskComposer'
+import { TaskDetailDialog } from '../components/TaskDetailDialog'
 import { TaskErrorDialog } from '../components/TaskErrorDialog'
 import { TaskFeedbackToast } from '../components/TaskFeedbackToast'
 import { TaskGroupManager } from '../components/TaskGroupManager'
-import { TaskDetailDialog } from '../components/TaskDetailDialog'
 import { TaskList } from '../components/TaskList'
 import { TaskOverview } from '../components/TaskOverview'
 import { TaskReminderCenter } from '../components/TaskReminderCenter'
@@ -17,6 +17,7 @@ import { DEFAULT_TASK_QUERY, applyTaskQuery, summarizeFilters } from '../feature
 import { TASK_PRIORITY_META } from '../features/tasks/task.priority'
 import type { ReminderBuckets } from '../features/tasks/task.reminders'
 import type {
+  NotificationPermissionStatus,
   TaskDateRangeFilter,
   TaskFilter,
   TaskGroupFilter,
@@ -53,6 +54,13 @@ const SORT_OPTIONS: Array<{ key: TaskSortBy; label: string; hint: string; shortL
   { key: 'priority', label: '优先级优先', hint: '更突出紧急和高优先级任务', shortLabel: '优先级' },
   { key: 'updated', label: '最近更新', hint: '先看最近处理过的任务', shortLabel: '更新' },
 ]
+
+const NOTIFICATION_STATUS_LABELS: Record<NotificationPermissionStatus, string> = {
+  allowed: '通知权限正常',
+  'not-requested': '尚未确认通知权限',
+  denied: '通知权限未开启',
+  error: '通知权限状态读取失败',
+}
 
 type ConditionPanel = 'root' | 'groups' | 'priority' | 'date-range' | 'sort'
 
@@ -171,13 +179,14 @@ export function AppShell() {
   const totalCount = activeTasks.length
   const completedCount = activeTasks.filter((task) => task.completed).length
   const activeCount = totalCount - completedCount
+  const archivedCount = tasks.filter((task) => task.archivedAt).length
 
   const filterCounts = {
     all: totalCount,
     active: activeCount,
     completed: completedCount,
   }
-  const archivedCount = tasks.filter((task) => task.archivedAt).length
+
   const sidebarCount = activeArchiveFilter === 'archived' ? archivedCount : filterCounts[activeFilter]
 
   const dynamicGroupOptions = useMemo(
@@ -289,19 +298,19 @@ export function AppShell() {
   }
 
   return (
-    <main className="app-shell">
-      <section className="topbar topbar-compact">
+    <main className="app-shell app-shell-console">
+      <section className="console-header panel-surface panel-strong">
         <div className="brand-block">
           <span className="brand-mark" aria-hidden="true">
             QD
           </span>
           <div>
             <p className="eyebrow">轻单 Qingdan</p>
-            <h1>桌面端任务工作台</h1>
+            <h1>桌面任务指挥台</h1>
           </div>
         </div>
 
-        <div className="topbar-actions">
+        <div className="console-header-main">
           <GlobalTaskSearch
             keyword={searchKeyword}
             onKeywordChange={setSearchKeyword}
@@ -309,57 +318,58 @@ export function AppShell() {
             results={searchResults}
           />
 
-          <TaskOverview />
-
-          <div className="system-action-bar" aria-label="系统图标组" role="group">
-            <BackupCenter
-              isOpen={isBackupCenterOpen}
-              lastBackupAt={lastBackupAt}
-              onBackupNow={createBackup}
-              onExportCsv={(exportPath) => exportTasks(exportPath, 'csv')}
-              onExportJson={(exportPath) => exportTasks(exportPath, 'json')}
-              onOpenChange={setBackupCenterOpen}
-              onRestoreFromBackup={restoreBackup}
-            />
-
-            <TaskReminderCenter
-              buckets={reminderBuckets}
-              isOpen={isReminderCenterOpen}
-              onOpenChange={setIsReminderCenterOpen}
-              onSelectTask={(taskId) => {
-                if (!filteredTasks.some((task) => task.id === taskId)) {
-                  resetFilters()
-                }
-                queueReminderNavigation(taskId)
-                setIsReminderCenterOpen(false)
-              }}
-            />
-
-            <TaskSettings
-              isOpen={isSettingsOpen}
-              isSaving={isSavingReminderPreferences}
-              notificationPermissionStatus={notificationPermissionStatus}
-              onOpenChange={setIsSettingsOpen}
-              onPreferencesChange={setDraftReminderPreferences}
-              onRefreshNotificationPermissionStatus={refreshNotificationPermissionStatus}
-              onSave={handleSaveReminderPreferences}
-              onSendTestDesktopNotification={sendTestDesktopNotification}
-              preferences={draftReminderPreferences}
-            />
+          <div className="console-primary-actions">
+            <TaskOverview />
+            <TaskGroupManager />
+            <TaskComposer />
           </div>
+        </div>
 
-          <TaskGroupManager />
-          <TaskComposer />
+        <div className="system-action-bar" aria-label="系统入口" role="group">
+          <BackupCenter
+            isOpen={isBackupCenterOpen}
+            lastBackupAt={lastBackupAt}
+            onBackupNow={createBackup}
+            onExportCsv={(exportPath) => exportTasks(exportPath, 'csv')}
+            onExportJson={(exportPath) => exportTasks(exportPath, 'json')}
+            onOpenChange={setBackupCenterOpen}
+            onRestoreFromBackup={restoreBackup}
+          />
+
+          <TaskReminderCenter
+            buckets={reminderBuckets}
+            isOpen={isReminderCenterOpen}
+            onOpenChange={setIsReminderCenterOpen}
+            onSelectTask={(taskId) => {
+              if (!filteredTasks.some((task) => task.id === taskId)) {
+                resetFilters()
+              }
+              queueReminderNavigation(taskId)
+              setIsReminderCenterOpen(false)
+            }}
+          />
+
+          <TaskSettings
+            isOpen={isSettingsOpen}
+            isSaving={isSavingReminderPreferences}
+            notificationPermissionStatus={notificationPermissionStatus}
+            onOpenChange={setIsSettingsOpen}
+            onPreferencesChange={setDraftReminderPreferences}
+            onRefreshNotificationPermissionStatus={refreshNotificationPermissionStatus}
+            onSave={handleSaveReminderPreferences}
+            onSendTestDesktopNotification={sendTestDesktopNotification}
+            preferences={draftReminderPreferences}
+          />
         </div>
       </section>
 
-      <section className="workspace-panel">
-        <aside className="sidebar-stack">
-          <section className="sidebar-card panel-surface">
+      <section aria-label="工作区布局" className="workspace-panel workspace-panel-console">
+        <aside aria-label="导航矩阵" className="sidebar-stack console-rail">
+          <section className="sidebar-card panel-surface console-panel">
             <div className="sidebar-heading">
               <div>
-                <p className="section-tag">工作视图</p>
-                <h2>筛选当前清单</h2>
+                <p className="section-tag">导航矩阵</p>
+                <h2>工作视图</h2>
               </div>
               <span className="sidebar-count">{sidebarCount}</span>
             </div>
@@ -567,8 +577,8 @@ export function AppShell() {
           </section>
         </aside>
 
-        <section className="content-column">
-          <div className="content-card panel-surface">
+        <section aria-label="任务主战场" className="content-column">
+          <div className="content-card panel-surface console-panel console-board">
             {statusNotice ? (
               <div className={`status-banner ${statusNotice.tone}`}>
                 <p>{statusNotice.message}</p>
@@ -580,22 +590,66 @@ export function AppShell() {
               </div>
             ) : null}
 
-            {reminderCount > 0 ? (
-              <section aria-label="提醒关注条" className="reminder-strip">
-                <div>
-                  <p className="section-tag">关注提醒</p>
-                  <strong>{reminderCount} 条待关注事项</strong>
-                  <p>{reminderStripSummary}</p>
-                </div>
-                <button className="secondary-button" onClick={() => setIsReminderCenterOpen(true)} type="button">
-                  查看提醒中心
-                </button>
-              </section>
-            ) : null}
-
             <TaskList />
           </div>
         </section>
+
+        <aside aria-label="系统仓" className="console-system-bay">
+          <section className="sidebar-card panel-surface console-panel">
+            <div className="sidebar-heading">
+              <div>
+                <p className="section-tag">系统仓</p>
+                <h2>提醒 / 备份 / 状态</h2>
+              </div>
+              <span className="sidebar-count">{reminderCount}</span>
+            </div>
+
+            <div className="system-bay-grid">
+              <article className="system-bay-card">
+                <div className="system-bay-card-header">
+                  <strong>提醒</strong>
+                  <span className="task-console-chip is-reminder-state is-upcoming">{reminderCount}</span>
+                </div>
+                <p>{reminderCount > 0 ? reminderStripSummary : '当前没有待关注事项。'}</p>
+                <button className="secondary-button" onClick={() => setIsReminderCenterOpen(true)} type="button">
+                  查看提醒中心
+                </button>
+              </article>
+
+              <article className="system-bay-card">
+                <div className="system-bay-card-header">
+                  <strong>备份</strong>
+                  <span className="task-console-chip is-meta">{lastBackupAt ? '已记录' : '未备份'}</span>
+                </div>
+                <p>{lastBackupAt ? `最近备份已记录，可进入备份中心继续管理。` : '尚未创建备份，建议先建立本地快照。'}</p>
+                <button className="secondary-button" onClick={() => setBackupCenterOpen(true)} type="button">
+                  打开备份中心
+                </button>
+              </article>
+
+              <article className="system-bay-card">
+                <div className="system-bay-card-header">
+                  <strong>系统状态</strong>
+                  <span className="task-console-chip is-meta">{notificationPermissionStatus === 'allowed' ? '在线' : '需关注'}</span>
+                </div>
+                <dl className="system-status-list">
+                  <div>
+                    <dt>通知权限</dt>
+                    <dd>{NOTIFICATION_STATUS_LABELS[notificationPermissionStatus]}</dd>
+                  </div>
+                  <div>
+                    <dt>工作台任务</dt>
+                    <dd>{tasks.length} 条</dd>
+                  </div>
+                  <div>
+                    <dt>当前筛选结果</dt>
+                    <dd>{filteredTasks.length} 条</dd>
+                  </div>
+                </dl>
+              </article>
+            </div>
+          </section>
+        </aside>
       </section>
 
       <TaskFeedbackToast />

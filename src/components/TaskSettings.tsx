@@ -62,14 +62,14 @@ export function TaskSettings({
         aria-label="设置"
         aria-expanded={isOpen}
         aria-haspopup="dialog"
-        className="icon-button icon-button-console"
+        className="icon-button icon-button-console icon-button-compact"
         onClick={() => onOpenChange(true)}
+        title="设置"
         type="button"
       >
         <span aria-hidden="true" className="icon-button-glyph">
           设
         </span>
-        <span>设置</span>
       </button>
 
       {isOpen ? (

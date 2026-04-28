@@ -704,6 +704,49 @@
 
 - 进入分支收口：确认是否合并到 `master`，并按后续发布流程创建 `v0.50.0` tag 与 GitHub Release。
 
+## 2026-04-29 第 57 轮
+
+### 讨论主题
+
+- 根据验包前反馈，修正 `v0.50.0` 当前 UI 与预览稿偏差，重点收口主工作台骨架、右上角系统入口形态和整体配色方向。
+
+### 当前结论
+
+- 当前主工作台不再沿用“浅底 + 局部深卡片”的保守方案，正式切换到深海军蓝控制台基底。
+- 主工作台骨架明确为左中右三仓：
+  - 左侧 `导航矩阵 / 更多条件`
+  - 中间 `任务主战场`
+  - 右侧 `系统仓`
+- 顶部只保留 `任务概览 / 任务组管理 / 新建` 三个高频主动作。
+- 右上角 `备份 / 提醒 / 设置` 收敛为小图标入口，`提醒` 保留数量角标。
+- 右侧第三仓固定承载 `提醒 / 备份 / 系统状态`，不再尝试做成概览仓。
+
+### 文档更新
+
+- 更新 [`docs/V050_ACCEPTANCE.md`](./V050_ACCEPTANCE.md)，把“三仓结构”“小图标系统入口”“系统仓”与“深海军蓝控制台”写入正式验收口径。
+- 更新 [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md)，同步 `v0.50.0` 的最新骨架与视觉基线。
+- 更新 [`docs/WORKLOG.md`](./WORKLOG.md)，记录本轮 UI 修正版实现与验证结果。
+
+### 实现记录
+
+- 更新 [src/app/AppShell.tsx](E:/CodeBase/.worktrees/v050/src/app/AppShell.tsx)，将主工作台重构为左中右三仓结构，并新增系统仓信息卡。
+- 更新 [src/components/BackupCenter.tsx](E:/CodeBase/.worktrees/v050/src/components/BackupCenter.tsx)、[src/components/TaskReminderCenter.tsx](E:/CodeBase/.worktrees/v050/src/components/TaskReminderCenter.tsx) 与 [src/components/TaskSettings.tsx](E:/CodeBase/.worktrees/v050/src/components/TaskSettings.tsx)，把右上角入口统一收成小图标形态。
+- 更新 [src/index.css](E:/CodeBase/.worktrees/v050/src/index.css)，把主色板切到深海军蓝控制台方向，并补三仓布局、系统仓和小图标入口样式。
+- 更新 [src/app/AppShell.test.tsx](E:/CodeBase/.worktrees/v050/src/app/AppShell.test.tsx)，补齐三仓结构和小图标系统入口的回归测试。
+
+### 验证记录
+
+- `cmd /c npx.cmd vitest run src/app/AppShell.test.tsx` 先失败，确认旧实现未满足“三仓 + 小图标入口”目标；修正后通过。
+- `cmd /c npx.cmd vitest run src/app/AppShell.test.tsx src/components/TaskReminderCenter.test.tsx src/components/BackupCenter.test.tsx src/components/TaskList.test.tsx src/components/GlobalTaskSearch.test.tsx` 通过，结果为 5 个测试文件、30 个用例通过。
+- `cmd /c npx.cmd vitest run` 通过，结果为 15 个测试文件、103 个用例通过。
+- `cmd /c npx.cmd tsc -b` 通过。
+- `cmd /c npm.cmd run tauri:build` 通过，已重新生成最新 UI 对应的 Windows 安装产物。
+- 已对本轮改动文件执行 UTF-8 显示复查，确认中文未再出现乱码。
+
+### 下一步建议
+
+- 继续做一次真实桌面预览与安装包复验，再决定是否进入 `v0.50.0` 的最终 tag 与 Release 流程。
+
 ## 2026-04-24 第 49 轮
 
 ### 讨论主题

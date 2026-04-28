@@ -28,7 +28,7 @@ export function TaskReminderCenter({
   const hasAnyReminderGroups = GROUP_META.some((group) => buckets[group.key].length > 0)
   const summaryTitle =
     pendingCount > 0
-      ? `${pendingCount} 条提醒`
+      ? `${pendingCount} 条提醒待处理`
       : buckets.recentlyReminded.length > 0
         ? `最近已提醒 ${buckets.recentlyReminded.length} 条`
         : '当前没有提醒内容'
@@ -39,14 +39,14 @@ export function TaskReminderCenter({
         aria-label="提醒中心"
         aria-expanded={isOpen}
         aria-haspopup="dialog"
-        className="icon-button icon-button-console reminder-entry-button"
+        className="icon-button icon-button-console icon-button-compact reminder-entry-button"
         onClick={() => onOpenChange(true)}
+        title="提醒中心"
         type="button"
       >
         <span aria-hidden="true" className="icon-button-glyph">
           铃
         </span>
-        <span>提醒</span>
         {pendingCount > 0 ? <strong className="icon-button-badge">{pendingCount}</strong> : null}
       </button>
 
