@@ -4,6 +4,27 @@ import { DEFAULT_REMINDER_PREFERENCES } from '../features/tasks/task.reminders'
 import { TaskSettings } from './TaskSettings'
 
 describe('TaskSettings', () => {
+  it('renders the trigger as a compact icon button with svg glyph', () => {
+    const markup = renderToStaticMarkup(
+      <TaskSettings
+        isOpen={false}
+        isSaving={false}
+        notificationPermissionStatus="not-requested"
+        preferences={DEFAULT_REMINDER_PREFERENCES}
+        onOpenChange={vi.fn()}
+        onPreferencesChange={vi.fn()}
+        onRefreshNotificationPermissionStatus={vi.fn()}
+        onSave={vi.fn()}
+        onSendTestDesktopNotification={vi.fn()}
+      />,
+    )
+
+    expect(markup).toContain('aria-label="设置"')
+    expect(markup).toContain('<svg')
+    expect(markup).not.toContain('>设置<')
+    expect(markup).not.toContain('>设<')
+  })
+
   it('renders reminder preference fields when dialog is open', () => {
     const markup = renderToStaticMarkup(
       <TaskSettings

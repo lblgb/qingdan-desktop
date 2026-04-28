@@ -747,6 +747,40 @@
 
 - 继续做一次真实桌面预览与安装包复验，再决定是否进入 `v0.50.0` 的最终 tag 与 Release 流程。
 
+## 2026-04-29 第 58 轮
+
+### 讨论主题
+
+- 根据二次验收反馈，继续收紧右上角系统入口的图标表达，并修复提醒中心内部信息在深色面板下的可读性问题。
+
+### 当前结论
+
+- `设置 / 提醒` 不再使用中文单字代替图标，已改成真正的 SVG 小图标按钮。
+- 为保持入口语言统一，`备份` 入口也同步改成 SVG 图标。
+- 提醒中心内部摘要卡、分组卡、任务条目和元信息已切到更高对比度的深色面板表达，避免“看得见结构、看不清信息”。
+
+### 文档更新
+
+- 更新 [`docs/WORKLOG.md`](./WORKLOG.md)，记录本轮图标与可读性修正。
+
+### 实现记录
+
+- 更新 [src/components/TaskSettings.tsx](E:/CodeBase/.worktrees/v050/src/components/TaskSettings.tsx) 与 [src/components/TaskReminderCenter.tsx](E:/CodeBase/.worktrees/v050/src/components/TaskReminderCenter.tsx)，将入口字形替换为 SVG 图标。
+- 更新 [src/components/BackupCenter.tsx](E:/CodeBase/.worktrees/v050/src/components/BackupCenter.tsx)，同步为统一图标语言。
+- 更新 [src/index.css](E:/CodeBase/.worktrees/v050/src/index.css)，增强提醒中心摘要、分组、条目与角标区域的对比度。
+- 更新 [src/components/TaskSettings.test.tsx](E:/CodeBase/.worktrees/v050/src/components/TaskSettings.test.tsx) 与 [src/components/TaskReminderCenter.test.tsx](E:/CodeBase/.worktrees/v050/src/components/TaskReminderCenter.test.tsx)，补充 SVG 图标触发器回归测试。
+
+### 验证记录
+
+- `cmd /c npx.cmd vitest run src/components/TaskReminderCenter.test.tsx src/components/TaskSettings.test.tsx` 先失败，确认旧实现仍是字形占位；修正后通过。
+- `cmd /c npx.cmd vitest run src/app/AppShell.test.tsx src/components/TaskReminderCenter.test.tsx src/components/TaskSettings.test.tsx src/components/BackupCenter.test.tsx` 通过，结果为 4 个测试文件、23 个用例通过。
+- `cmd /c npx.cmd vitest run` 通过，结果为 15 个测试文件、105 个用例通过。
+- `cmd /c npx.cmd tsc -b` 通过。
+
+### 下一步建议
+
+- 重新打包最新安装产物，让用户直接按这轮图标和提醒中心可读性修正后的版本继续验收。
+
 ## 2026-04-24 第 49 轮
 
 ### 讨论主题

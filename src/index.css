@@ -2273,6 +2273,12 @@ select:disabled {
   font-weight: 700;
 }
 
+.icon-button-glyph svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
 .icon-button-badge {
   box-shadow: 0 0 0 2px rgba(3, 10, 24, 0.96);
 }
@@ -2364,6 +2370,43 @@ select:disabled {
   margin: 0;
   color: var(--text-primary);
   font-weight: 700;
+}
+
+.task-reminder-center-modal .task-reminder-center-summary,
+.task-reminder-center-modal .task-reminder-group,
+.task-reminder-center-modal .task-reminder-empty {
+  background: rgba(6, 14, 27, 0.96);
+  border: 1px solid rgba(125, 211, 252, 0.14);
+}
+
+.task-reminder-center-modal .task-reminder-group {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.task-reminder-center-modal .task-reminder-center-summary p,
+.task-reminder-center-modal .task-reminder-group-header p,
+.task-reminder-center-modal .task-reminder-empty p,
+.task-reminder-center-modal .task-reminder-item p {
+  color: #9bb0c3;
+}
+
+.task-reminder-center-modal .task-reminder-item {
+  background: rgba(9, 18, 34, 0.92);
+  border: 1px solid rgba(125, 211, 252, 0.14);
+}
+
+.task-reminder-center-modal .task-reminder-item strong,
+.task-reminder-center-modal .task-reminder-group h3,
+.task-reminder-center-modal .task-reminder-center-summary strong,
+.task-reminder-center-modal .task-reminder-empty strong {
+  color: #f8fbff;
+}
+
+.task-reminder-center-modal .meta-pill,
+.task-reminder-center-modal .task-group-count {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(125, 211, 252, 0.14);
+  color: #d9f4ff;
 }
 
 @media (prefers-reduced-motion: reduce) {

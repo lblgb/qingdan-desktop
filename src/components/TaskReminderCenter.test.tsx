@@ -63,6 +63,27 @@ describe('TaskReminderCenter', () => {
     expect(markup).not.toContain('>2<')
   })
 
+  it('renders the reminder entry as an icon button with svg glyph', () => {
+    const markup = renderToStaticMarkup(
+      <TaskReminderCenter
+        buckets={{
+          overdue: [buildReminderItem()],
+          upcoming: [],
+          focusWithoutDate: [],
+          recentlyReminded: [],
+        }}
+        isOpen={false}
+        onOpenChange={vi.fn()}
+        onSelectTask={vi.fn()}
+      />,
+    )
+
+    expect(markup).toContain('aria-label="提醒中心"')
+    expect(markup).toContain('<svg')
+    expect(markup).not.toContain('>提醒<')
+    expect(markup).not.toContain('>铃<')
+  })
+
   it('uses a recently-reminded summary instead of showing zero reminders with a real list', () => {
     const markup = renderToStaticMarkup(
       <TaskReminderCenter

@@ -27,6 +27,19 @@ export function BackupCenter({
   onExportJson,
   onExportCsv,
 }: BackupCenterProps) {
+  const archiveIcon = (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path
+        d="M4 6.5h16v3H4zM6.5 9.5h11v8.5h-11z"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.7"
+      />
+      <path d="M9.5 13h5" stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" />
+    </svg>
+  )
+
   const formattedLastBackupAt = formatBackupTimestamp(lastBackupAt)
 
   async function handleBackupNow() {
@@ -85,7 +98,7 @@ export function BackupCenter({
         type="button"
       >
         <span aria-hidden="true" className="icon-button-glyph">
-          BR
+          {archiveIcon}
         </span>
       </button>
 

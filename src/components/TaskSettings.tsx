@@ -50,6 +50,19 @@ export function TaskSettings({
   onSave,
   onSendTestDesktopNotification,
 }: TaskSettingsProps) {
+  const gearIcon = (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path
+        d="M10.4 3.2h3.2l.5 2a7.8 7.8 0 0 1 1.7.7L17.7 4l2.3 2.3-1.9 1.9c.3.5.5 1.1.7 1.7l2 .5v3.2l-2 .5a7.8 7.8 0 0 1-.7 1.7l1.9 1.9-2.3 2.3-1.9-1.9c-.5.3-1.1.5-1.7.7l-.5 2h-3.2l-.5-2a7.8 7.8 0 0 1-1.7-.7L6.3 20l-2.3-2.3 1.9-1.9a7.8 7.8 0 0 1-.7-1.7l-2-.5v-3.2l2-.5c.1-.6.4-1.2.7-1.7L4 6.3 6.3 4l1.9 1.9c.5-.3 1.1-.5 1.7-.7l.5-2Z"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.6"
+      />
+      <circle cx="12" cy="12" r="2.8" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  )
+
   useEffect(() => {
     if (isOpen) {
       void onRefreshNotificationPermissionStatus()
@@ -68,7 +81,7 @@ export function TaskSettings({
         type="button"
       >
         <span aria-hidden="true" className="icon-button-glyph">
-          设
+          {gearIcon}
         </span>
       </button>
 

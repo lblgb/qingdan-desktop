@@ -24,6 +24,25 @@ export function TaskReminderCenter({
   onOpenChange,
   onSelectTask,
 }: TaskReminderCenterProps) {
+  const bellIcon = (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path
+        d="M9.5 19a2.5 2.5 0 0 0 5 0"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M6 16.5h12l-1.6-2.2a6.9 6.9 0 0 1-1.3-4v-.8a3.1 3.1 0 1 0-6.2 0v.8a6.9 6.9 0 0 1-1.3 4L6 16.5Z"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+    </svg>
+  )
+
   const pendingCount = buckets.overdue.length + buckets.upcoming.length + buckets.focusWithoutDate.length
   const hasAnyReminderGroups = GROUP_META.some((group) => buckets[group.key].length > 0)
   const summaryTitle =
@@ -45,7 +64,7 @@ export function TaskReminderCenter({
         type="button"
       >
         <span aria-hidden="true" className="icon-button-glyph">
-          铃
+          {bellIcon}
         </span>
         {pendingCount > 0 ? <strong className="icon-button-badge">{pendingCount}</strong> : null}
       </button>
