@@ -612,6 +612,37 @@
 
 - 汇总 `v0.50.0` 当前分支变更后执行一次全量验证，再决定是否进入打包收口或继续做剩余文档/验收整理。
 
+## 2026-04-28 第 54 轮
+
+### 讨论主题
+
+- 对 `feature/v050` 当前实现执行一次全量验证，并补齐搜索基线修正后的最终状态记录。
+
+### 当前结论
+
+- 当前 `v0.50.0` 分支已经完成控制台 UI、备份恢复中心、全量导出、当前结果导出和全局搜索定位主线。
+- 搜索基线已修正为“基于全量任务集搜索，再重置筛选并定位目标任务”，不再受初始筛选结果集限制。
+- 当前实现分支已通过前端测试、TypeScript 构建、Rust 测试和 Rust 编译检查。
+
+### 文档更新
+
+- 更新 [`docs/WORKLOG.md`](./WORKLOG.md)，记录本轮全量验证与搜索基线修正后的分支状态。
+
+### 实现记录
+
+- 更新 [src/stores/taskStore.ts](E:/CodeBase/.worktrees/v050/src/stores/taskStore.ts) 与 [src/stores/taskStore.test.ts](E:/CodeBase/.worktrees/v050/src/stores/taskStore.test.ts)，将 `hydrateTasks` 调整为全量装载任务，再派生当前筛选结果与搜索结果。
+
+### 验证记录
+
+- `cmd /c npx.cmd vitest run` 通过，结果为 15 个测试文件、101 个用例通过。
+- `cmd /c npx.cmd tsc -b` 通过。
+- `cargo test` 通过，结果为 17 个 Rust 测试通过。
+- `cargo check` 通过。
+
+### 下一步建议
+
+- 若确认进入发布收口，可继续处理版本号切换到 `0.50.0`、正式打包和后续合并发布。
+
 ## 2026-04-24 第 49 轮
 
 ### 讨论主题
