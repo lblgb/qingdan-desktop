@@ -163,6 +163,7 @@ describe('AppShell console workspace', () => {
       root.render(<AppShell />)
     })
 
+    expect(container.querySelector('.theme-coldsteel')).toBeTruthy()
     expect(container.querySelector('[aria-label="工作区布局"]')).toBeTruthy()
     expect(container.querySelector('[aria-label="导航矩阵"]')).toBeTruthy()
     expect(container.querySelector('[aria-label="任务主战场"]')).toBeTruthy()

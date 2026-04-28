@@ -3,42 +3,42 @@
   font-family: 'Fira Sans', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #e6edf7;
+  color: #e8eef8;
   background:
-    radial-gradient(circle at top right, rgba(56, 189, 248, 0.1), transparent 18%),
-    radial-gradient(circle at top left, rgba(37, 99, 235, 0.1), transparent 24%),
-    linear-gradient(180deg, #020617 0%, #06101d 100%);
+    radial-gradient(circle at top right, rgba(96, 165, 250, 0.08), transparent 16%),
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.06), transparent 22%),
+    linear-gradient(180deg, #03060d 0%, #09111b 58%, #0a1220 100%);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color-scheme: dark;
-  --surface: linear-gradient(180deg, rgba(6, 14, 27, 0.96), rgba(8, 19, 35, 0.94));
-  --surface-strong: linear-gradient(180deg, rgba(5, 12, 24, 0.98), rgba(8, 18, 32, 0.96));
-  --surface-muted: linear-gradient(180deg, rgba(7, 17, 31, 0.92), rgba(10, 23, 40, 0.9));
-  --surface-border: rgba(125, 211, 252, 0.14);
-  --surface-border-strong: rgba(125, 211, 252, 0.18);
-  --text-primary: #f8fbff;
-  --text-secondary: #8ea7bd;
-  --text-on-dark: #f8fbff;
-  --accent: #38bdf8;
+  --surface: linear-gradient(180deg, rgba(8, 14, 22, 0.98), rgba(10, 18, 28, 0.96));
+  --surface-strong: linear-gradient(180deg, rgba(7, 13, 21, 0.99), rgba(9, 17, 27, 0.97));
+  --surface-muted: linear-gradient(180deg, rgba(11, 19, 30, 0.94), rgba(10, 18, 29, 0.92));
+  --surface-border: rgba(148, 163, 184, 0.16);
+  --surface-border-strong: rgba(148, 163, 184, 0.22);
+  --text-primary: #f3f7fd;
+  --text-secondary: #9db0c4;
+  --text-on-dark: #f3f7fd;
+  --accent: #60a5fa;
   --accent-strong: #7dd3fc;
-  --accent-soft: rgba(56, 189, 248, 0.12);
-  --accent-warm: #38bdf8;
-  --accent-warm-soft: rgba(56, 189, 248, 0.12);
-  --console-panel: rgba(5, 12, 24, 0.92);
-  --console-panel-border: rgba(125, 211, 252, 0.18);
-  --console-icon-surface: rgba(9, 18, 34, 0.96);
-  --console-icon-border: rgba(125, 211, 252, 0.16);
-  --console-icon-glyph: rgba(56, 189, 248, 0.12);
-  --console-icon-badge: #fb7185;
+  --accent-soft: rgba(96, 165, 250, 0.12);
+  --accent-warm: #60a5fa;
+  --accent-warm-soft: rgba(96, 165, 250, 0.12);
+  --console-panel: rgba(7, 13, 21, 0.94);
+  --console-panel-border: rgba(148, 163, 184, 0.18);
+  --console-icon-surface: linear-gradient(180deg, rgba(11, 19, 30, 0.98), rgba(8, 14, 22, 0.98));
+  --console-icon-border: rgba(148, 163, 184, 0.18);
+  --console-icon-glyph: rgba(96, 165, 250, 0.1);
+  --console-icon-badge: #ef4444;
   --console-icon-badge-text: #fffaf8;
   --danger: #fb7185;
   --warning: #f59e0b;
   --warning-soft: rgba(245, 158, 11, 0.12);
   --warning-border: rgba(245, 158, 11, 0.24);
-  --shadow-lg: 0 22px 48px rgba(2, 8, 23, 0.36);
-  --shadow-md: 0 16px 32px rgba(2, 8, 23, 0.28);
+  --shadow-lg: 0 22px 48px rgba(2, 6, 23, 0.5);
+  --shadow-md: 0 16px 32px rgba(2, 6, 23, 0.42);
   --radius-xl: 24px;
   --radius-lg: 18px;
   --radius-md: 14px;
@@ -58,9 +58,9 @@ body {
   margin: 0;
   color: var(--text-primary);
   background:
-    radial-gradient(circle at top right, rgba(56, 189, 248, 0.08), transparent 20%),
-    radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 24%),
-    linear-gradient(180deg, #020617 0%, #06101d 100%);
+    radial-gradient(circle at top right, rgba(96, 165, 250, 0.07), transparent 18%),
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.06), transparent 24%),
+    linear-gradient(180deg, #03060d 0%, #09111b 58%, #0a1220 100%);
 }
 
 body::before {
@@ -69,10 +69,10 @@ body::before {
   inset: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
-  background-size: 28px 28px;
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.18), transparent 78%);
+    linear-gradient(rgba(148, 163, 184, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.035) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.22), transparent 74%);
 }
 
 a,
@@ -208,13 +208,13 @@ textarea {
 
 .global-task-search-result {
   border: 1px solid rgba(94, 234, 212, 0.12);
-  background: rgba(16, 28, 42, 0.88);
+  background: linear-gradient(180deg, rgba(11, 20, 31, 0.98), rgba(9, 16, 25, 0.96));
   color: #e6f6ff;
 }
 
 .global-task-search-result:hover {
-  border-color: rgba(94, 234, 212, 0.28);
-  box-shadow: 0 0 0 1px rgba(94, 234, 212, 0.1), 0 0 24px rgba(45, 212, 191, 0.12);
+  border-color: rgba(125, 211, 252, 0.28);
+  box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.1), 0 0 24px rgba(59, 130, 246, 0.08);
 }
 
 .global-task-search-result strong,
@@ -240,12 +240,15 @@ textarea {
   width: 56px;
   height: 56px;
   border-radius: 16px;
-  background: #1f7a7a;
-  color: #effdfa;
+  background: linear-gradient(180deg, rgba(13, 24, 38, 0.98), rgba(9, 17, 27, 0.96));
+  border: 1px solid rgba(125, 211, 252, 0.24);
+  color: #eaf4ff;
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  box-shadow: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 14px 28px rgba(2, 6, 23, 0.38);
 }
 
 .topbar h1,
@@ -1874,36 +1877,55 @@ textarea {
   padding: 18px;
   border-radius: 18px;
   background:
-    linear-gradient(180deg, rgba(8, 16, 24, 0.96), rgba(12, 24, 36, 0.94));
-  border: 1px solid rgba(109, 199, 201, 0.18);
+    linear-gradient(180deg, rgba(10, 18, 28, 0.98), rgba(12, 20, 31, 0.96));
+  border: 1px solid rgba(148, 163, 184, 0.16);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 18px 36px rgba(4, 10, 18, 0.28);
-  color: #d9edf5;
+    inset 0 0 0 1px rgba(125, 211, 252, 0.03),
+    0 18px 36px rgba(2, 6, 23, 0.42);
+  color: #dbeafe;
+  position: relative;
+  overflow: hidden;
+}
+
+.task-module-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 18px;
+  width: 52px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #38bdf8, #60a5fa);
+  opacity: 0.92;
+  pointer-events: none;
 }
 
 .task-item.completed .task-module-card {
   background:
-    linear-gradient(180deg, rgba(9, 20, 28, 0.96), rgba(12, 28, 35, 0.94));
+    linear-gradient(180deg, rgba(10, 18, 28, 0.94), rgba(12, 20, 31, 0.9));
 }
 
 .task-item.selected .task-module-card {
-  border-color: rgba(31, 122, 122, 0.28);
+  border-color: rgba(125, 211, 252, 0.42);
   box-shadow:
-    inset 0 0 0 1px rgba(80, 223, 255, 0.18),
-    0 18px 38px rgba(4, 10, 18, 0.34);
+    inset 0 0 0 1px rgba(186, 230, 253, 0.06),
+    0 0 0 1px rgba(59, 130, 246, 0.12),
+    0 0 24px rgba(59, 130, 246, 0.09),
+    0 18px 38px rgba(2, 6, 23, 0.48);
 }
 
 .task-item.reminder-target .task-module-card {
-  border-color: rgba(31, 122, 122, 0.34);
+  border-color: rgba(125, 211, 252, 0.46);
   box-shadow:
-    0 0 0 3px rgba(80, 223, 255, 0.16),
-    0 18px 40px rgba(4, 10, 18, 0.34);
+    0 0 0 2px rgba(96, 165, 250, 0.14),
+    0 0 28px rgba(59, 130, 246, 0.1),
+    0 18px 40px rgba(2, 6, 23, 0.48);
 }
 
 .task-module-header {
   padding-bottom: 10px;
-  border-bottom: 1px solid rgba(109, 199, 201, 0.14);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
 }
 
 .task-body,
@@ -1921,12 +1943,12 @@ textarea {
 
 .task-module-card .task-main p,
 .task-module-card .section-note {
-  color: rgba(217, 237, 245, 0.74);
+  color: rgba(205, 221, 239, 0.76);
 }
 
 .task-module-card .task-note-summary {
-  background: rgba(15, 42, 58, 0.72);
-  color: rgba(217, 237, 245, 0.82);
+  background: rgba(14, 24, 38, 0.8);
+  color: rgba(219, 234, 254, 0.82);
 }
 
 .task-console-chip {
@@ -1935,9 +1957,9 @@ textarea {
   gap: 8px;
   padding: 0.45rem 0.85rem;
   border-radius: 999px;
-  border: 1px solid rgba(109, 199, 201, 0.16);
-  background: rgba(80, 223, 255, 0.1);
-  color: #dffaff;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(96, 165, 250, 0.08);
+  color: #e4f1ff;
   font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -1950,13 +1972,13 @@ textarea {
   height: 8px;
   border-radius: 999px;
   background: currentColor;
-  box-shadow: 0 0 0 3px rgba(7, 16, 24, 0.86);
+  box-shadow: 0 0 0 3px rgba(7, 13, 21, 0.9);
 }
 
 .task-console-chip.is-active {
-  background: rgba(80, 223, 255, 0.12);
-  border-color: rgba(80, 223, 255, 0.24);
-  color: #8ef3ff;
+  background: rgba(96, 165, 250, 0.1);
+  border-color: rgba(125, 211, 252, 0.22);
+  color: #bfdbfe;
 }
 
 .task-console-chip.is-done {
@@ -1972,9 +1994,9 @@ textarea {
 }
 
 .task-console-chip.is-meta {
-  background: rgba(15, 42, 58, 0.78);
-  border-color: rgba(109, 199, 201, 0.12);
-  color: rgba(217, 237, 245, 0.82);
+  background: rgba(14, 24, 38, 0.82);
+  border-color: rgba(148, 163, 184, 0.12);
+  color: rgba(219, 234, 254, 0.82);
   text-transform: none;
   letter-spacing: 0.01em;
 }
@@ -1997,9 +2019,9 @@ textarea {
 }
 
 .task-console-chip.is-reminder-state.is-focus-without-date {
-  background: rgba(80, 223, 255, 0.12);
-  border-color: rgba(80, 223, 255, 0.22);
-  color: #8ef3ff;
+  background: rgba(96, 165, 250, 0.1);
+  border-color: rgba(125, 211, 252, 0.22);
+  color: #bfdbfe;
 }
 
 .task-console-chip.is-reminder-state.is-recently-reminded {
@@ -2021,9 +2043,9 @@ textarea {
 }
 
 .task-console-chip.is-priority.is-medium {
-  background: rgba(80, 223, 255, 0.12);
-  border-color: rgba(80, 223, 255, 0.22);
-  color: #8ef3ff;
+  background: rgba(96, 165, 250, 0.1);
+  border-color: rgba(125, 211, 252, 0.22);
+  color: #bfdbfe;
 }
 
 .task-console-chip.is-priority.is-low {
@@ -2163,12 +2185,40 @@ select:disabled {
   gap: 18px;
 }
 
+.theme-coldsteel {
+  position: relative;
+}
+
 .console-header {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr) auto;
   align-items: center;
   gap: 18px;
   padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.console-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent 0%, rgba(125, 211, 252, 0.05) 24%, transparent 48%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 34%);
+}
+
+.console-header::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  right: 18px;
+  width: 72px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(125, 211, 252, 0.5));
+  pointer-events: none;
 }
 
 .console-header-main {
@@ -2198,6 +2248,19 @@ select:disabled {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.03),
     var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+}
+
+.console-panel::before {
+  content: '';
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(125, 211, 252, 0.2), transparent 60%);
+  pointer-events: none;
 }
 
 .console-board {
@@ -2217,9 +2280,12 @@ select:disabled {
 }
 
 .console-header .brand-mark {
-  background: linear-gradient(135deg, #38bdf8, #7dd3fc);
-  color: #031320;
-  box-shadow: 0 0 32px rgba(56, 189, 248, 0.18);
+  background: linear-gradient(180deg, rgba(13, 24, 38, 0.98), rgba(9, 17, 27, 0.96));
+  color: #eef6ff;
+  box-shadow:
+    inset 0 0 0 1px rgba(186, 230, 253, 0.06),
+    0 0 20px rgba(59, 130, 246, 0.08),
+    0 14px 28px rgba(2, 6, 23, 0.38);
 }
 
 .console-header .global-task-search {
@@ -2228,9 +2294,11 @@ select:disabled {
 
 .console-header .global-task-search-input {
   min-width: 0;
-  border-color: rgba(125, 211, 252, 0.16);
-  background: rgba(8, 17, 31, 0.94);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  border-color: rgba(148, 163, 184, 0.18);
+  background: linear-gradient(180deg, rgba(10, 18, 28, 0.98), rgba(8, 14, 22, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    inset 0 0 0 1px rgba(96, 165, 250, 0.02);
 }
 
 .system-action-bar {
@@ -2239,9 +2307,11 @@ select:disabled {
   gap: 8px;
   padding: 8px;
   border-radius: 999px;
-  background: rgba(5, 12, 24, 0.86);
-  border: 1px solid rgba(125, 211, 252, 0.12);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  background: linear-gradient(180deg, rgba(7, 13, 21, 0.94), rgba(9, 16, 24, 0.9));
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 10px 24px rgba(2, 6, 23, 0.26);
 }
 
 .icon-button-console {
@@ -2253,6 +2323,7 @@ select:disabled {
   border: 1px solid var(--console-icon-border);
   background: var(--console-icon-surface);
   color: var(--text-primary);
+  box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.04);
 }
 
 .icon-button-compact {
@@ -2271,6 +2342,7 @@ select:disabled {
   color: var(--accent-strong);
   font-size: 0.78rem;
   font-weight: 700;
+  box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.05);
 }
 
 .icon-button-glyph svg {
@@ -2291,8 +2363,8 @@ select:disabled {
 .console-panel .task-reminder-empty,
 .console-panel .backup-center-summary,
 .console-panel .backup-center-note {
-  background: rgba(9, 18, 34, 0.88);
-  border-color: rgba(125, 211, 252, 0.12);
+  background: linear-gradient(180deg, rgba(10, 18, 28, 0.96), rgba(9, 16, 25, 0.94));
+  border-color: rgba(148, 163, 184, 0.14);
   color: var(--text-primary);
 }
 
@@ -2309,19 +2381,23 @@ select:disabled {
 
 .console-panel .filter-button.active,
 .console-panel .nested-filter-button.active {
-  background: rgba(56, 189, 248, 0.14);
-  border-color: rgba(125, 211, 252, 0.28);
-  box-shadow: 0 0 24px rgba(56, 189, 248, 0.08);
+  background: linear-gradient(180deg, rgba(15, 30, 46, 0.98), rgba(10, 20, 32, 0.96));
+  border-color: rgba(125, 211, 252, 0.42);
+  box-shadow:
+    inset 0 0 0 1px rgba(186, 230, 253, 0.05),
+    0 0 0 1px rgba(59, 130, 246, 0.12),
+    0 0 20px rgba(59, 130, 246, 0.08);
 }
 
 .console-panel .secondary-button {
-  background: rgba(255, 255, 255, 0.06);
+  background: linear-gradient(180deg, rgba(12, 20, 31, 0.96), rgba(8, 14, 22, 0.96));
+  border-color: rgba(148, 163, 184, 0.16);
   color: var(--text-primary);
 }
 
 .console-panel .primary-button {
-  background: linear-gradient(90deg, #38bdf8, #7dd3fc);
-  color: #031320;
+  background: linear-gradient(90deg, #60a5fa, #7dd3fc);
+  color: #05111d;
 }
 
 .system-bay-grid {
@@ -2334,8 +2410,21 @@ select:disabled {
   gap: 10px;
   padding: 16px;
   border-radius: 18px;
-  background: rgba(9, 18, 34, 0.88);
-  border: 1px solid rgba(125, 211, 252, 0.12);
+  background: linear-gradient(180deg, rgba(11, 19, 30, 0.98), rgba(9, 16, 25, 0.96));
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.04);
+  position: relative;
+}
+
+.system-bay-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 14px;
+  right: 14px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(125, 211, 252, 0.2), transparent 72%);
+  pointer-events: none;
 }
 
 .system-bay-card p {
@@ -2375,8 +2464,8 @@ select:disabled {
 .task-reminder-center-modal .task-reminder-center-summary,
 .task-reminder-center-modal .task-reminder-group,
 .task-reminder-center-modal .task-reminder-empty {
-  background: rgba(6, 14, 27, 0.96);
-  border: 1px solid rgba(125, 211, 252, 0.14);
+  background: linear-gradient(180deg, rgba(9, 16, 25, 0.98), rgba(11, 19, 30, 0.96));
+  border: 1px solid rgba(148, 163, 184, 0.16);
 }
 
 .task-reminder-center-modal .task-reminder-group {
@@ -2387,12 +2476,13 @@ select:disabled {
 .task-reminder-center-modal .task-reminder-group-header p,
 .task-reminder-center-modal .task-reminder-empty p,
 .task-reminder-center-modal .task-reminder-item p {
-  color: #9bb0c3;
+  color: #b8cada;
 }
 
 .task-reminder-center-modal .task-reminder-item {
-  background: rgba(9, 18, 34, 0.92);
-  border: 1px solid rgba(125, 211, 252, 0.14);
+  background: linear-gradient(180deg, rgba(11, 19, 30, 0.98), rgba(9, 16, 25, 0.96));
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.04);
 }
 
 .task-reminder-center-modal .task-reminder-item strong,
@@ -2404,9 +2494,9 @@ select:disabled {
 
 .task-reminder-center-modal .meta-pill,
 .task-reminder-center-modal .task-group-count {
-  background: rgba(56, 189, 248, 0.12);
-  border: 1px solid rgba(125, 211, 252, 0.14);
-  color: #d9f4ff;
+  background: rgba(96, 165, 250, 0.1);
+  border: 1px solid rgba(125, 211, 252, 0.16);
+  color: #e4f0ff;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -816,3 +816,41 @@
 ### 下一步建议
 
 - 按 `ARCHITECTURE.md` 与 `V050_ACCEPTANCE.md` 进入 UI 改版和数据安全能力实现。
+
+## 2026-04-29 第 59 轮
+
+### 讨论主题
+
+- 根据最新验收反馈，继续把 `v0.50.0` 的主工作台从“深色但偏平”收束到“冷钢蓝设备控制台”方向，重点修正颜色疲劳感和设计感不足的问题。
+
+### 当前结论
+
+- 主工作台正式补上 `theme-coldsteel` 主题锚点，避免后续视觉继续漂移。
+- 整体配色从偏亮青蓝收束为冷钢蓝控制台：近黑底、钢蓝描边、亮白信息、青蓝仅保留在边框、状态线和焦点高亮。
+- 顶部主控制条、右上角系统图标组、任务卡、导航筛选块和系统仓卡片统一补上设备感细节：
+  - 更硬的边框结构
+  - 顶部刻度线和局部分割线
+  - 克制的通电辉光
+  - 更明确的激活态状态条
+- 提醒中心继续沿用更高对比度表达，并同步切到这套冷钢蓝语言，避免“局部能看清、整体不一致”。
+
+### 文档更新
+
+- 更新 [`docs/V050_ACCEPTANCE.md`](./V050_ACCEPTANCE.md)，把“冷钢蓝控制台”和“设备感细节”写入正式验收口径。
+- 更新 [`docs/WORKLOG.md`](./WORKLOG.md)，记录本轮视觉收束、主题锚点与验证结果。
+
+### 实现记录
+
+- 更新 [src/app/AppShell.tsx](E:/CodeBase/.worktrees/v050/src/app/AppShell.tsx)，为主工作台补上 `theme-coldsteel` 主题锚点。
+- 更新 [src/index.css](E:/CodeBase/.worktrees/v050/src/index.css)，统一重做全局色板、顶部控制条、系统图标组、筛选块、任务卡、系统仓卡片和提醒中心面板的冷钢蓝设备感样式。
+- 更新 [src/app/AppShell.test.tsx](E:/CodeBase/.worktrees/v050/src/app/AppShell.test.tsx)，新增主题锚点回归检查，确保这轮视觉方案有明确结构落点。
+
+### 验证记录
+
+- `cmd /c npx.cmd vitest run src/app/AppShell.test.tsx` 先失败，确认旧实现尚未挂载 `theme-coldsteel`；修正后通过。
+- `cmd /c npx.cmd vitest run src/app/AppShell.test.tsx src/components/TaskReminderCenter.test.tsx src/components/TaskSettings.test.tsx` 通过，结果为 3 个测试文件、14 个用例通过。
+- `cmd /c npx.cmd tsc -b` 通过。
+
+### 下一步建议
+
+- 继续执行全量前端回归与桌面打包，生成这轮冷钢蓝设备感修正后的最新安装产物供用户复验。
