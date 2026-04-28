@@ -635,6 +635,37 @@ describe('taskStore reset and feedback', () => {
     expect(state.feedback).toBeNull()
   })
 
+  it('hydrates the full task set while deriving filteredTasks from the active query', async () => {
+    const activeTask = buildTask({ id: 'task-active', title: '进行中任务', completed: false })
+    const completedTask = buildTask({
+      id: 'task-completed',
+      title: '已完成任务',
+      completed: true,
+      completedAt: '2026-04-16T02:00:00.000Z',
+    })
+    mockLoadTasks.mockResolvedValueOnce([activeTask, completedTask])
+    mockLoadTaskGroups.mockResolvedValueOnce([])
+
+    const { useTaskStore } = await loadStore()
+    useTaskStore.setState({
+      activeFilter: 'completed',
+      activeArchiveFilter: 'active',
+      activeGroupFilter: 'all-groups',
+      activePriorityFilter: 'all-priorities',
+      activeDateRange: 'all-time',
+      activeSortBy: 'default',
+      searchKeyword: '已完成',
+      searchResults: [],
+    })
+
+    await useTaskStore.getState().hydrateTasks()
+
+    expect(useTaskStore.getState().tasks.map((task) => task.id)).toEqual(['task-active', 'task-completed'])
+    expect(useTaskStore.getState().filteredTasks.map((task) => task.id)).toEqual(['task-completed'])
+    expect(useTaskStore.getState().searchResults.map((item) => item.task.id)).toEqual(['task-completed'])
+    expect(mockLoadTasks).toHaveBeenCalledTimes(1)
+  })
+
   it('hydrates reminder preferences and derives reminder buckets in shared state', async () => {
     const preferences: ReminderPreferences = {
       ...DEFAULT_REMINDER_PREFERENCES,

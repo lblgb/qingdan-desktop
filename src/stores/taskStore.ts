@@ -24,7 +24,6 @@ import {
   loadReminderPreferences,
   loadTaskGroups,
   loadTasks,
-  queryTasks,
   restoreBackup as restoreBackupSnapshot,
   saveReminderPreferences as persistReminderPreferences,
   toggleTask,
@@ -353,7 +352,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     })
 
     try {
-      const [taskGroups, tasks] = await Promise.all([loadTaskGroups(), queryTasks(buildQuery(get()))])
+      const [taskGroups, tasks] = await Promise.all([loadTaskGroups(), loadTasks()])
       set((state) => {
         const activeGroupFilter = normalizeGroupFilter(taskGroups, state.activeGroupFilter)
         const nextQuery = buildQuery({
