@@ -396,6 +396,8 @@ describe('task query storage', () => {
   })
 
   it('maps filtered csv export with the current query payload', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-04-26T08:00:00.000Z'))
     ;(globalThis as typeof globalThis & { window: Window & { __TAURI_INTERNALS__: unknown } }).window = {
       localStorage: createLocalStorage() as never,
       __TAURI_INTERNALS__: {},
@@ -437,5 +439,6 @@ describe('task query storage', () => {
       },
     })
     expect(result).toBe('C:\\backup\\qingdan-current-results.csv')
+    vi.useRealTimers()
   })
 })

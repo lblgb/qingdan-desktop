@@ -643,6 +643,37 @@
 
 - 若确认进入发布收口，可继续处理版本号切换到 `0.50.0`、正式打包和后续合并发布。
 
+## 2026-04-28 第 55 轮
+
+### 讨论主题
+
+- 将实现分支的应用版本号正式对齐到 `0.50.0`，并重新验证版本切换后的前后端基线。
+
+### 当前结论
+
+- `package.json`、`package-lock.json`、`src-tauri/Cargo.toml`、`src-tauri/Cargo.lock` 与 `src-tauri/tauri.conf.json` 已统一切换到 `0.50.0`。
+- 版本切换后，前端测试、TypeScript 构建、Rust 测试与 Rust 编译检查均通过。
+
+### 文档更新
+
+- 更新 [`docs/WORKLOG.md`](./WORKLOG.md)，记录本轮版本号对齐与验证结果。
+
+### 实现记录
+
+- 更新 [package.json](E:/CodeBase/.worktrees/v050/package.json)、[package-lock.json](E:/CodeBase/.worktrees/v050/package-lock.json)、[src-tauri/Cargo.toml](E:/CodeBase/.worktrees/v050/src-tauri/Cargo.toml)、[src-tauri/Cargo.lock](E:/CodeBase/.worktrees/v050/src-tauri/Cargo.lock) 与 [src-tauri/tauri.conf.json](E:/CodeBase/.worktrees/v050/src-tauri/tauri.conf.json)，统一应用版本号到 `0.50.0`。
+- 更新 [src/features/tasks/task.storage.test.ts](E:/CodeBase/.worktrees/v050/src/features/tasks/task.storage.test.ts)，修正依赖当前日期的脆弱断言。
+
+### 验证记录
+
+- `cmd /c npx.cmd vitest run` 通过，结果为 15 个测试文件、102 个用例通过。
+- `cmd /c npx.cmd tsc -b` 通过。
+- `cargo test` 通过，结果为 17 个 Rust 测试通过。
+- `cargo check` 通过。
+
+### 下一步建议
+
+- 继续执行 `npm run tauri:build`，生成 `v0.50.0` 对应的 Windows 安装产物并准备后续合并/发布。
+
 ## 2026-04-24 第 49 轮
 
 ### 讨论主题
