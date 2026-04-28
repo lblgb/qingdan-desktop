@@ -674,6 +674,36 @@
 
 - 继续执行 `npm run tauri:build`，生成 `v0.50.0` 对应的 Windows 安装产物并准备后续合并/发布。
 
+## 2026-04-28 第 56 轮
+
+### 讨论主题
+
+- 为 `v0.50.0` 当前分支执行正式桌面打包，确认 Windows 安装产物可生成。
+
+### 当前结论
+
+- `v0.50.0` 当前分支已完成正式打包。
+- 已生成 NSIS 安装包与 MSI 安装包，文件名版本号与当前分支版本号一致。
+
+### 文档更新
+
+- 更新 [`docs/WORKLOG.md`](./WORKLOG.md)，记录本轮正式打包结果。
+
+### 实现记录
+
+- 本轮未新增代码实现，主要执行版本对齐后的正式构建验证。
+
+### 验证记录
+
+- `cmd /c npm.cmd run tauri:build` 通过。
+- 生成产物：
+  - `src-tauri/target/release/bundle/nsis/轻单_0.50.0_x64-setup.exe`
+  - `src-tauri/target/release/bundle/msi/轻单_0.50.0_x64_zh-CN.msi`
+
+### 下一步建议
+
+- 进入分支收口：确认是否合并到 `master`，并按后续发布流程创建 `v0.50.0` tag 与 GitHub Release。
+
 ## 2026-04-24 第 49 轮
 
 ### 讨论主题
