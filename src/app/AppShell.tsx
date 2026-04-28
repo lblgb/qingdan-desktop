@@ -299,7 +299,7 @@ export function AppShell() {
 
   return (
     <main className="app-shell app-shell-console theme-coldsteel">
-      <section className="console-header panel-surface panel-strong">
+      <section className="console-header console-header-allows-overflow panel-surface panel-strong">
         <div className="brand-block">
           <span className="brand-mark" aria-hidden="true">
             QD

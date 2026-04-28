@@ -2196,7 +2196,7 @@ select:disabled {
   gap: 18px;
   padding: 18px 20px;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .console-header::before {

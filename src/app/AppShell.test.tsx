@@ -144,6 +144,7 @@ describe('AppShell console workspace', () => {
       root.render(<AppShell />)
     })
 
+    expect(container.querySelector('.console-header-allows-overflow')).toBeTruthy()
     const systemActions = container.querySelector('[aria-label="系统入口"]')
     const backupEntry = container.querySelector('button[aria-label="备份与恢复"]')
     const reminderEntry = container.querySelector('button[aria-label="提醒中心"]')

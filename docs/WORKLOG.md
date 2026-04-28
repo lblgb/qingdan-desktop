@@ -854,3 +854,33 @@
 ### 下一步建议
 
 - 继续执行全量前端回归与桌面打包，生成这轮冷钢蓝设备感修正后的最新安装产物供用户复验。
+
+## 2026-04-29 第 60 轮
+
+### 讨论主题
+
+- 修复顶部 `新建` 按钮下拉菜单被头部控制条裁切、展开后显示不完整的问题。
+
+### 当前结论
+
+- 根因不是层级不够，而是 `console-header` 为了视觉装饰被设成了 `overflow: hidden`，导致 `TaskComposer` 的绝对定位菜单被头部容器直接裁掉。
+- 本轮按最小变更修复：保留现有骨架和装饰层，只放开头部容器的溢出裁切。
+
+### 文档更新
+
+- 更新 [`docs/WORKLOG.md`](./WORKLOG.md)，记录本轮下拉菜单裁切问题的根因与修复。
+
+### 实现记录
+
+- 更新 [src/app/AppShell.tsx](E:/CodeBase/.worktrees/v050/src/app/AppShell.tsx)，为顶部控制条补上 `console-header-allows-overflow` 回归锚点。
+- 更新 [src/index.css](E:/CodeBase/.worktrees/v050/src/index.css)，将顶部控制条从 `overflow: hidden` 调整为 `overflow: visible`，允许 `新建` 下拉菜单完整展开。
+- 更新 [src/app/AppShell.test.tsx](E:/CodeBase/.worktrees/v050/src/app/AppShell.test.tsx)，补充顶部控制条允许下拉溢出的结构回归检查。
+
+### 验证记录
+
+- `cmd /c npx.cmd vitest run src/app/AppShell.test.tsx` 先失败，确认旧实现未挂载回归锚点；修正后通过。
+- `cmd /c npx.cmd tsc -b` 通过。
+
+### 下一步建议
+
+- 重新打包最新安装产物，让用户直接复验 `新建` 下拉菜单展开是否恢复正常。
