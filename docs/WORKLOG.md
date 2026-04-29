@@ -884,3 +884,34 @@
 ### 下一步建议
 
 - 重新打包最新安装产物，让用户直接复验 `新建` 下拉菜单展开是否恢复正常。
+
+## 2026-04-29 第 61 轮
+
+### 讨论主题
+
+- 继续修正 `新建` 下拉菜单与任务组管理弹窗的颜色语义，使其和当前 `v0.50.0` 冷钢蓝控制台主题一致。
+
+### 当前结论
+
+- `toolbar-menu`、`group-creator-card`、`group-manager-item`、`task-group-header` 和 `task-group-count` 已统一切到冷钢蓝体系。
+- 任务组管理弹窗中的表单控件与提交/取消按钮也切到冷钢蓝色板，避免组管理区域继续保留旧青绿。
+- 全局 `primary-button / secondary-button / active-chip-button` 的默认色板也收敛到冷钢蓝，以避免同一页面不同入口继续出现“旧按钮色”。
+
+### 文档更新
+
+- 更新 [`docs/WORKLOG.md`](./WORKLOG.md)，记录本轮菜单、组管理和按钮色板统一结果。
+
+### 实现记录
+
+- 更新 [src/index.css](E:/CodeBase/.worktrees/v050/src/index.css)，重做 `toolbar-menu`、任务组管理、组计数徽标、任务组头部卡片和任务模态表单按钮的冷钢蓝样式。
+- 更新 [docs/WORKLOG.md](./WORKLOG.md)，记录这轮一致性收束与验证结果。
+
+### 验证记录
+
+- `cmd /c npx.cmd vitest run` 通过，结果为 15 个测试文件、105 个用例通过。
+- `cmd /c npx.cmd tsc -b` 通过。
+- `cmd /c npm.cmd run tauri:build` 通过，已重打最新 Windows 安装产物。
+
+### 下一步建议
+
+- 让用户直接验证 `新建` 下拉菜单与任务组管理弹窗的颜色是否和整体一致。
