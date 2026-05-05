@@ -49,10 +49,45 @@ pub fn init_database(db_path: &PathBuf) -> Result<(), String> {
                 FOREIGN KEY(group_id) REFERENCES task_groups(id) ON DELETE SET NULL
             );
 
+            CREATE TABLE IF NOT EXISTS recurring_tasks (
+                id TEXT PRIMARY KEY NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL,
+                cadence_unit TEXT NOT NULL,
+                cadence_interval INTEGER NOT NULL,
+                remind_at_end INTEGER NOT NULL DEFAULT 1,
+                is_active INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS recurring_periods (
+                id TEXT PRIMARY KEY NOT NULL,
+                task_id TEXT NOT NULL,
+                start_at TEXT NOT NULL,
+                end_at TEXT NOT NULL,
+                closed_at TEXT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY(task_id) REFERENCES recurring_tasks(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS recurring_progress_entries (
+                id TEXT PRIMARY KEY NOT NULL,
+                period_id TEXT NOT NULL,
+                content TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY(period_id) REFERENCES recurring_periods(id) ON DELETE CASCADE
+            );
+
             CREATE INDEX IF NOT EXISTS idx_task_groups_updated_at ON task_groups(updated_at DESC);
             CREATE INDEX IF NOT EXISTS idx_tasks_completed ON tasks(completed);
             CREATE INDEX IF NOT EXISTS idx_tasks_due_at ON tasks(due_at);
             CREATE INDEX IF NOT EXISTS idx_tasks_updated_at ON tasks(updated_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_recurring_tasks_updated_at ON recurring_tasks(updated_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_recurring_periods_task_id_start_at ON recurring_periods(task_id, start_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_recurring_progress_entries_period_id_created_at ON recurring_progress_entries(period_id, created_at DESC);
             ",
         )
         .map_err(|error| format!("初始化任务表失败：{error}"))?;
@@ -61,6 +96,7 @@ pub fn init_database(db_path: &PathBuf) -> Result<(), String> {
     ensure_tasks_group_column(&connection)?;
     ensure_tasks_v040_columns(&connection)?;
     ensure_tasks_group_index(&connection)?;
+    ensure_recurring_tables(&connection)?;
 
     Ok(())
 }
@@ -269,6 +305,52 @@ fn ensure_tasks_group_index(connection: &Connection) -> Result<(), String> {
             [],
         )
         .map_err(|error| format!("为 tasks.group_id 创建索引失败：{error}"))?;
+
+    Ok(())
+}
+
+fn ensure_recurring_tables(connection: &Connection) -> Result<(), String> {
+    connection
+        .execute_batch(
+            "
+            CREATE TABLE IF NOT EXISTS recurring_tasks (
+                id TEXT PRIMARY KEY NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL,
+                cadence_unit TEXT NOT NULL,
+                cadence_interval INTEGER NOT NULL,
+                remind_at_end INTEGER NOT NULL DEFAULT 1,
+                is_active INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS recurring_periods (
+                id TEXT PRIMARY KEY NOT NULL,
+                task_id TEXT NOT NULL,
+                start_at TEXT NOT NULL,
+                end_at TEXT NOT NULL,
+                closed_at TEXT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY(task_id) REFERENCES recurring_tasks(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS recurring_progress_entries (
+                id TEXT PRIMARY KEY NOT NULL,
+                period_id TEXT NOT NULL,
+                content TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY(period_id) REFERENCES recurring_periods(id) ON DELETE CASCADE
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_recurring_tasks_updated_at ON recurring_tasks(updated_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_recurring_periods_task_id_start_at ON recurring_periods(task_id, start_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_recurring_progress_entries_period_id_created_at ON recurring_progress_entries(period_id, created_at DESC);
+            ",
+        )
+        .map_err(|error| format!("initialize recurring tables failed: {error}"))?;
 
     Ok(())
 }

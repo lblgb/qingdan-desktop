@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { formatTaskDate } from '../lib/date'
+import { formatTaskDate, toDateTimeLocalValue } from '../lib/date'
 import { getTaskQualityWarnings } from '../features/tasks/task.quality'
 import { TASK_PRIORITY_META } from '../features/tasks/task.priority'
 import type { TaskGroup, TaskItem, TaskPriority, UpdateTaskInput } from '../features/tasks/task.types'
@@ -16,11 +16,6 @@ export interface TaskDetailDialogProps {
   onSave: (input: UpdateTaskInput) => void | Promise<void>
   onArchive: (taskId: string) => void | Promise<void>
 }
-
-function toDateInputValue(value: string | null) {
-  return value ? value.slice(0, 10) : ''
-}
-
 export function TaskDetailDialog({
   isOpen,
   task,
@@ -62,7 +57,7 @@ function TaskDetailDialogContent({
   const [note, setNote] = useState(task.note)
   const [priority, setPriority] = useState<TaskPriority>(task.priority)
   const [groupId, setGroupId] = useState(task.groupId ?? '')
-  const [dueAt, setDueAt] = useState(toDateInputValue(task.dueAt))
+  const [dueAt, setDueAt] = useState(toDateTimeLocalValue(task.dueAt))
 
   const normalizedTitle = title.trim()
   const qualityTask: TaskItem = {
@@ -176,7 +171,7 @@ function TaskDetailDialogContent({
               <span>截止日期</span>
               <input
                 id="task-detail-due-at"
-                type="date"
+                type="datetime-local"
                 value={dueAt}
                 onChange={(event) => setDueAt(event.target.value)}
                 disabled={isMutating}

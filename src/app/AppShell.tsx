@@ -25,6 +25,7 @@ import type {
   TaskSortBy,
 } from '../features/tasks/task.types'
 import { useTaskStore } from '../stores/taskStore'
+import { useRecurringStore } from '../stores/recurringStore'
 
 const FILTER_OPTIONS: Array<{ key: TaskFilter; label: string; hint: string }> = [
   { key: 'all', label: '全部任务', hint: '查看完整清单' },
@@ -140,6 +141,7 @@ export function AppShell() {
   const searchResults = useTaskStore((state) => state.searchResults)
   const setSearchKeyword = useTaskStore((state) => state.setSearchKeyword)
   const focusTaskFromSearch = useTaskStore((state) => state.focusTaskFromSearch)
+  const hydrateRecurring = useRecurringStore((state) => state.hydrate)
 
   const [isMoreFiltersOpen, setIsMoreFiltersOpen] = useState(false)
   const [activeConditionPanel, setActiveConditionPanel] = useState<ConditionPanel>('root')
@@ -150,12 +152,13 @@ export function AppShell() {
   useEffect(() => {
     void hydrateTasks()
     void hydrateReminderPreferences()
+    void hydrateRecurring()
     startReminderAutoRefresh()
 
     return () => {
       stopReminderAutoRefresh()
     }
-  }, [hydrateReminderPreferences, hydrateTasks, startReminderAutoRefresh, stopReminderAutoRefresh])
+  }, [hydrateRecurring, hydrateReminderPreferences, hydrateTasks, startReminderAutoRefresh, stopReminderAutoRefresh])
 
   useEffect(() => {
     if (!isSettingsOpen) {

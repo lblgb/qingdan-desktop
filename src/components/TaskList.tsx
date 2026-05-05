@@ -7,8 +7,9 @@ import { applyTaskQuery, summarizeFilters } from '../features/tasks/task.filters
 import { buildTaskGroups } from '../features/tasks/task.grouping'
 import { TASK_PRIORITY_META } from '../features/tasks/task.priority'
 import type { TaskItem, TaskPriority } from '../features/tasks/task.types'
-import { formatTaskDate } from '../lib/date'
+import { formatTaskDate, toDateTimeLocalValue } from '../lib/date'
 import { useTaskStore } from '../stores/taskStore'
+import { RecurringTaskList } from './RecurringTaskList'
 
 const EMPTY_STATE_COPY = {
   all: {
@@ -63,6 +64,7 @@ export function TaskList() {
   const clearReminderNavigation = useTaskStore((state) => state.clearReminderNavigation)
   const emptyState = EMPTY_STATE_COPY[activeFilter]
 
+  const [listMode, setListMode] = useState<'tasks' | 'recurring'>('tasks')
   const [currentPage, setCurrentPage] = useState(1)
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
@@ -268,9 +270,48 @@ export function TaskList() {
     await exportCurrentResults(exportPath.trim())
   }
 
+  if (listMode === 'recurring') {
+    return (
+      <section className="task-list-card">
+        <div className="task-list-toolbar">
+          <div className="task-list-toolbar-main">
+            <span className="filter-summary-pill">周期任务</span>
+            <p className="section-note">按周期提交进展，历史进展可修改。</p>
+          </div>
+
+          <div className="task-list-toolbar-actions">
+            <button className="secondary-button" onClick={() => setListMode('tasks')} type="button">
+              普通任务
+            </button>
+            <button className="primary-button" type="button" disabled>
+              周期任务
+            </button>
+          </div>
+        </div>
+
+        <RecurringTaskList />
+      </section>
+    )
+  }
+
   if (filteredTasks.length === 0) {
     return (
       <section className="task-list-card empty-state">
+        <div className="task-list-toolbar">
+          <div className="task-list-toolbar-main">
+            <span className="filter-summary-pill">普通任务</span>
+            <p className="section-note">切换到周期任务可查看每个周期的提交状态。</p>
+          </div>
+
+          <div className="task-list-toolbar-actions">
+            <button className="primary-button" type="button" disabled>
+              普通任务
+            </button>
+            <button className="secondary-button" onClick={() => setListMode('recurring')} type="button">
+              周期任务
+            </button>
+          </div>
+        </div>
         <p className="section-tag">当前列表</p>
         <h2>{emptyState.title}</h2>
         <p>{emptyState.description}</p>
@@ -299,6 +340,12 @@ export function TaskList() {
         </div>
 
         <div className="task-list-toolbar-actions">
+          <button className="primary-button" type="button" disabled>
+            普通任务
+          </button>
+          <button className="secondary-button" onClick={() => setListMode('recurring')} type="button">
+            周期任务
+          </button>
           <button className="secondary-button" onClick={() => void handleExportCurrentResults()} type="button" disabled={isMutating}>
             导出当前结果
           </button>
@@ -475,8 +522,8 @@ export function TaskList() {
                               <span>截止日期</span>
                               <input
                                 id={`edit-dueAt-${task.id}`}
-                                type="date"
-                                value={editingDueAt}
+                                type="datetime-local"
+                                value={toDateTimeLocalValue(editingDueAt)}
                                 onChange={(event) => setEditingDueAt(event.target.value)}
                               />
                             </label>
@@ -516,8 +563,8 @@ export function TaskList() {
                           </div>
 
                           <div className="task-meta">
-                            <span className="task-console-chip is-meta">{formatTaskDate(task.createdAt, '创建于 YYYY-MM-DD')}</span>
-                            <span className="task-console-chip is-meta">{formatTaskDate(task.updatedAt, '最近更新于 YYYY-MM-DD')}</span>
+                            <span className="task-console-chip is-meta">{formatTaskDate(task.createdAt, '创建于 YYYY-MM-DD HH:mm')}</span>
+                            <span className="task-console-chip is-meta">{formatTaskDate(task.updatedAt, '最近更新于 YYYY-MM-DD HH:mm')}</span>
                           </div>
                         </form>
 
@@ -585,7 +632,7 @@ export function TaskList() {
                           <div className="task-meta">
                             <span className="task-console-chip is-meta is-group">{taskGroupLabel}</span>
                             <span className="task-console-chip is-meta is-due">{formatTaskDate(task.dueAt)}</span>
-                            <span className="task-console-chip is-meta is-created">{formatTaskDate(task.createdAt, '创建于 YYYY-MM-DD')}</span>
+                            <span className="task-console-chip is-meta is-created">{formatTaskDate(task.createdAt, '创建于 YYYY-MM-DD HH:mm')}</span>
                           </div>
                         </div>
 

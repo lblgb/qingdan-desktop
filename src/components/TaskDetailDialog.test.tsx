@@ -161,7 +161,7 @@ describe('TaskDetailDialog', () => {
     expect(container.querySelector<HTMLTextAreaElement>('#task-detail-note')?.value).toBe(secondTask.note)
     expect(container.querySelector<HTMLSelectElement>('#task-detail-priority')?.value).toBe(secondTask.priority)
     expect(container.querySelector<HTMLSelectElement>('#task-detail-group')?.value).toBe(secondTask.groupId)
-    expect(container.querySelector<HTMLInputElement>('#task-detail-due-at')?.value).toBe('2026-04-30')
+    expect(container.querySelector<HTMLInputElement>('#task-detail-due-at')?.value).toBe('2026-04-30T18:00')
 
     const form = container.querySelector('form')
     await act(async () => {
@@ -174,7 +174,7 @@ describe('TaskDetailDialog', () => {
       description: secondTask.description,
       note: secondTask.note,
       groupId: secondTask.groupId,
-      dueAt: '2026-04-30',
+      dueAt: '2026-04-30T18:00',
       priority: secondTask.priority,
     })
   })

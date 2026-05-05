@@ -7,14 +7,14 @@
 
 ## 当前活跃基线
 
-- 当前活跃版本：`v0.50.0`
-- 当前实施范围：本文档 `v0.50.0` 章节
-- 当前手工验收清单：[`docs/V050_ACCEPTANCE.md`](./V050_ACCEPTANCE.md)
+- 当前活跃版本：`v0.9.0`
+- 当前实施范围：本文档 `v0.9.0` 章节
+- 当前手工验收清单：[`docs/V090_ACCEPTANCE.md`](./V090_ACCEPTANCE.md)
 - 历史架构参考：[`docs/ARCHITECTURE_HISTORY.md`](./ARCHITECTURE_HISTORY.md)
 
-> 当前唯一有效的实施范围基线是 `v0.50.0`。若范围、责任边界、实施顺序或风险控制发生变化，应先更新本文档与 `docs/V050_ACCEPTANCE.md`，再进入实现。
+> 当前唯一有效的实施范围基线是 `v0.9.0`。若范围、责任边界、实施顺序或风险控制发生变化，应先更新本文档与 `docs/V090_ACCEPTANCE.md`，再进入实现。
 
-## `v0.50.0` 当前实施基线
+## `v0.9.0` 当前实施基线
 
 ### 版本目标
 
@@ -337,3 +337,8 @@ src-tauri/
 - 左侧 `更多条件` 已正式扩展为 `任务组 / 优先级 / 时间范围 / 排序方式` 四类条件面板，并统一接入同一套查询状态。
 - 列表已支持多选批量模式，当前只提供批量改优先级、批量归组和批量完成，不提供批量删除。
 - 概览弹窗已落地优先级分布、最近 7 天趋势和本周摘要卡片，趋势默认展示完成数，并支持切换到“新增 / 完成”双线。
+## 2026-05-05 Incremental Extension
+
+- Added a parallel recurring-task subsystem instead of extending `TaskItem`.
+- Minute-level time precision is now the default for storage, reminder checks, and user-facing date-time editing.
+- Day-level grouping remains valid for overview aggregation, but not for due/overdue correctness.

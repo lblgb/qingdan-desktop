@@ -7,9 +7,9 @@
 
 ## 当前活跃基线
 
-- 当前活跃版本：`v0.50.0`
+- 当前活跃版本：`v0.9.0`
 - 当前架构基线：[`docs/ARCHITECTURE.md`](./ARCHITECTURE.md)
-- 当前验收清单：[`docs/V050_ACCEPTANCE.md`](./V050_ACCEPTANCE.md)
+- 当前验收清单：[`docs/V090_ACCEPTANCE.md`](./V090_ACCEPTANCE.md)
 - 历史日志归档：[`docs/WORKLOG_ARCHIVE.md`](./WORKLOG_ARCHIVE.md)
 
 ## 版本索引
@@ -26,7 +26,7 @@
 - 近期关键节点：
   - `v0.1.5` 正式收口：见 [`docs/V015_CLOSEOUT.md`](./V015_CLOSEOUT.md)
   - `v0.1.5` 发布资产补齐：详见 [`docs/WORKLOG_ARCHIVE.md`](./WORKLOG_ARCHIVE.md)
-  - `v0.50.0` 当前实施基线：见 [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) 与 [`docs/V050_ACCEPTANCE.md`](./V050_ACCEPTANCE.md)
+  - `v0.9.0` 当前实施基线：见 [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) 与 [`docs/V090_ACCEPTANCE.md`](./V090_ACCEPTANCE.md)
 
 > 旧轮次不再继续堆叠在本文档内。若需要回溯第 1 至第 35 轮，请查阅归档文档。
 
@@ -915,3 +915,23 @@
 ### 下一步建议
 
 - 让用户直接验证 `新建` 下拉菜单与任务组管理弹窗的颜色是否和整体一致。
+## 2026-05-05 Recurring Tasks And Minute-Level Time
+
+### Summary
+
+- Added an independent recurring task subsystem for periodic templates, generated periods, and progress entries.
+- Upgraded user-facing task time input and display to minute-level precision.
+
+### Implemented
+
+- Added Rust/SQLite recurring tables, models, commands, and tests.
+- Added frontend recurring storage, reminder/overview derivation, dedicated Zustand store, and recurring task center UI.
+- Added recurring summary cards to task overview.
+- Switched task due-date editing from date-only input to `datetime-local`.
+- Updated shared time formatting to default to `YYYY-MM-DD HH:mm`.
+
+### Verification
+
+- `npm.cmd test`
+- `npm.cmd run build`
+- `cargo test`

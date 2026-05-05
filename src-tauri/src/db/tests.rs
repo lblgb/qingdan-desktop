@@ -385,3 +385,33 @@ fn restore_backup_with_wrong_sqlite_schema_keeps_existing_database_intact() {
 
     assert_eq!(titles, vec!["live task".to_string()]);
 }
+
+#[test]
+fn init_database_creates_recurring_tables() {
+    let db_path = legacy_database_path();
+    fs::remove_file(&db_path).ok();
+
+    init_database(&db_path).expect("initialize database");
+
+    let connection = Connection::open(&db_path).expect("open database");
+    let tables = ["recurring_tasks", "recurring_periods", "recurring_progress_entries"]
+        .into_iter()
+        .map(|table| {
+            connection.query_row(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?1",
+                params![table],
+                |row| row.get::<_, String>(0),
+            )
+        })
+        .collect::<Result<Vec<_>, _>>()
+        .expect("read recurring tables");
+
+    assert_eq!(
+        tables,
+        vec![
+            "recurring_tasks".to_string(),
+            "recurring_periods".to_string(),
+            "recurring_progress_entries".to_string()
+        ]
+    );
+}

@@ -111,6 +111,11 @@ select {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
+option {
+  background: #09121f;
+  color: var(--text-primary);
+}
+
 input::placeholder,
 textarea::placeholder {
   color: #6f88a3;
@@ -2101,6 +2106,183 @@ textarea {
   font-size: 0.92rem;
 }
 
+.recurring-entry-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recurring-entry-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: linear-gradient(180deg, rgba(11, 19, 30, 0.96), rgba(9, 16, 25, 0.94));
+}
+
+.recurring-entry-list span {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.recurring-entry-list strong {
+  color: var(--text-primary);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.recurring-latest-entry {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(125, 211, 252, 0.14);
+  background:
+    linear-gradient(180deg, rgba(9, 18, 30, 0.88), rgba(8, 14, 24, 0.84));
+}
+
+.recurring-latest-entry span {
+  color: rgba(186, 230, 253, 0.72);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.recurring-latest-entry p {
+  margin: 0;
+  color: rgba(229, 241, 255, 0.9);
+  overflow-wrap: anywhere;
+}
+
+.recurring-detail-modal {
+  width: min(980px, 100%);
+}
+
+.recurring-detail-modal .task-modal-header > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.recurring-detail-headline {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: linear-gradient(180deg, rgba(11, 19, 30, 0.94), rgba(8, 14, 22, 0.9));
+}
+
+.recurring-detail-headline p {
+  margin: 0;
+  color: rgba(229, 241, 255, 0.84);
+}
+
+.recurring-detail-grid {
+  grid-template-columns: 1fr;
+}
+
+.recurring-detail-grid .is-hidden {
+  display: none;
+}
+
+.recurring-detail-summary {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: linear-gradient(180deg, rgba(11, 19, 30, 0.94), rgba(8, 14, 22, 0.9));
+}
+
+.recurring-history-heading,
+.recurring-history-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.recurring-history-heading h3 {
+  margin: 0 0 4px;
+}
+
+.recurring-history-timeline {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recurring-history-timeline li {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  gap: 14px;
+  position: relative;
+}
+
+.recurring-history-timeline li::before {
+  content: '';
+  position: absolute;
+  top: 22px;
+  bottom: -18px;
+  left: 6px;
+  width: 1px;
+  background: linear-gradient(180deg, rgba(125, 211, 252, 0.32), rgba(125, 211, 252, 0.04));
+}
+
+.recurring-history-timeline li:last-child::before {
+  display: none;
+}
+
+.recurring-history-marker {
+  width: 13px;
+  height: 13px;
+  margin-top: 18px;
+  border-radius: 999px;
+  background: #7dd3fc;
+  box-shadow:
+    0 0 0 4px rgba(125, 211, 252, 0.12),
+    0 0 18px rgba(125, 211, 252, 0.28);
+}
+
+.recurring-history-card {
+  display: grid;
+  gap: 12px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: linear-gradient(180deg, rgba(10, 18, 28, 0.98), rgba(9, 16, 25, 0.96));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.recurring-history-header > div {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.recurring-history-header small {
+  color: var(--text-secondary);
+}
+
+.recurring-history-card p {
+  margin: 0;
+  color: rgba(229, 241, 255, 0.88);
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.recurring-toggle-grid {
+  display: grid;
+  gap: 12px;
+}
+
 .task-actions {
   align-items: center;
   flex-wrap: wrap;
@@ -2596,6 +2778,8 @@ select:disabled {
   .nested-filter-toolbar,
   .composer-actions,
   .section-heading,
+  .recurring-history-heading,
+  .recurring-history-header,
   .task-list-toolbar,
   .task-main-row,
   .status-banner,
@@ -2649,6 +2833,7 @@ select:disabled {
 
   .bulk-priority-actions,
   .bulk-group-actions,
+  .recurring-entry-list li,
   .overview-review-card-grid {
     grid-template-columns: 1fr;
   }

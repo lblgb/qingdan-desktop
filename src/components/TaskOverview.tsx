@@ -1,11 +1,13 @@
 /**
  * 文件说明：顶部任务概览入口，提供汇总指标、优先级分布、趋势和周摘要的概览弹窗。
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import dayjs from 'dayjs'
 import { buildTaskOverview } from '../features/tasks/task.overview'
+import { buildRecurringOverview } from '../features/recurring/recurring.overview'
 import { TASK_PRIORITY_META } from '../features/tasks/task.priority'
 import type { TaskPriority } from '../features/tasks/task.types'
+import { useRecurringStore } from '../stores/recurringStore'
 import { useTaskStore } from '../stores/taskStore'
 
 const PRIORITY_ORDER: TaskPriority[] = ['urgent', 'high', 'medium', 'low']
@@ -14,11 +16,18 @@ export function TaskOverview() {
   const tasks = useTaskStore((state) => state.tasks)
   const isHydrated = useTaskStore((state) => state.isHydrated)
   const activeAction = useTaskStore((state) => state.activeAction)
+  const recurringTasks = useRecurringStore((state) => state.tasks)
+  const recurringPeriodsByTaskId = useRecurringStore((state) => state.periodsByTaskId)
+  const recurringEntriesByPeriodId = useRecurringStore((state) => state.entriesByPeriodId)
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [trendMode, setTrendMode] = useState<'completed' | 'created-vs-completed'>('completed')
 
   const overview = buildTaskOverview(tasks)
+  const recurringOverview = useMemo(
+    () => buildRecurringOverview(recurringTasks, recurringPeriodsByTaskId, recurringEntriesByPeriodId, new Date().toISOString()),
+    [recurringEntriesByPeriodId, recurringPeriodsByTaskId, recurringTasks],
+  )
   const trendMax = Math.max(
     1,
     ...overview.trend.flatMap((item) =>
@@ -248,6 +257,34 @@ export function TaskOverview() {
                         '无'
                       )}
                     </div>
+                  </article>
+                </div>
+              </section>
+
+              <section className="overview-card overview-console-panel">
+                <div className="overview-card-header overview-console-panel-header">
+                  <div>
+                    <h3>周期任务摘要</h3>
+                    <p>独立周期任务系统的提交压力和进展记录总览。</p>
+                  </div>
+                </div>
+
+                <div className="overview-weekly-grid">
+                  <article className="overview-weekly-item">
+                    <span>周期任务数</span>
+                    <strong>{recurringOverview.taskCount}</strong>
+                  </article>
+                  <article className="overview-weekly-item">
+                    <span>待提交周期</span>
+                    <strong>{recurringOverview.pendingPeriodCount}</strong>
+                  </article>
+                  <article className="overview-weekly-item">
+                    <span>逾期未提交</span>
+                    <strong>{recurringOverview.overduePeriodCount}</strong>
+                  </article>
+                  <article className="overview-weekly-item">
+                    <span>进展记录数</span>
+                    <strong>{recurringOverview.progressEntryCount}</strong>
                   </article>
                 </div>
               </section>

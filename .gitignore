@@ -36,3 +36,4 @@ src-tauri/cargo-check.err.log
 # Local installers and temporary scaffolds
 rustup-init.exe
 vs_BuildTools.exe
+python-*.exe

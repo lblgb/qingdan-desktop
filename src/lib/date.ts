@@ -6,7 +6,7 @@ import dayjs from 'dayjs'
 /**
  * 格式化任务日期。
  */
-export function formatTaskDate(value: string | null, pattern = '截止于 YYYY-MM-DD') {
+export function formatTaskDate(value: string | null, pattern = '截止于 YYYY-MM-DD HH:mm') {
   if (!value) {
     return '未设置时间'
   }
@@ -17,4 +17,17 @@ export function formatTaskDate(value: string | null, pattern = '截止于 YYYY-M
   }
 
   return parsedValue.format(pattern)
+}
+
+export function toDateTimeLocalValue(value: string | null) {
+  if (!value) {
+    return ''
+  }
+
+  const parsedValue = dayjs(value)
+  if (!parsedValue.isValid()) {
+    return ''
+  }
+
+  return parsedValue.format('YYYY-MM-DDTHH:mm')
 }

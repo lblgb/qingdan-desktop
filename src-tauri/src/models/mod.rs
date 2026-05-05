@@ -203,3 +203,84 @@ pub struct ExportTasksInput {
 pub struct ExportCommandResult {
     pub export_path: String,
 }
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum RecurringCadenceUnit {
+    Minute,
+    Hour,
+    Day,
+    Week,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RecurringTask {
+    pub id: String,
+    pub title: String,
+    pub description: String,
+    pub cadence_unit: RecurringCadenceUnit,
+    pub cadence_interval: i64,
+    pub remind_at_end: bool,
+    pub is_active: bool,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RecurringPeriod {
+    pub id: String,
+    pub task_id: String,
+    pub start_at: String,
+    pub end_at: String,
+    pub closed_at: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RecurringProgressEntry {
+    pub id: String,
+    pub period_id: String,
+    pub content: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateRecurringTaskInput {
+    pub title: String,
+    pub description: String,
+    pub cadence_unit: RecurringCadenceUnit,
+    pub cadence_interval: i64,
+    pub remind_at_end: bool,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateRecurringTaskInput {
+    pub id: String,
+    pub title: String,
+    pub description: String,
+    pub cadence_unit: RecurringCadenceUnit,
+    pub cadence_interval: i64,
+    pub remind_at_end: bool,
+    pub is_active: bool,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateRecurringProgressEntryInput {
+    pub period_id: String,
+    pub content: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateRecurringProgressEntryInput {
+    pub id: String,
+    pub content: String,
+}
