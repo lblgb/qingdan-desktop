@@ -1,4 +1,4 @@
-use rusqlite::params;
+use rusqlite::{params, OptionalExtension};
 use tauri::State;
 use time::{format_description::well_known::Rfc3339, Duration, OffsetDateTime};
 use uuid::Uuid;
@@ -516,6 +516,19 @@ pub(crate) fn create_recurring_time_entry_inner(
     }
 
     let connection = open_connection(&state.db_path)?;
+    let period_exists = connection
+        .query_row(
+            "SELECT 1 FROM recurring_periods WHERE id = ?1",
+            params![input.period_id.as_str()],
+            |row| row.get::<_, i64>(0),
+        )
+        .optional()
+        .map_err(|error| format!("check recurring period failed: {error}"))?
+        .is_some();
+    if !period_exists {
+        return Err("recurring period does not exist".to_string());
+    }
+
     let timestamp = now_iso_string()?;
     connection
         .execute(
@@ -782,6 +795,76 @@ mod tests {
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].duration_minutes, 95);
         assert_eq!(entries[0].note, "implemented timer");
+    }
+
+    #[test]
+    fn create_recurring_time_entry_rejects_missing_period() {
+        let db_path = temp_db_path();
+        fs::remove_file(&db_path).ok();
+        init_database(&db_path).expect("initialize database");
+
+        let state = DatabaseState { db_path };
+        let result = create_recurring_time_entry_inner(
+            &state,
+            &CreateRecurringTimeEntryInput {
+                period_id: "missing-period".to_string(),
+                started_at: "2026-05-06T12:00:00Z".to_string(),
+                ended_at: "2026-05-06T13:35:00Z".to_string(),
+                duration_minutes: 95,
+                note: "implemented timer".to_string(),
+            },
+        );
+
+        assert_eq!(result.unwrap_err(), "recurring period does not exist");
+    }
+
+    #[test]
+    fn create_recurring_time_entry_rejects_invalid_duration_and_time_range() {
+        let db_path = temp_db_path();
+        fs::remove_file(&db_path).ok();
+        init_database(&db_path).expect("initialize database");
+
+        let state = DatabaseState { db_path };
+        let tasks = create_recurring_task_inner(
+            &state,
+            &CreateRecurringTaskInput {
+                title: "Practice".to_string(),
+                description: "".to_string(),
+                cadence_unit: RecurringCadenceUnit::Week,
+                cadence_interval: 1,
+                target_minutes_per_period: 420,
+                remind_at_end: true,
+            },
+        )
+        .expect("create task");
+        let periods = list_recurring_periods_inner(&state, &tasks[0].id).expect("list periods");
+
+        let invalid_duration = create_recurring_time_entry_inner(
+            &state,
+            &CreateRecurringTimeEntryInput {
+                period_id: periods[0].id.clone(),
+                started_at: "2026-05-06T12:00:00Z".to_string(),
+                ended_at: "2026-05-06T13:35:00Z".to_string(),
+                duration_minutes: 0,
+                note: "invalid".to_string(),
+            },
+        );
+        assert_eq!(
+            invalid_duration.unwrap_err(),
+            "recurring time entry duration must be at least 1 minute"
+        );
+
+        let invalid_range = create_recurring_time_entry_inner(
+            &state,
+            &CreateRecurringTimeEntryInput {
+                period_id: periods[0].id.clone(),
+                started_at: "2026-05-06T14:00:00Z".to_string(),
+                ended_at: "2026-05-06T13:35:00Z".to_string(),
+                duration_minutes: 25,
+                note: "invalid".to_string(),
+            },
+        );
+        assert_eq!(invalid_range.unwrap_err(), "recurring time entry start cannot be after end");
     }
 
     #[test]
