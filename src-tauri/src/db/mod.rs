@@ -55,6 +55,7 @@ pub fn init_database(db_path: &PathBuf) -> Result<(), String> {
                 description TEXT NOT NULL,
                 cadence_unit TEXT NOT NULL,
                 cadence_interval INTEGER NOT NULL,
+                target_minutes_per_period INTEGER NOT NULL DEFAULT 420,
                 remind_at_end INTEGER NOT NULL DEFAULT 1,
                 is_active INTEGER NOT NULL DEFAULT 1,
                 created_at TEXT NOT NULL,
@@ -81,6 +82,18 @@ pub fn init_database(db_path: &PathBuf) -> Result<(), String> {
                 FOREIGN KEY(period_id) REFERENCES recurring_periods(id) ON DELETE CASCADE
             );
 
+            CREATE TABLE IF NOT EXISTS recurring_time_entries (
+                id TEXT PRIMARY KEY NOT NULL,
+                period_id TEXT NOT NULL,
+                started_at TEXT NOT NULL,
+                ended_at TEXT NOT NULL,
+                duration_minutes INTEGER NOT NULL,
+                note TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY(period_id) REFERENCES recurring_periods(id) ON DELETE CASCADE
+            );
+
             CREATE INDEX IF NOT EXISTS idx_task_groups_updated_at ON task_groups(updated_at DESC);
             CREATE INDEX IF NOT EXISTS idx_tasks_completed ON tasks(completed);
             CREATE INDEX IF NOT EXISTS idx_tasks_due_at ON tasks(due_at);
@@ -88,6 +101,7 @@ pub fn init_database(db_path: &PathBuf) -> Result<(), String> {
             CREATE INDEX IF NOT EXISTS idx_recurring_tasks_updated_at ON recurring_tasks(updated_at DESC);
             CREATE INDEX IF NOT EXISTS idx_recurring_periods_task_id_start_at ON recurring_periods(task_id, start_at DESC);
             CREATE INDEX IF NOT EXISTS idx_recurring_progress_entries_period_id_created_at ON recurring_progress_entries(period_id, created_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_recurring_time_entries_period_id_started_at ON recurring_time_entries(period_id, started_at DESC);
             ",
         )
         .map_err(|error| format!("初始化任务表失败：{error}"))?;
@@ -309,6 +323,53 @@ fn ensure_tasks_group_index(connection: &Connection) -> Result<(), String> {
     Ok(())
 }
 
+fn table_has_column(
+    connection: &Connection,
+    table_name: &str,
+    column_name: &str,
+) -> Result<bool, String> {
+    let mut statement = connection
+        .prepare(&format!("PRAGMA table_info({table_name})"))
+        .map_err(|error| format!("read {table_name} columns failed: {error}"))?;
+    let columns = statement
+        .query_map([], |row| row.get::<_, String>(1))
+        .map_err(|error| format!("query {table_name} columns failed: {error}"))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|error| format!("collect {table_name} columns failed: {error}"))?;
+
+    Ok(columns.iter().any(|column| column == column_name))
+}
+
+fn ensure_recurring_target_minutes_column(connection: &Connection) -> Result<(), String> {
+    if !table_has_column(connection, "recurring_tasks", "target_minutes_per_period")? {
+        connection
+            .execute(
+                "ALTER TABLE recurring_tasks ADD COLUMN target_minutes_per_period INTEGER NOT NULL DEFAULT 420",
+                [],
+            )
+            .map_err(|error| format!("add recurring target minutes column failed: {error}"))?;
+    }
+
+    Ok(())
+}
+
+fn migrate_recurring_progress_entries(connection: &Connection) -> Result<(), String> {
+    connection
+        .execute(
+            "
+            INSERT OR IGNORE INTO recurring_time_entries (
+                id, period_id, started_at, ended_at, duration_minutes, note, created_at, updated_at
+            )
+            SELECT id, period_id, created_at, created_at, 0, content, created_at, updated_at
+            FROM recurring_progress_entries
+            ",
+            [],
+        )
+        .map_err(|error| format!("migrate recurring progress entries failed: {error}"))?;
+
+    Ok(())
+}
+
 fn ensure_recurring_tables(connection: &Connection) -> Result<(), String> {
     connection
         .execute_batch(
@@ -319,6 +380,7 @@ fn ensure_recurring_tables(connection: &Connection) -> Result<(), String> {
                 description TEXT NOT NULL,
                 cadence_unit TEXT NOT NULL,
                 cadence_interval INTEGER NOT NULL,
+                target_minutes_per_period INTEGER NOT NULL DEFAULT 420,
                 remind_at_end INTEGER NOT NULL DEFAULT 1,
                 is_active INTEGER NOT NULL DEFAULT 1,
                 created_at TEXT NOT NULL,
@@ -345,12 +407,28 @@ fn ensure_recurring_tables(connection: &Connection) -> Result<(), String> {
                 FOREIGN KEY(period_id) REFERENCES recurring_periods(id) ON DELETE CASCADE
             );
 
+            CREATE TABLE IF NOT EXISTS recurring_time_entries (
+                id TEXT PRIMARY KEY NOT NULL,
+                period_id TEXT NOT NULL,
+                started_at TEXT NOT NULL,
+                ended_at TEXT NOT NULL,
+                duration_minutes INTEGER NOT NULL,
+                note TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY(period_id) REFERENCES recurring_periods(id) ON DELETE CASCADE
+            );
+
             CREATE INDEX IF NOT EXISTS idx_recurring_tasks_updated_at ON recurring_tasks(updated_at DESC);
             CREATE INDEX IF NOT EXISTS idx_recurring_periods_task_id_start_at ON recurring_periods(task_id, start_at DESC);
             CREATE INDEX IF NOT EXISTS idx_recurring_progress_entries_period_id_created_at ON recurring_progress_entries(period_id, created_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_recurring_time_entries_period_id_started_at ON recurring_time_entries(period_id, started_at DESC);
             ",
         )
         .map_err(|error| format!("initialize recurring tables failed: {error}"))?;
+
+    ensure_recurring_target_minutes_column(connection)?;
+    migrate_recurring_progress_entries(connection)?;
 
     Ok(())
 }

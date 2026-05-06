@@ -45,10 +45,11 @@ fn recurring_task_row_to_item(row: &rusqlite::Row<'_>) -> Result<RecurringTask, 
             _ => RecurringCadenceUnit::Day,
         },
         cadence_interval: row.get(4)?,
-        remind_at_end: row.get::<_, i64>(5)? != 0,
-        is_active: row.get::<_, i64>(6)? != 0,
-        created_at: row.get(7)?,
-        updated_at: row.get(8)?,
+        target_minutes_per_period: row.get(5)?,
+        remind_at_end: row.get::<_, i64>(6)? != 0,
+        is_active: row.get::<_, i64>(7)? != 0,
+        created_at: row.get(8)?,
+        updated_at: row.get(9)?,
     })
 }
 
@@ -182,8 +183,8 @@ pub(crate) fn list_recurring_tasks_inner(state: &DatabaseState) -> Result<Vec<Re
     let mut statement = connection
         .prepare(
             "
-            SELECT id, title, description, cadence_unit, cadence_interval, remind_at_end,
-                   is_active, created_at, updated_at
+            SELECT id, title, description, cadence_unit, cadence_interval, target_minutes_per_period,
+                   remind_at_end, is_active, created_at, updated_at
             FROM recurring_tasks
             ORDER BY updated_at DESC, created_at DESC
             ",
@@ -268,9 +269,9 @@ pub(crate) fn create_recurring_task_inner(
         .execute(
             "
             INSERT INTO recurring_tasks (
-                id, title, description, cadence_unit, cadence_interval, remind_at_end,
-                is_active, created_at, updated_at
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, 1, ?7, ?8)
+                id, title, description, cadence_unit, cadence_interval, target_minutes_per_period,
+                remind_at_end, is_active, created_at, updated_at
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 1, ?8, ?9)
             ",
             params![
                 task_id,
@@ -283,6 +284,7 @@ pub(crate) fn create_recurring_task_inner(
                     RecurringCadenceUnit::Week => "week",
                 },
                 input.cadence_interval,
+                input.target_minutes_per_period,
                 if input.remind_at_end { 1 } else { 0 },
                 timestamp,
                 timestamp
@@ -318,9 +320,10 @@ pub(crate) fn update_recurring_task_inner(
                 description = ?3,
                 cadence_unit = ?4,
                 cadence_interval = ?5,
-                remind_at_end = ?6,
-                is_active = ?7,
-                updated_at = ?8
+                target_minutes_per_period = ?6,
+                remind_at_end = ?7,
+                is_active = ?8,
+                updated_at = ?9
             WHERE id = ?1
             ",
             params![
@@ -334,6 +337,7 @@ pub(crate) fn update_recurring_task_inner(
                     RecurringCadenceUnit::Week => "week",
                 },
                 input.cadence_interval,
+                input.target_minutes_per_period,
                 if input.remind_at_end { 1 } else { 0 },
                 if input.is_active { 1 } else { 0 },
                 now_iso_string()?
@@ -540,6 +544,7 @@ mod tests {
                 description: "submit progress".to_string(),
                 cadence_unit: RecurringCadenceUnit::Week,
                 cadence_interval: 1,
+                target_minutes_per_period: 420,
                 remind_at_end: true,
             },
         )
@@ -565,6 +570,7 @@ mod tests {
                 description: "".to_string(),
                 cadence_unit: RecurringCadenceUnit::Day,
                 cadence_interval: 1,
+                target_minutes_per_period: 420,
                 remind_at_end: true,
             },
         )
@@ -598,6 +604,7 @@ mod tests {
                 description: "".to_string(),
                 cadence_unit: RecurringCadenceUnit::Day,
                 cadence_interval: 3,
+                target_minutes_per_period: 420,
                 remind_at_end: false,
             },
         )
@@ -642,6 +649,7 @@ mod tests {
                 description: "".to_string(),
                 cadence_unit: RecurringCadenceUnit::Week,
                 cadence_interval: 1,
+                target_minutes_per_period: 420,
                 remind_at_end: true,
             },
         )

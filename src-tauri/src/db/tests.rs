@@ -7,6 +7,17 @@ fn legacy_database_path() -> PathBuf {
     std::env::temp_dir().join(format!("qingdan-legacy-{}.db", Uuid::new_v4()))
 }
 
+fn table_columns(connection: &Connection, table_name: &str) -> Vec<String> {
+    let mut statement = connection
+        .prepare(&format!("PRAGMA table_info({table_name})"))
+        .expect("read table schema");
+    statement
+        .query_map([], |row| row.get::<_, String>(1))
+        .expect("query table columns")
+        .collect::<Result<Vec<_>, _>>()
+        .expect("collect table columns")
+}
+
 #[test]
 fn init_database_adds_priority_column_to_legacy_tasks_table() {
     let db_path = legacy_database_path();
@@ -414,4 +425,91 @@ fn init_database_creates_recurring_tables() {
             "recurring_progress_entries".to_string()
         ]
     );
+}
+
+#[test]
+fn init_database_adds_recurring_target_minutes_to_legacy_tasks() {
+    let db_path = legacy_database_path();
+    {
+        let connection = rusqlite::Connection::open(&db_path).expect("open test db");
+        connection
+            .execute_batch(
+                "
+                CREATE TABLE recurring_tasks (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    title TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    cadence_unit TEXT NOT NULL,
+                    cadence_interval INTEGER NOT NULL,
+                    remind_at_end INTEGER NOT NULL DEFAULT 1,
+                    is_active INTEGER NOT NULL DEFAULT 1,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                ",
+            )
+            .expect("create legacy recurring_tasks");
+    }
+
+    init_database(&db_path).expect("migrate database");
+    let connection = rusqlite::Connection::open(&db_path).expect("reopen db");
+    let columns = table_columns(&connection, "recurring_tasks");
+
+    assert!(columns.contains(&"target_minutes_per_period".to_string()));
+}
+
+#[test]
+fn init_database_migrates_legacy_progress_entries_to_zero_minute_time_entries() {
+    let db_path = legacy_database_path();
+    {
+        let connection = rusqlite::Connection::open(&db_path).expect("open test db");
+        connection
+            .execute_batch(
+                "
+                CREATE TABLE recurring_tasks (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    title TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    cadence_unit TEXT NOT NULL,
+                    cadence_interval INTEGER NOT NULL,
+                    remind_at_end INTEGER NOT NULL DEFAULT 1,
+                    is_active INTEGER NOT NULL DEFAULT 1,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                CREATE TABLE recurring_periods (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    task_id TEXT NOT NULL,
+                    start_at TEXT NOT NULL,
+                    end_at TEXT NOT NULL,
+                    closed_at TEXT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                CREATE TABLE recurring_progress_entries (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    period_id TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                INSERT INTO recurring_tasks VALUES ('task-1', 'Workout', '', 'week', 1, 1, 1, '2026-05-01T00:00:00Z', '2026-05-01T00:00:00Z');
+                INSERT INTO recurring_periods VALUES ('period-1', 'task-1', '2026-05-01T00:00:00Z', '2026-05-08T00:00:00Z', NULL, '2026-05-01T00:00:00Z', '2026-05-01T00:00:00Z');
+                INSERT INTO recurring_progress_entries VALUES ('entry-1', 'period-1', 'legacy note', '2026-05-02T00:00:00Z', '2026-05-02T01:00:00Z');
+                ",
+            )
+            .expect("create legacy progress data");
+    }
+
+    init_database(&db_path).expect("migrate database");
+    let connection = rusqlite::Connection::open(&db_path).expect("reopen db");
+    let row = connection
+        .query_row(
+            "SELECT period_id, duration_minutes, note FROM recurring_time_entries WHERE id = 'entry-1'",
+            [],
+            |row| Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?, row.get::<_, String>(2)?)),
+        )
+        .expect("read migrated time entry");
+
+    assert_eq!(row, ("period-1".to_string(), 0, "legacy note".to_string()));
 }

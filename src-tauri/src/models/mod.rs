@@ -221,6 +221,7 @@ pub struct RecurringTask {
     pub description: String,
     pub cadence_unit: RecurringCadenceUnit,
     pub cadence_interval: i64,
+    pub target_minutes_per_period: i64,
     pub remind_at_end: bool,
     pub is_active: bool,
     pub created_at: String,
@@ -249,6 +250,19 @@ pub struct RecurringProgressEntry {
     pub updated_at: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RecurringTimeEntry {
+    pub id: String,
+    pub period_id: String,
+    pub started_at: String,
+    pub ended_at: String,
+    pub duration_minutes: i64,
+    pub note: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateRecurringTaskInput {
@@ -256,6 +270,7 @@ pub struct CreateRecurringTaskInput {
     pub description: String,
     pub cadence_unit: RecurringCadenceUnit,
     pub cadence_interval: i64,
+    pub target_minutes_per_period: i64,
     pub remind_at_end: bool,
 }
 
@@ -267,6 +282,7 @@ pub struct UpdateRecurringTaskInput {
     pub description: String,
     pub cadence_unit: RecurringCadenceUnit,
     pub cadence_interval: i64,
+    pub target_minutes_per_period: i64,
     pub remind_at_end: bool,
     pub is_active: bool,
 }
@@ -283,4 +299,21 @@ pub struct CreateRecurringProgressEntryInput {
 pub struct UpdateRecurringProgressEntryInput {
     pub id: String,
     pub content: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateRecurringTimeEntryInput {
+    pub period_id: String,
+    pub started_at: String,
+    pub ended_at: String,
+    pub duration_minutes: i64,
+    pub note: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateRecurringTimeEntryNoteInput {
+    pub id: String,
+    pub note: String,
 }
