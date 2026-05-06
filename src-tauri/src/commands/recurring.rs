@@ -6,9 +6,10 @@ use uuid::Uuid;
 use crate::{
     db::{open_connection, DatabaseState},
     models::{
-        CreateRecurringProgressEntryInput, CreateRecurringTaskInput, RecurringCadenceUnit,
-        RecurringPeriod, RecurringProgressEntry, RecurringTask, UpdateRecurringProgressEntryInput,
-        UpdateRecurringTaskInput,
+        CreateRecurringProgressEntryInput, CreateRecurringTaskInput, CreateRecurringTimeEntryInput,
+        RecurringCadenceUnit, RecurringPeriod, RecurringProgressEntry, RecurringTask,
+        RecurringTimeEntry, UpdateRecurringProgressEntryInput, UpdateRecurringTaskInput,
+        UpdateRecurringTimeEntryNoteInput,
     },
 };
 
@@ -74,6 +75,19 @@ fn recurring_progress_row_to_item(
         content: row.get(2)?,
         created_at: row.get(3)?,
         updated_at: row.get(4)?,
+    })
+}
+
+fn recurring_time_entry_row_to_item(row: &rusqlite::Row<'_>) -> Result<RecurringTimeEntry, rusqlite::Error> {
+    Ok(RecurringTimeEntry {
+        id: row.get(0)?,
+        period_id: row.get(1)?,
+        started_at: row.get(2)?,
+        ended_at: row.get(3)?,
+        duration_minutes: row.get(4)?,
+        note: row.get(5)?,
+        created_at: row.get(6)?,
+        updated_at: row.get(7)?,
     })
 }
 
@@ -249,6 +263,30 @@ pub(crate) fn list_recurring_progress_entries_inner(
         .map_err(|error| format!("read recurring progress list failed: {error}"))
 }
 
+pub(crate) fn list_recurring_time_entries_inner(
+    state: &DatabaseState,
+    period_id: &str,
+) -> Result<Vec<RecurringTimeEntry>, String> {
+    let connection = open_connection(&state.db_path)?;
+    let mut statement = connection
+        .prepare(
+            "
+            SELECT id, period_id, started_at, ended_at, duration_minutes, note, created_at, updated_at
+            FROM recurring_time_entries
+            WHERE period_id = ?1
+            ORDER BY started_at DESC, created_at DESC
+            ",
+        )
+        .map_err(|error| format!("prepare recurring time entry list failed: {error}"))?;
+
+    let rows = statement
+        .query_map(params![period_id], recurring_time_entry_row_to_item)
+        .map_err(|error| format!("query recurring time entry list failed: {error}"))?;
+
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|error| format!("read recurring time entry list failed: {error}"))
+}
+
 pub(crate) fn create_recurring_task_inner(
     state: &DatabaseState,
     input: &CreateRecurringTaskInput,
@@ -259,6 +297,9 @@ pub(crate) fn create_recurring_task_inner(
     }
     if input.cadence_interval <= 0 {
         return Err("recurring cadence interval must be positive".to_string());
+    }
+    if input.target_minutes_per_period <= 0 {
+        return Err("recurring target minutes must be positive".to_string());
     }
 
     let connection = open_connection(&state.db_path)?;
@@ -309,6 +350,9 @@ pub(crate) fn update_recurring_task_inner(
     }
     if input.cadence_interval <= 0 {
         return Err("recurring cadence interval must be positive".to_string());
+    }
+    if input.target_minutes_per_period <= 0 {
+        return Err("recurring target minutes must be positive".to_string());
     }
 
     let connection = open_connection(&state.db_path)?;
@@ -368,6 +412,18 @@ pub(crate) fn delete_recurring_task_inner(
             params![task_id],
         )
         .map_err(|error| format!("delete recurring progress entries failed: {error}"))?;
+
+    transaction
+        .execute(
+            "
+            DELETE FROM recurring_time_entries
+            WHERE period_id IN (
+                SELECT id FROM recurring_periods WHERE task_id = ?1
+            )
+            ",
+            params![task_id],
+        )
+        .map_err(|error| format!("delete recurring time entries failed: {error}"))?;
 
     transaction
         .execute("DELETE FROM recurring_periods WHERE task_id = ?1", params![task_id])
@@ -448,6 +504,85 @@ pub(crate) fn update_recurring_progress_entry_inner(
     list_recurring_progress_entries_inner(state, &period_id)
 }
 
+pub(crate) fn create_recurring_time_entry_inner(
+    state: &DatabaseState,
+    input: &CreateRecurringTimeEntryInput,
+) -> Result<Vec<RecurringTimeEntry>, String> {
+    if input.duration_minutes < 1 {
+        return Err("recurring time entry duration must be at least 1 minute".to_string());
+    }
+    if parse_iso(&input.started_at)? > parse_iso(&input.ended_at)? {
+        return Err("recurring time entry start cannot be after end".to_string());
+    }
+
+    let connection = open_connection(&state.db_path)?;
+    let timestamp = now_iso_string()?;
+    connection
+        .execute(
+            "
+            INSERT INTO recurring_time_entries (
+                id, period_id, started_at, ended_at, duration_minutes, note, created_at, updated_at
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+            ",
+            params![
+                Uuid::new_v4().to_string(),
+                input.period_id,
+                input.started_at,
+                input.ended_at,
+                input.duration_minutes,
+                input.note.trim(),
+                timestamp,
+                timestamp
+            ],
+        )
+        .map_err(|error| format!("create recurring time entry failed: {error}"))?;
+
+    list_recurring_time_entries_inner(state, &input.period_id)
+}
+
+pub(crate) fn update_recurring_time_entry_note_inner(
+    state: &DatabaseState,
+    input: &UpdateRecurringTimeEntryNoteInput,
+) -> Result<Vec<RecurringTimeEntry>, String> {
+    let connection = open_connection(&state.db_path)?;
+    let period_id = connection
+        .query_row(
+            "SELECT period_id FROM recurring_time_entries WHERE id = ?1",
+            params![input.id.as_str()],
+            |row| row.get::<_, String>(0),
+        )
+        .map_err(|error| format!("load recurring time entry failed: {error}"))?;
+
+    connection
+        .execute(
+            "UPDATE recurring_time_entries SET note = ?1, updated_at = ?2 WHERE id = ?3",
+            params![input.note.trim(), now_iso_string()?, input.id],
+        )
+        .map_err(|error| format!("update recurring time entry note failed: {error}"))?;
+
+    list_recurring_time_entries_inner(state, &period_id)
+}
+
+pub(crate) fn delete_recurring_time_entry_inner(
+    state: &DatabaseState,
+    entry_id: &str,
+) -> Result<Vec<RecurringTimeEntry>, String> {
+    let connection = open_connection(&state.db_path)?;
+    let period_id = connection
+        .query_row(
+            "SELECT period_id FROM recurring_time_entries WHERE id = ?1",
+            params![entry_id],
+            |row| row.get::<_, String>(0),
+        )
+        .map_err(|error| format!("load recurring time entry failed: {error}"))?;
+
+    connection
+        .execute("DELETE FROM recurring_time_entries WHERE id = ?1", params![entry_id])
+        .map_err(|error| format!("delete recurring time entry failed: {error}"))?;
+
+    list_recurring_time_entries_inner(state, &period_id)
+}
+
 #[tauri::command]
 pub fn list_recurring_tasks(state: State<'_, DatabaseState>) -> Result<Vec<RecurringTask>, String> {
     list_recurring_tasks_inner(&state)
@@ -467,6 +602,14 @@ pub fn list_recurring_progress_entries(
     state: State<'_, DatabaseState>,
 ) -> Result<Vec<RecurringProgressEntry>, String> {
     list_recurring_progress_entries_inner(&state, &period_id)
+}
+
+#[tauri::command]
+pub fn list_recurring_time_entries(
+    period_id: String,
+    state: State<'_, DatabaseState>,
+) -> Result<Vec<RecurringTimeEntry>, String> {
+    list_recurring_time_entries_inner(&state, &period_id)
 }
 
 #[tauri::command]
@@ -509,18 +652,43 @@ pub fn update_recurring_progress_entry(
     update_recurring_progress_entry_inner(&state, &input)
 }
 
+#[tauri::command]
+pub fn create_recurring_time_entry(
+    input: CreateRecurringTimeEntryInput,
+    state: State<'_, DatabaseState>,
+) -> Result<Vec<RecurringTimeEntry>, String> {
+    create_recurring_time_entry_inner(&state, &input)
+}
+
+#[tauri::command]
+pub fn update_recurring_time_entry_note(
+    input: UpdateRecurringTimeEntryNoteInput,
+    state: State<'_, DatabaseState>,
+) -> Result<Vec<RecurringTimeEntry>, String> {
+    update_recurring_time_entry_note_inner(&state, &input)
+}
+
+#[tauri::command]
+pub fn delete_recurring_time_entry(
+    entry_id: String,
+    state: State<'_, DatabaseState>,
+) -> Result<Vec<RecurringTimeEntry>, String> {
+    delete_recurring_time_entry_inner(&state, &entry_id)
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
         create_recurring_progress_entry_inner, create_recurring_task_inner,
-        delete_recurring_task_inner, list_recurring_periods_inner, list_recurring_progress_entries_inner,
-        update_recurring_progress_entry_inner,
+        create_recurring_time_entry_inner, delete_recurring_task_inner, list_recurring_periods_inner,
+        list_recurring_progress_entries_inner, list_recurring_time_entries_inner,
+        update_recurring_progress_entry_inner, update_recurring_time_entry_note_inner,
     };
     use crate::{
         db::{init_database, DatabaseState},
         models::{
-            CreateRecurringProgressEntryInput, CreateRecurringTaskInput, RecurringCadenceUnit,
-            UpdateRecurringProgressEntryInput,
+            CreateRecurringProgressEntryInput, CreateRecurringTaskInput, CreateRecurringTimeEntryInput,
+            RecurringCadenceUnit, UpdateRecurringProgressEntryInput, UpdateRecurringTimeEntryNoteInput,
         },
     };
     use std::fs;
@@ -554,6 +722,111 @@ mod tests {
         let periods = list_recurring_periods_inner(&state, &tasks[0].id).expect("list recurring periods");
         assert_eq!(periods.len(), 1);
         assert!(periods[0].end_at > periods[0].start_at);
+    }
+
+    #[test]
+    fn create_recurring_task_rejects_non_positive_target_minutes() {
+        let db_path = temp_db_path();
+        fs::remove_file(&db_path).ok();
+        init_database(&db_path).expect("initialize database");
+
+        let state = DatabaseState { db_path };
+        let result = create_recurring_task_inner(
+            &state,
+            &CreateRecurringTaskInput {
+                title: "Weekly report".to_string(),
+                description: "submit progress".to_string(),
+                cadence_unit: RecurringCadenceUnit::Week,
+                cadence_interval: 1,
+                target_minutes_per_period: 0,
+                remind_at_end: true,
+            },
+        );
+
+        assert_eq!(result.unwrap_err(), "recurring target minutes must be positive");
+    }
+
+    #[test]
+    fn create_recurring_time_entry_persists_minutes_and_note() {
+        let db_path = temp_db_path();
+        fs::remove_file(&db_path).ok();
+        init_database(&db_path).expect("initialize database");
+
+        let state = DatabaseState { db_path };
+        let tasks = create_recurring_task_inner(
+            &state,
+            &CreateRecurringTaskInput {
+                title: "Practice".to_string(),
+                description: "".to_string(),
+                cadence_unit: RecurringCadenceUnit::Week,
+                cadence_interval: 1,
+                target_minutes_per_period: 420,
+                remind_at_end: true,
+            },
+        )
+        .expect("create task");
+        let periods = list_recurring_periods_inner(&state, &tasks[0].id).expect("list periods");
+
+        let entries = create_recurring_time_entry_inner(
+            &state,
+            &CreateRecurringTimeEntryInput {
+                period_id: periods[0].id.clone(),
+                started_at: "2026-05-06T12:00:00Z".to_string(),
+                ended_at: "2026-05-06T13:35:00Z".to_string(),
+                duration_minutes: 95,
+                note: "implemented timer".to_string(),
+            },
+        )
+        .expect("create time entry");
+
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].duration_minutes, 95);
+        assert_eq!(entries[0].note, "implemented timer");
+    }
+
+    #[test]
+    fn update_recurring_time_entry_note_only_changes_note() {
+        let db_path = temp_db_path();
+        fs::remove_file(&db_path).ok();
+        init_database(&db_path).expect("initialize database");
+
+        let state = DatabaseState { db_path };
+        let tasks = create_recurring_task_inner(
+            &state,
+            &CreateRecurringTaskInput {
+                title: "Practice".to_string(),
+                description: "".to_string(),
+                cadence_unit: RecurringCadenceUnit::Day,
+                cadence_interval: 1,
+                target_minutes_per_period: 60,
+                remind_at_end: true,
+            },
+        )
+        .expect("create task");
+        let periods = list_recurring_periods_inner(&state, &tasks[0].id).expect("list periods");
+        let entries = create_recurring_time_entry_inner(
+            &state,
+            &CreateRecurringTimeEntryInput {
+                period_id: periods[0].id.clone(),
+                started_at: "2026-05-06T12:00:00Z".to_string(),
+                ended_at: "2026-05-06T12:20:00Z".to_string(),
+                duration_minutes: 20,
+                note: "draft".to_string(),
+            },
+        )
+        .expect("create entry");
+
+        let updated = update_recurring_time_entry_note_inner(
+            &state,
+            &UpdateRecurringTimeEntryNoteInput {
+                id: entries[0].id.clone(),
+                note: "revised note".to_string(),
+            },
+        )
+        .expect("update note");
+
+        assert_eq!(updated[0].duration_minutes, 20);
+        assert_eq!(updated[0].note, "revised note");
     }
 
     #[test]
@@ -663,6 +936,17 @@ mod tests {
             },
         )
         .expect("create progress");
+        create_recurring_time_entry_inner(
+            &state,
+            &CreateRecurringTimeEntryInput {
+                period_id: periods[0].id.clone(),
+                started_at: "2026-05-06T12:00:00Z".to_string(),
+                ended_at: "2026-05-06T12:20:00Z".to_string(),
+                duration_minutes: 20,
+                note: "timed".to_string(),
+            },
+        )
+        .expect("create time entry");
 
         let next_tasks = delete_recurring_task_inner(&state, &tasks[0].id).expect("delete recurring task");
 
@@ -670,6 +954,9 @@ mod tests {
         assert!(list_recurring_periods_inner(&state, &tasks[0].id).expect("reload periods").is_empty());
         assert!(list_recurring_progress_entries_inner(&state, &periods[0].id)
             .expect("reload entries")
+            .is_empty());
+        assert!(list_recurring_time_entries_inner(&state, &periods[0].id)
+            .expect("reload time entries")
             .is_empty());
     }
 }
