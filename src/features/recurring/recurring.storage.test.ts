@@ -119,4 +119,25 @@ describe('recurring.storage', () => {
       },
     ])
   })
+
+  it('persists and clears local recurring timer session', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (window as any).__TAURI_INTERNALS__
+    const { clearRecurringTimerSession, loadRecurringTimerSession, saveRecurringTimerSession } = await import('./recurring.storage')
+
+    const session = {
+      taskId: 'task-1',
+      periodId: 'period-1',
+      startedAt: '2026-05-02T08:00:00.000Z',
+      runningSince: '2026-05-02T08:00:00.000Z',
+      pausedAccumulatedMs: 60_000,
+      isPaused: true,
+    }
+
+    saveRecurringTimerSession(session)
+    expect(loadRecurringTimerSession()).toEqual(session)
+
+    clearRecurringTimerSession()
+    expect(loadRecurringTimerSession()).toBeNull()
+  })
 })

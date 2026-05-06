@@ -3,8 +3,14 @@ import type {
   RecurringCadenceUnit,
   RecurringPeriod,
   RecurringTask,
+  RecurringTimerSession,
   RecurringTimeEntry,
 } from '../features/recurring/recurring.types'
+import {
+  clearRecurringTimerSession,
+  loadRecurringTimerSession,
+  saveRecurringTimerSession,
+} from '../features/recurring/recurring.storage'
 import { formatTaskDate } from '../lib/date'
 import { useRecurringStore } from '../stores/recurringStore'
 
@@ -56,6 +62,12 @@ function flattenEntries(periods: RecurringPeriod[], entriesByPeriodId: Record<st
     .sort((left, right) => right.entry.startedAt.localeCompare(left.entry.startedAt))
 }
 
+function calculateSessionDurationMinutes(session: RecurringTimerSession, nowMs = Date.now()) {
+  const runningSince = new Date(session.runningSince).getTime()
+  const elapsedMs = Math.max(0, nowMs - runningSince - session.pausedAccumulatedMs)
+  return Math.floor(elapsedMs / 60_000)
+}
+
 export function RecurringTaskList() {
   const tasks = useRecurringStore((state) => state.tasks)
   const periodsByTaskId = useRecurringStore((state) => state.periodsByTaskId)
@@ -92,6 +104,11 @@ export function RecurringTaskList() {
   const [timerPausedAt, setTimerPausedAt] = useState<number | null>(null)
   const [timerTick, setTimerTick] = useState(0)
   const [timerNote, setTimerNote] = useState('')
+  const [recoveredSession, setRecoveredSession] = useState<RecurringTimerSession | null>(null)
+
+  useEffect(() => {
+    setRecoveredSession(loadRecurringTimerSession())
+  }, [])
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -117,6 +134,21 @@ export function RecurringTaskList() {
     const interval = window.setInterval(() => setTimerTick((value) => value + 1), 1000)
     return () => window.clearInterval(interval)
   }, [timerPausedAt, timerStep, timerTask])
+
+  useEffect(() => {
+    if (!timerTask || !timerPeriod || !timerStartedAt || !timerRunningSince || timerStep !== 'running') {
+      return
+    }
+
+    saveRecurringTimerSession({
+      taskId: timerTask.id,
+      periodId: timerPeriod.id,
+      startedAt: timerStartedAt,
+      runningSince: new Date(timerRunningSince).toISOString(),
+      pausedAccumulatedMs: timerPausedAccumulatedMs,
+      isPaused: Boolean(timerPausedAt),
+    })
+  }, [timerPausedAccumulatedMs, timerPausedAt, timerPeriod, timerRunningSince, timerStartedAt, timerStep, timerTask])
 
   async function ensureTaskHistoryLoaded(task: RecurringTask) {
     await selectTask(task.id)
@@ -217,6 +249,7 @@ export function RecurringTaskList() {
     void selectTask(task.id)
     void selectPeriod(period.id)
     const nowIso = new Date().toISOString()
+    clearRecurringTimerSession()
     setTimerTask(task)
     setTimerPeriod(period)
     setTimerStep('running')
@@ -227,9 +260,18 @@ export function RecurringTaskList() {
     setTimerPausedAt(null)
     setTimerTick(0)
     setTimerNote('')
+    saveRecurringTimerSession({
+      taskId: task.id,
+      periodId: period.id,
+      startedAt: nowIso,
+      runningSince: nowIso,
+      pausedAccumulatedMs: 0,
+      isPaused: false,
+    })
   }
 
   function closeTimer() {
+    clearRecurringTimerSession()
     setTimerTask(null)
     setTimerPeriod(null)
     setTimerStep('running')
@@ -240,6 +282,54 @@ export function RecurringTaskList() {
     setTimerPausedAt(null)
     setTimerTick(0)
     setTimerNote('')
+  }
+
+  function discardRecoveredSession() {
+    clearRecurringTimerSession()
+    setRecoveredSession(null)
+  }
+
+  function restoreRecoveredSession(session: RecurringTimerSession) {
+    const task = tasks.find((item) => item.id === session.taskId)
+    const period = Object.values(periodsByTaskId)
+      .flat()
+      .find((item) => item.id === session.periodId)
+
+    if (!task || !period) {
+      discardRecoveredSession()
+      return
+    }
+
+    void selectTask(task.id)
+    void selectPeriod(period.id)
+    setTimerTask(task)
+    setTimerPeriod(period)
+    setTimerStep('running')
+    setTimerStartedAt(session.startedAt)
+    setTimerEndedAt(null)
+    setTimerRunningSince(new Date(session.runningSince).getTime())
+    setTimerPausedAccumulatedMs(session.pausedAccumulatedMs)
+    setTimerPausedAt(session.isPaused ? Date.now() : null)
+    setTimerTick(0)
+    setTimerNote('')
+    setRecoveredSession(null)
+  }
+
+  async function saveRecoveredSession(session: RecurringTimerSession) {
+    const durationMinutes = calculateSessionDurationMinutes(session)
+    if (durationMinutes < 1) {
+      discardRecoveredSession()
+      return
+    }
+
+    await addTimeEntry({
+      periodId: session.periodId,
+      startedAt: session.startedAt,
+      endedAt: new Date().toISOString(),
+      durationMinutes,
+      note: '',
+    })
+    discardRecoveredSession()
   }
 
   function calculateTimerDurationMinutes(nowMs = Date.now()) {
@@ -274,9 +364,13 @@ export function RecurringTaskList() {
   }
 
   function exitTimer() {
-    if (calculateTimerDurationMinutes() < 1 || window.confirm('本次计时已超过 1 分钟，确认丢弃并退出？')) {
+    if (calculateTimerDurationMinutes() < 1) {
       closeTimer()
+      return
     }
+
+    setTimerEndedAt(new Date().toISOString())
+    setTimerStep('note')
   }
 
   async function saveTimerEntry(event: React.FormEvent<HTMLFormElement>) {
@@ -629,6 +723,47 @@ export function RecurringTaskList() {
                 </button>
               </div>
             </form>
+          </section>
+        </div>
+      ) : null}
+
+      {recoveredSession ? (
+        <div className="modal-backdrop" onClick={discardRecoveredSession} role="presentation">
+          <section className="task-modal recurring-timer-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <div className="task-modal-header task-modal-console-header">
+              <div>
+                <p className="section-tag">计时恢复</p>
+                <h2>发现未完成的周期任务计时</h2>
+              </div>
+              <button className="secondary-button modal-close-button" onClick={discardRecoveredSession} type="button" disabled={isMutating}>
+                丢弃
+              </button>
+            </div>
+
+            <div className="recurring-timer-body">
+              <div className="task-detail-meta">
+                <div className="task-detail-meta-panel">
+                  <dt>已计时</dt>
+                  <dd className="task-detail-meta-value">{formatMinutes(calculateSessionDurationMinutes(recoveredSession))}</dd>
+                </div>
+                <div className="task-detail-meta-panel">
+                  <dt>开始时间</dt>
+                  <dd className="task-detail-meta-value">{formatTaskDate(recoveredSession.startedAt, 'YYYY-MM-DD HH:mm')}</dd>
+                </div>
+              </div>
+              <p className="section-note">可以继续计时，也可以把当前累计时间直接保存成一条时间记录。</p>
+              <div className="task-modal-button-row task-modal-console-button-row">
+                <button className="secondary-button" onClick={() => restoreRecoveredSession(recoveredSession)} type="button" disabled={isMutating}>
+                  恢复计时
+                </button>
+                <button className="primary-button" onClick={() => void saveRecoveredSession(recoveredSession)} type="button" disabled={isMutating}>
+                  保存为记录
+                </button>
+                <button className="ghost-button" onClick={discardRecoveredSession} type="button" disabled={isMutating}>
+                  丢弃
+                </button>
+              </div>
+            </div>
           </section>
         </div>
       ) : null}

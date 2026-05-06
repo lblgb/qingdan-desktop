@@ -264,8 +264,8 @@ export function TaskOverview() {
               <section className="overview-card overview-console-panel">
                 <div className="overview-card-header overview-console-panel-header">
                   <div>
-                    <h3>周期任务摘要</h3>
-                    <p>独立周期任务系统的提交压力和进展记录总览。</p>
+                    <h3>周期任务完成情况</h3>
+                    <p>按当前周期汇总每个周期任务的目标时间、已完成时间和最近记录。</p>
                   </div>
                 </div>
 
@@ -275,17 +275,36 @@ export function TaskOverview() {
                     <strong>{recurringOverview.taskCount}</strong>
                   </article>
                   <article className="overview-weekly-item">
-                    <span>待提交周期</span>
+                    <span>目标时间</span>
                     <strong>{recurringOverview.totalTargetMinutes}</strong>
+                    <small>分钟</small>
                   </article>
                   <article className="overview-weekly-item">
-                    <span>逾期未提交</span>
+                    <span>已完成时间</span>
                     <strong>{recurringOverview.totalCompletedMinutes}</strong>
+                    <small>分钟</small>
                   </article>
                   <article className="overview-weekly-item">
-                    <span>进展记录数</span>
+                    <span>剩余时间</span>
                     <strong>{recurringOverview.totalRemainingMinutes}</strong>
+                    <small>分钟</small>
                   </article>
+                </div>
+                <div className="recurring-overview-showcase">
+                  {recurringOverview.items.map((item) => (
+                    <article key={item.task.id} className="recurring-overview-task-card">
+                      <div className="recurring-overview-task-heading">
+                        <strong>{item.task.title}</strong>
+                        <span>
+                          {item.completedMinutes} / {item.targetMinutes} 分钟
+                        </span>
+                      </div>
+                      <div className="overview-progress-track" aria-hidden="true">
+                        <span className="overview-progress-fill" style={{ width: `${Math.min(item.completionRate, 100)}%` }} />
+                      </div>
+                      <p>{item.latestEntry ? `最近：${item.latestEntry.durationMinutes} 分钟，${item.latestEntry.note || '未填写说明'}` : '暂无时间记录'}</p>
+                    </article>
+                  ))}
                 </div>
               </section>
 

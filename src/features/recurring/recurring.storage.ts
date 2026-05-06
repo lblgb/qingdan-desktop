@@ -6,6 +6,7 @@ import type {
   RecurringCadenceUnit,
   RecurringPeriod,
   RecurringTask,
+  RecurringTimerSession,
   RecurringTimeEntry,
   UpdateRecurringTaskInput,
   UpdateRecurringTimeEntryNoteInput,
@@ -15,6 +16,7 @@ const TASKS_STORAGE_KEY = 'qingdan.recurring.tasks'
 const PERIODS_STORAGE_KEY = 'qingdan.recurring.periods'
 const TIME_ENTRIES_STORAGE_KEY = 'qingdan.recurring.timeEntries'
 const LEGACY_ENTRIES_STORAGE_KEY = 'qingdan.recurring.entries'
+const TIMER_SESSION_STORAGE_KEY = 'qingdan.recurring.timerSession'
 
 const recurringTaskSchema = z.object({
   id: z.string(),
@@ -56,6 +58,15 @@ const legacyRecurringEntrySchema = z.object({
   content: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
+})
+
+const recurringTimerSessionSchema = z.object({
+  taskId: z.string(),
+  periodId: z.string(),
+  startedAt: z.string(),
+  runningSince: z.string(),
+  pausedAccumulatedMs: z.number().int().min(0),
+  isPaused: z.boolean(),
 })
 
 function isTauriRuntime() {
@@ -109,6 +120,37 @@ function loadLocalTimeEntriesRecord() {
 
 function saveLocalTimeEntriesRecord(entries: Record<string, RecurringTimeEntry[]>) {
   window.localStorage.setItem(TIME_ENTRIES_STORAGE_KEY, JSON.stringify(entries))
+}
+
+export function loadRecurringTimerSession(): RecurringTimerSession | null {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  const raw = window.localStorage.getItem(TIMER_SESSION_STORAGE_KEY)
+  if (!raw) {
+    return null
+  }
+
+  const parsed = JSON.parse(raw)
+  const result = recurringTimerSessionSchema.safeParse(parsed)
+  return result.success ? result.data : null
+}
+
+export function saveRecurringTimerSession(session: RecurringTimerSession) {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  window.localStorage.setItem(TIMER_SESSION_STORAGE_KEY, JSON.stringify(session))
+}
+
+export function clearRecurringTimerSession() {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  window.localStorage.removeItem(TIMER_SESSION_STORAGE_KEY)
 }
 
 function migrateLocalLegacyEntries() {
