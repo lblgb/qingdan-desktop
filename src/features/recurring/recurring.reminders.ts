@@ -54,6 +54,6 @@ function findCurrentPeriod(periods: RecurringPeriod[], now: dayjs.Dayjs) {
       const start = dayjs(period.startAt)
       const end = dayjs(period.endAt)
       return (start.isBefore(now) || start.isSame(now)) && end.isAfter(now)
-    }) ?? [...periods].sort((left, right) => right.startAt.localeCompare(left.startAt))[0] ?? null
+    }) ?? null
   )
 }
