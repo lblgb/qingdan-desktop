@@ -102,7 +102,7 @@ export function RecurringTaskList() {
   const [timerRunningSince, setTimerRunningSince] = useState<number | null>(null)
   const [timerPausedAccumulatedMs, setTimerPausedAccumulatedMs] = useState(0)
   const [timerPausedAt, setTimerPausedAt] = useState<number | null>(null)
-  const [timerTick, setTimerTick] = useState(0)
+  const [, setTimerTick] = useState(0)
   const [timerNote, setTimerNote] = useState('')
   const [recoveredSession, setRecoveredSession] = useState<RecurringTimerSession | null>(null)
 
@@ -795,7 +795,6 @@ export function RecurringTaskList() {
                 </div>
                 <strong className="recurring-timer-clock" aria-live="polite">
                   {formatMinutes(calculateTimerDurationMinutes())}
-                  <span className="is-hidden">{timerTick}</span>
                 </strong>
                 <div className="task-modal-button-row task-modal-console-button-row">
                   <button className="secondary-button" onClick={toggleTimerPause} type="button">

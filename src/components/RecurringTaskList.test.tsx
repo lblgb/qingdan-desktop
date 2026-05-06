@@ -76,6 +76,26 @@ describe('RecurringTaskList', () => {
     expect(container.querySelector('.recurring-timer-modal')?.textContent).toContain('周期任务计时')
   })
 
+  it('does not render ticking seconds in the timer modal', async () => {
+    vi.useFakeTimers()
+    await act(async () => {
+      root.render(<RecurringTaskList />)
+    })
+
+    const startButton = container.querySelector<HTMLButtonElement>('[data-testid="start-recurring-timer"]')
+    await act(async () => {
+      startButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    await act(async () => {
+      vi.advanceTimersByTime(3000)
+    })
+
+    expect(container.querySelector('.recurring-timer-clock .is-hidden')).toBeNull()
+    expect(container.querySelector('.recurring-timer-clock')?.textContent).toBe('0 分钟')
+    vi.useRealTimers()
+  })
+
   it('offers timer first, then detail, edit, and delete actions for recurring task rows', async () => {
     const removeTask = vi.fn().mockResolvedValue(undefined)
     useRecurringStore.setState({ removeTask })
