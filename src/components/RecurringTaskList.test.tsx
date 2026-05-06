@@ -25,6 +25,7 @@ describe('RecurringTaskList', () => {
           description: '写本周推进情况',
           cadenceUnit: 'week',
           cadenceInterval: 1,
+          targetMinutesPerPeriod: 420,
           remindAtEnd: true,
           isActive: true,
           createdAt: '2026-05-01T08:00:00.000Z',
@@ -44,7 +45,7 @@ describe('RecurringTaskList', () => {
           },
         ],
       },
-      entriesByPeriodId: {},
+      timeEntriesByPeriodId: {},
       selectedTaskId: 'recurring-1',
       selectedPeriodId: 'period-1',
       isLoading: false,
@@ -60,23 +61,22 @@ describe('RecurringTaskList', () => {
     vi.restoreAllMocks()
   })
 
-  it('opens a modal when submitting progress from a recurring task row', async () => {
+  it('opens a timer modal from a recurring task row', async () => {
     await act(async () => {
       root.render(<RecurringTaskList />)
     })
 
-    const submitButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === '提交进展')
-    expect(submitButton).toBeTruthy()
+    const startButton = container.querySelector<HTMLButtonElement>('[data-testid="start-recurring-timer"]')
+    expect(startButton).toBeTruthy()
 
     await act(async () => {
-      submitButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      startButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    expect(container.querySelector('#recurring-progress-title')?.textContent).toBe('提交进展')
-    expect(container.querySelector<HTMLTextAreaElement>('#recurring-progress-content')).toBeTruthy()
+    expect(container.querySelector('.recurring-timer-modal')?.textContent).toContain('周期任务计时')
   })
 
-  it('offers progress first, then detail, edit, and delete actions for recurring task rows', async () => {
+  it('offers timer first, then detail, edit, and delete actions for recurring task rows', async () => {
     const removeTask = vi.fn().mockResolvedValue(undefined)
     useRecurringStore.setState({ removeTask })
 
@@ -85,7 +85,7 @@ describe('RecurringTaskList', () => {
     })
 
     const buttons = Array.from(container.querySelectorAll('button')).map((button) => button.textContent)
-    expect(buttons.slice(0, 4)).toEqual(['提交进展', '详情', '编辑', '删除'])
+    expect(buttons.slice(0, 4)).toEqual(['开始计时', '详情', '编辑', '删除'])
 
     const detailButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === '详情')
     await act(async () => {
@@ -106,24 +106,57 @@ describe('RecurringTaskList', () => {
     expect(removeTask).toHaveBeenCalledWith('recurring-1')
   })
 
+  it('shows target, completed, and remaining minutes for recurring tasks', async () => {
+    useRecurringStore.setState({
+      timeEntriesByPeriodId: {
+        'period-1': [
+          {
+            id: 'time-1',
+            periodId: 'period-1',
+            startedAt: '2026-05-06T08:00:00.000Z',
+            endedAt: '2026-05-06T09:30:00.000Z',
+            durationMinutes: 90,
+            note: 'wrote tests',
+            createdAt: '2026-05-06T09:30:00.000Z',
+            updatedAt: '2026-05-06T09:30:00.000Z',
+          },
+        ],
+      },
+    })
+
+    await act(async () => {
+      root.render(<RecurringTaskList />)
+    })
+
+    expect(container.textContent).toContain('90 / 420')
+    expect(container.textContent).toContain('还差 5 小时 30 分钟')
+    expect(container.textContent).toContain('wrote tests')
+  })
+
   it('keeps the list compact and shows full history only in detail', async () => {
     useRecurringStore.setState({
       selectTask: vi.fn().mockResolvedValue(undefined),
       selectPeriod: vi.fn().mockResolvedValue(undefined),
-      entriesByPeriodId: {
+      timeEntriesByPeriodId: {
         'period-1': [
           {
-            id: 'entry-1',
+            id: 'time-1',
             periodId: 'period-1',
-            content: '完成了接口联调',
-            createdAt: '2026-05-02T08:00:00.000Z',
+            startedAt: '2026-05-02T08:00:00.000Z',
+            endedAt: '2026-05-02T09:00:00.000Z',
+            durationMinutes: 60,
+            note: '完成接口联调',
+            createdAt: '2026-05-02T09:00:00.000Z',
             updatedAt: '2026-05-02T09:00:00.000Z',
           },
           {
-            id: 'entry-2',
+            id: 'time-2',
             periodId: 'period-1',
-            content: '补了回归测试',
-            createdAt: '2026-05-03T08:00:00.000Z',
+            startedAt: '2026-05-03T08:00:00.000Z',
+            endedAt: '2026-05-03T09:00:00.000Z',
+            durationMinutes: 60,
+            note: '补了回归测试',
+            createdAt: '2026-05-03T09:00:00.000Z',
             updatedAt: '2026-05-03T09:00:00.000Z',
           },
         ],
@@ -143,6 +176,6 @@ describe('RecurringTaskList', () => {
     })
 
     expect(container.querySelector('.recurring-history-timeline')).toBeTruthy()
-    expect(container.querySelectorAll('.recurring-history-card')).toHaveLength(2)
+    expect(container.querySelectorAll('.recurring-entry-list li')).toHaveLength(2)
   })
 })

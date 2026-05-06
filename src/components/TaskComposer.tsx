@@ -40,6 +40,7 @@ export function TaskComposer() {
   const [recurringDescription, setRecurringDescription] = useState('')
   const [cadenceUnit, setCadenceUnit] = useState<RecurringCadenceUnit>('week')
   const [cadenceInterval, setCadenceInterval] = useState('1')
+  const [recurringTargetMinutes, setRecurringTargetMinutes] = useState('420')
 
   const menuRef = useRef<HTMLDivElement | null>(null)
 
@@ -121,6 +122,7 @@ export function TaskComposer() {
     setRecurringDescription('')
     setCadenceUnit('week')
     setCadenceInterval('1')
+    setRecurringTargetMinutes('420')
   }
 
   async function handleSubmitTask(event: React.FormEvent<HTMLFormElement>) {
@@ -171,6 +173,7 @@ export function TaskComposer() {
       description: recurringDescription.trim(),
       cadenceUnit,
       cadenceInterval: Math.max(1, Number(cadenceInterval) || 1),
+      targetMinutesPerPeriod: Math.max(1, Number(recurringTargetMinutes) || 420),
       remindAtEnd: true,
     })
 
@@ -391,6 +394,19 @@ export function TaskComposer() {
                     <option value="day">天</option>
                     <option value="week">周</option>
                   </select>
+                </label>
+
+                <label htmlFor="recurring-target-minutes">
+                  <span>每周期目标分钟数</span>
+                  <input
+                    id="recurring-target-minutes"
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={recurringTargetMinutes}
+                    onChange={(event) => setRecurringTargetMinutes(event.target.value)}
+                    disabled={isSubmittingRecurringTask}
+                  />
                 </label>
               </div>
 

@@ -18,15 +18,15 @@ export function TaskOverview() {
   const activeAction = useTaskStore((state) => state.activeAction)
   const recurringTasks = useRecurringStore((state) => state.tasks)
   const recurringPeriodsByTaskId = useRecurringStore((state) => state.periodsByTaskId)
-  const recurringEntriesByPeriodId = useRecurringStore((state) => state.entriesByPeriodId)
+  const recurringTimeEntriesByPeriodId = useRecurringStore((state) => state.timeEntriesByPeriodId)
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [trendMode, setTrendMode] = useState<'completed' | 'created-vs-completed'>('completed')
 
   const overview = buildTaskOverview(tasks)
   const recurringOverview = useMemo(
-    () => buildRecurringOverview(recurringTasks, recurringPeriodsByTaskId, recurringEntriesByPeriodId, new Date().toISOString()),
-    [recurringEntriesByPeriodId, recurringPeriodsByTaskId, recurringTasks],
+    () => buildRecurringOverview(recurringTasks, recurringPeriodsByTaskId, recurringTimeEntriesByPeriodId, new Date().toISOString()),
+    [recurringTimeEntriesByPeriodId, recurringPeriodsByTaskId, recurringTasks],
   )
   const trendMax = Math.max(
     1,
@@ -276,15 +276,15 @@ export function TaskOverview() {
                   </article>
                   <article className="overview-weekly-item">
                     <span>待提交周期</span>
-                    <strong>{recurringOverview.pendingPeriodCount}</strong>
+                    <strong>{recurringOverview.totalTargetMinutes}</strong>
                   </article>
                   <article className="overview-weekly-item">
                     <span>逾期未提交</span>
-                    <strong>{recurringOverview.overduePeriodCount}</strong>
+                    <strong>{recurringOverview.totalCompletedMinutes}</strong>
                   </article>
                   <article className="overview-weekly-item">
                     <span>进展记录数</span>
-                    <strong>{recurringOverview.progressEntryCount}</strong>
+                    <strong>{recurringOverview.totalRemainingMinutes}</strong>
                   </article>
                 </div>
               </section>
