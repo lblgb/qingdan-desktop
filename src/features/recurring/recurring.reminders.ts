@@ -1,5 +1,5 @@
 import dayjs from 'dayjs'
-import type { RecurringPeriod, RecurringProgressEntry, RecurringTask } from './recurring.types'
+import type { RecurringPeriod, RecurringTask, RecurringTimeEntry } from './recurring.types'
 
 export interface RecurringReminderItem {
   task: RecurringTask
@@ -14,7 +14,7 @@ export interface RecurringReminderSnapshot {
 export function deriveRecurringReminderSnapshot(
   tasks: RecurringTask[],
   periodsByTaskId: Record<string, RecurringPeriod[]>,
-  entriesByPeriodId: Record<string, RecurringProgressEntry[]>,
+  entriesByPeriodId: Record<string, RecurringTimeEntry[]>,
   nowIso: string,
 ): RecurringReminderSnapshot {
   const now = dayjs(nowIso)
@@ -28,7 +28,8 @@ export function deriveRecurringReminderSnapshot(
 
     for (const period of periodsByTaskId[task.id] ?? []) {
       const entries = entriesByPeriodId[period.id] ?? []
-      if (entries.length > 0) {
+      const completedMinutes = entries.reduce((total, entry) => total + entry.durationMinutes, 0)
+      if (completedMinutes >= task.targetMinutesPerPeriod) {
         continue
       }
 

@@ -29,6 +29,7 @@ describe('recurring.storage', () => {
       description: 'submit progress',
       cadenceUnit: 'week',
       cadenceInterval: 1,
+      targetMinutesPerPeriod: 420,
       remindAtEnd: true,
     })
 
@@ -38,7 +39,31 @@ describe('recurring.storage', () => {
         description: 'submit progress',
         cadenceUnit: 'week',
         cadenceInterval: 1,
+        targetMinutesPerPeriod: 420,
         remindAtEnd: true,
+      },
+    })
+  })
+
+  it('forwards recurring time entry creation to tauri', async () => {
+    mockInvoke.mockResolvedValueOnce([])
+    const { createRecurringTimeEntry } = await import('./recurring.storage')
+
+    await createRecurringTimeEntry({
+      periodId: 'period-1',
+      startedAt: '2026-05-02T08:00:00.000Z',
+      endedAt: '2026-05-02T09:30:00.000Z',
+      durationMinutes: 90,
+      note: 'read docs',
+    })
+
+    expect(mockInvoke).toHaveBeenCalledWith('create_recurring_time_entry', {
+      input: {
+        periodId: 'period-1',
+        startedAt: '2026-05-02T08:00:00.000Z',
+        endedAt: '2026-05-02T09:30:00.000Z',
+        durationMinutes: 90,
+        note: 'read docs',
       },
     })
   })

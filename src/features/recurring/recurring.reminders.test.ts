@@ -10,6 +10,7 @@ describe('recurring.reminders', () => {
       description: '',
       cadenceUnit: 'week',
       cadenceInterval: 1,
+      targetMinutesPerPeriod: 120,
       remindAtEnd: true,
       isActive: true,
       createdAt: '2026-05-01T08:00:00.000Z',
@@ -26,6 +27,53 @@ describe('recurring.reminders', () => {
     }
 
     const snapshot = deriveRecurringReminderSnapshot([task], { 'task-1': [period] }, {}, '2026-05-02T08:30:00.000Z')
+
+    expect(snapshot.pending).toHaveLength(1)
+    expect(snapshot.overdue).toHaveLength(1)
+  })
+
+  it('treats a period as pending until accumulated minutes meet the target', () => {
+    const task: RecurringTask = {
+      id: 'task-1',
+      title: 'Practice',
+      description: '',
+      cadenceUnit: 'week',
+      cadenceInterval: 1,
+      targetMinutesPerPeriod: 120,
+      remindAtEnd: true,
+      isActive: true,
+      createdAt: '2026-05-01T08:00:00.000Z',
+      updatedAt: '2026-05-01T08:00:00.000Z',
+    }
+    const period: RecurringPeriod = {
+      id: 'period-1',
+      taskId: 'task-1',
+      startAt: '2026-05-01T08:00:00.000Z',
+      endAt: '2026-05-02T08:00:00.000Z',
+      closedAt: null,
+      createdAt: '2026-05-01T08:00:00.000Z',
+      updatedAt: '2026-05-01T08:00:00.000Z',
+    }
+
+    const snapshot = deriveRecurringReminderSnapshot(
+      [task],
+      { 'task-1': [period] },
+      {
+        'period-1': [
+          {
+            id: 'entry-1',
+            periodId: 'period-1',
+            startedAt: '2026-05-01T09:00:00.000Z',
+            endedAt: '2026-05-01T10:00:00.000Z',
+            durationMinutes: 60,
+            note: '',
+            createdAt: '2026-05-01T10:00:00.000Z',
+            updatedAt: '2026-05-01T10:00:00.000Z',
+          },
+        ],
+      },
+      '2026-05-02T08:30:00.000Z',
+    )
 
     expect(snapshot.pending).toHaveLength(1)
     expect(snapshot.overdue).toHaveLength(1)

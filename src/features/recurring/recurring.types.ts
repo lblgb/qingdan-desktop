@@ -6,6 +6,7 @@ export interface RecurringTask {
   description: string
   cadenceUnit: RecurringCadenceUnit
   cadenceInterval: number
+  targetMinutesPerPeriod: number
   remindAtEnd: boolean
   isActive: boolean
   createdAt: string
@@ -22,10 +23,13 @@ export interface RecurringPeriod {
   updatedAt: string
 }
 
-export interface RecurringProgressEntry {
+export interface RecurringTimeEntry {
   id: string
   periodId: string
-  content: string
+  startedAt: string
+  endedAt: string
+  durationMinutes: number
+  note: string
   createdAt: string
   updatedAt: string
 }
@@ -35,6 +39,7 @@ export interface CreateRecurringTaskInput {
   description: string
   cadenceUnit: RecurringCadenceUnit
   cadenceInterval: number
+  targetMinutesPerPeriod: number
   remindAtEnd: boolean
 }
 
@@ -43,12 +48,24 @@ export interface UpdateRecurringTaskInput extends CreateRecurringTaskInput {
   isActive: boolean
 }
 
-export interface CreateRecurringProgressEntryInput {
+export interface CreateRecurringTimeEntryInput {
   periodId: string
-  content: string
+  startedAt: string
+  endedAt: string
+  durationMinutes: number
+  note: string
 }
 
-export interface UpdateRecurringProgressEntryInput {
+export interface UpdateRecurringTimeEntryNoteInput {
   id: string
-  content: string
+  note: string
+}
+
+export interface RecurringTimerSession {
+  taskId: string
+  periodId: string
+  startedAt: string
+  runningSince: string
+  pausedAccumulatedMs: number
+  isPaused: boolean
 }

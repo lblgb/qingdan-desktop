@@ -1,19 +1,19 @@
 import { invoke } from '@tauri-apps/api/core'
 import { z } from 'zod'
 import type {
-  CreateRecurringProgressEntryInput,
   CreateRecurringTaskInput,
+  CreateRecurringTimeEntryInput,
   RecurringCadenceUnit,
   RecurringPeriod,
-  RecurringProgressEntry,
   RecurringTask,
-  UpdateRecurringProgressEntryInput,
+  RecurringTimeEntry,
   UpdateRecurringTaskInput,
+  UpdateRecurringTimeEntryNoteInput,
 } from './recurring.types'
 
 const TASKS_STORAGE_KEY = 'qingdan.recurring.tasks'
 const PERIODS_STORAGE_KEY = 'qingdan.recurring.periods'
-const ENTRIES_STORAGE_KEY = 'qingdan.recurring.entries'
+const TIME_ENTRIES_STORAGE_KEY = 'qingdan.recurring.timeEntries'
 
 const recurringTaskSchema = z.object({
   id: z.string(),
@@ -21,6 +21,7 @@ const recurringTaskSchema = z.object({
   description: z.string(),
   cadenceUnit: z.enum(['minute', 'hour', 'day', 'week']),
   cadenceInterval: z.number().int().positive(),
+  targetMinutesPerPeriod: z.number().int().positive().default(420),
   remindAtEnd: z.boolean(),
   isActive: z.boolean(),
   createdAt: z.string(),
@@ -37,10 +38,13 @@ const recurringPeriodSchema = z.object({
   updatedAt: z.string(),
 })
 
-const recurringEntrySchema = z.object({
+const recurringTimeEntrySchema = z.object({
   id: z.string(),
   periodId: z.string(),
-  content: z.string(),
+  startedAt: z.string(),
+  endedAt: z.string(),
+  durationMinutes: z.number().int().min(0),
+  note: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
@@ -83,19 +87,19 @@ function saveLocalPeriodsRecord(periods: Record<string, RecurringPeriod[]>) {
   window.localStorage.setItem(PERIODS_STORAGE_KEY, JSON.stringify(periods))
 }
 
-function loadLocalEntriesRecord() {
-  const raw = window.localStorage.getItem(ENTRIES_STORAGE_KEY)
+function loadLocalTimeEntriesRecord() {
+  const raw = window.localStorage.getItem(TIME_ENTRIES_STORAGE_KEY)
   if (!raw) {
-    return {} as Record<string, RecurringProgressEntry[]>
+    return {} as Record<string, RecurringTimeEntry[]>
   }
 
   const parsed = JSON.parse(raw)
-  const result = z.record(z.string(), z.array(recurringEntrySchema)).safeParse(parsed)
+  const result = z.record(z.string(), z.array(recurringTimeEntrySchema)).safeParse(parsed)
   return result.success ? result.data : {}
 }
 
-function saveLocalEntriesRecord(entries: Record<string, RecurringProgressEntry[]>) {
-  window.localStorage.setItem(ENTRIES_STORAGE_KEY, JSON.stringify(entries))
+function saveLocalTimeEntriesRecord(entries: Record<string, RecurringTimeEntry[]>) {
+  window.localStorage.setItem(TIME_ENTRIES_STORAGE_KEY, JSON.stringify(entries))
 }
 
 function toCadenceMs(unit: RecurringCadenceUnit, interval: number) {
@@ -177,6 +181,7 @@ export async function createRecurringTask(input: CreateRecurringTaskInput): Prom
       description: input.description.trim(),
       cadenceUnit: input.cadenceUnit,
       cadenceInterval: input.cadenceInterval,
+      targetMinutesPerPeriod: input.targetMinutesPerPeriod,
       remindAtEnd: input.remindAtEnd,
       isActive: true,
       createdAt: timestamp,
@@ -202,6 +207,7 @@ export async function updateRecurringTask(input: UpdateRecurringTaskInput): Prom
           description: input.description.trim(),
           cadenceUnit: input.cadenceUnit,
           cadenceInterval: input.cadenceInterval,
+          targetMinutesPerPeriod: input.targetMinutesPerPeriod,
           remindAtEnd: input.remindAtEnd,
           isActive: input.isActive,
           updatedAt: new Date().toISOString(),
@@ -223,14 +229,14 @@ export async function deleteRecurringTask(taskId: string): Promise<RecurringTask
 
   const tasks = loadLocalTasks().filter((task) => task.id !== taskId)
   const periods = loadLocalPeriodsRecord()
-  const entries = loadLocalEntriesRecord()
+  const entries = loadLocalTimeEntriesRecord()
   for (const period of periods[taskId] ?? []) {
     delete entries[period.id]
   }
   delete periods[taskId]
   saveLocalTasks(tasks)
   saveLocalPeriodsRecord(periods)
-  saveLocalEntriesRecord(entries)
+  saveLocalTimeEntriesRecord(entries)
   return tasks
 }
 
@@ -247,55 +253,72 @@ export async function listRecurringPeriods(taskId: string): Promise<RecurringPer
   return [...syncLocalPeriods(task)].sort((left, right) => right.startAt.localeCompare(left.startAt))
 }
 
-export async function listRecurringProgressEntries(periodId: string): Promise<RecurringProgressEntry[]> {
+export async function listRecurringTimeEntries(periodId: string): Promise<RecurringTimeEntry[]> {
   if (isTauriRuntime()) {
-    return invoke<RecurringProgressEntry[]>('list_recurring_progress_entries', { periodId })
+    return invoke<RecurringTimeEntry[]>('list_recurring_time_entries', { periodId })
   }
 
-  const entries = loadLocalEntriesRecord()
+  const entries = loadLocalTimeEntriesRecord()
   return entries[periodId] ?? []
 }
 
-export async function createRecurringProgressEntry(
-  input: CreateRecurringProgressEntryInput,
-): Promise<RecurringProgressEntry[]> {
+export async function createRecurringTimeEntry(input: CreateRecurringTimeEntryInput): Promise<RecurringTimeEntry[]> {
   if (isTauriRuntime()) {
-    return invoke<RecurringProgressEntry[]>('create_recurring_progress_entry', { input })
+    return invoke<RecurringTimeEntry[]>('create_recurring_time_entry', { input })
   }
 
-  const allEntries = loadLocalEntriesRecord()
+  const allEntries = loadLocalTimeEntriesRecord()
   const timestamp = new Date().toISOString()
   const nextEntries = [
     {
       id: crypto.randomUUID(),
       periodId: input.periodId,
-      content: input.content.trim(),
+      startedAt: input.startedAt,
+      endedAt: input.endedAt,
+      durationMinutes: input.durationMinutes,
+      note: input.note.trim(),
       createdAt: timestamp,
       updatedAt: timestamp,
     },
     ...(allEntries[input.periodId] ?? []),
   ]
   allEntries[input.periodId] = nextEntries
-  saveLocalEntriesRecord(allEntries)
+  saveLocalTimeEntriesRecord(allEntries)
   return nextEntries
 }
 
-export async function updateRecurringProgressEntry(
-  input: UpdateRecurringProgressEntryInput,
-): Promise<RecurringProgressEntry[]> {
+export async function updateRecurringTimeEntryNote(
+  input: UpdateRecurringTimeEntryNoteInput,
+): Promise<RecurringTimeEntry[]> {
   if (isTauriRuntime()) {
-    return invoke<RecurringProgressEntry[]>('update_recurring_progress_entry', { input })
+    return invoke<RecurringTimeEntry[]>('update_recurring_time_entry_note', { input })
   }
 
-  const allEntries = loadLocalEntriesRecord()
+  const allEntries = loadLocalTimeEntriesRecord()
   const periodId = Object.keys(allEntries).find((key) => allEntries[key].some((entry) => entry.id === input.id))
   if (!periodId) {
     return []
   }
 
   allEntries[periodId] = allEntries[periodId].map((entry) =>
-    entry.id === input.id ? { ...entry, content: input.content.trim(), updatedAt: new Date().toISOString() } : entry,
+    entry.id === input.id ? { ...entry, note: input.note.trim(), updatedAt: new Date().toISOString() } : entry,
   )
-  saveLocalEntriesRecord(allEntries)
+  saveLocalTimeEntriesRecord(allEntries)
+  return allEntries[periodId]
+}
+
+export async function deleteRecurringTimeEntry(entryId: string): Promise<RecurringTimeEntry[]> {
+  if (isTauriRuntime()) {
+    return invoke<RecurringTimeEntry[]>('delete_recurring_time_entry', { entryId })
+  }
+
+  const allEntries = loadLocalTimeEntriesRecord()
+  const periodId = Object.keys(allEntries).find((key) => allEntries[key].some((entry) => entry.id === entryId))
+  if (!periodId) {
+    return []
+  }
+
+  allEntries[periodId] = allEntries[periodId].filter((entry) => entry.id !== entryId)
+  saveLocalTimeEntriesRecord(allEntries)
   return allEntries[periodId]
 }

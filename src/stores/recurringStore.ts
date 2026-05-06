@@ -1,29 +1,30 @@
 import { create } from 'zustand'
 import { buildRecurringOverview } from '../features/recurring/recurring.overview'
 import {
-  createRecurringProgressEntry,
   createRecurringTask,
+  createRecurringTimeEntry,
   deleteRecurringTask,
+  deleteRecurringTimeEntry,
   listRecurringPeriods,
-  listRecurringProgressEntries,
   listRecurringTasks,
-  updateRecurringProgressEntry,
+  listRecurringTimeEntries,
   updateRecurringTask,
+  updateRecurringTimeEntryNote,
 } from '../features/recurring/recurring.storage'
 import type {
-  CreateRecurringProgressEntryInput,
   CreateRecurringTaskInput,
+  CreateRecurringTimeEntryInput,
   RecurringPeriod,
-  RecurringProgressEntry,
   RecurringTask,
-  UpdateRecurringProgressEntryInput,
+  RecurringTimeEntry,
   UpdateRecurringTaskInput,
+  UpdateRecurringTimeEntryNoteInput,
 } from '../features/recurring/recurring.types'
 
 interface RecurringState {
   tasks: RecurringTask[]
   periodsByTaskId: Record<string, RecurringPeriod[]>
-  entriesByPeriodId: Record<string, RecurringProgressEntry[]>
+  timeEntriesByPeriodId: Record<string, RecurringTimeEntry[]>
   selectedTaskId: string | null
   selectedPeriodId: string | null
   isCenterOpen: boolean
@@ -37,15 +38,16 @@ interface RecurringState {
   addTask: (input: CreateRecurringTaskInput) => Promise<void>
   saveTask: (input: UpdateRecurringTaskInput) => Promise<void>
   removeTask: (taskId: string) => Promise<void>
-  addEntry: (input: CreateRecurringProgressEntryInput) => Promise<void>
-  saveEntry: (input: UpdateRecurringProgressEntryInput) => Promise<void>
+  addTimeEntry: (input: CreateRecurringTimeEntryInput) => Promise<void>
+  saveTimeEntryNote: (input: UpdateRecurringTimeEntryNoteInput) => Promise<void>
+  removeTimeEntry: (entryId: string) => Promise<void>
   overview: (nowIso?: string) => ReturnType<typeof buildRecurringOverview>
 }
 
 export const useRecurringStore = create<RecurringState>((set, get) => ({
   tasks: [],
   periodsByTaskId: {},
-  entriesByPeriodId: {},
+  timeEntriesByPeriodId: {},
   selectedTaskId: null,
   selectedPeriodId: null,
   isCenterOpen: false,
@@ -80,11 +82,11 @@ export const useRecurringStore = create<RecurringState>((set, get) => ({
     }
   },
   selectPeriod: async (periodId) => {
-    const entries = await listRecurringProgressEntries(periodId)
+    const entries = await listRecurringTimeEntries(periodId)
     set((state) => ({
       selectedPeriodId: periodId,
-      entriesByPeriodId: {
-        ...state.entriesByPeriodId,
+      timeEntriesByPeriodId: {
+        ...state.timeEntriesByPeriodId,
         [periodId]: entries,
       },
     }))
@@ -110,51 +112,70 @@ export const useRecurringStore = create<RecurringState>((set, get) => ({
     const tasks = await deleteRecurringTask(taskId)
     set((state) => {
       const periodsByTaskId = { ...state.periodsByTaskId }
-      const entriesByPeriodId = { ...state.entriesByPeriodId }
+      const timeEntriesByPeriodId = { ...state.timeEntriesByPeriodId }
       delete periodsByTaskId[taskId]
       for (const period of removedPeriods) {
-        delete entriesByPeriodId[period.id]
+        delete timeEntriesByPeriodId[period.id]
       }
       const selectedTaskId = state.selectedTaskId === taskId ? tasks[0]?.id ?? null : state.selectedTaskId
       return {
         tasks,
         periodsByTaskId,
-        entriesByPeriodId,
+        timeEntriesByPeriodId,
         selectedTaskId,
         selectedPeriodId: selectedTaskId === state.selectedTaskId ? state.selectedPeriodId : null,
         isMutating: false,
       }
     })
   },
-  addEntry: async (input) => {
+  addTimeEntry: async (input) => {
     set({ isMutating: true })
-    const entries = await createRecurringProgressEntry(input)
+    const entries = await createRecurringTimeEntry(input)
     set((state) => ({
       isMutating: false,
-      entriesByPeriodId: {
-        ...state.entriesByPeriodId,
+      timeEntriesByPeriodId: {
+        ...state.timeEntriesByPeriodId,
         [input.periodId]: entries,
       },
     }))
   },
-  saveEntry: async (input) => {
+  saveTimeEntryNote: async (input) => {
     set({ isMutating: true })
-    const periodId = Object.keys(get().entriesByPeriodId).find((key) =>
-      (get().entriesByPeriodId[key] ?? []).some((entry) => entry.id === input.id),
+    const periodId = Object.keys(get().timeEntriesByPeriodId).find((key) =>
+      (get().timeEntriesByPeriodId[key] ?? []).some((entry) => entry.id === input.id),
     )
-    const entries = await updateRecurringProgressEntry(input)
+    const entries = await updateRecurringTimeEntryNote(input)
     if (!periodId) {
       set({ isMutating: false })
       return
     }
     set((state) => ({
       isMutating: false,
-      entriesByPeriodId: {
-        ...state.entriesByPeriodId,
+      timeEntriesByPeriodId: {
+        ...state.timeEntriesByPeriodId,
+        [periodId]: entries,
+      },
+    }))
+  },
+  removeTimeEntry: async (entryId) => {
+    set({ isMutating: true })
+    const periodId = Object.keys(get().timeEntriesByPeriodId).find((key) =>
+      (get().timeEntriesByPeriodId[key] ?? []).some((entry) => entry.id === entryId),
+    )
+    const entries = await deleteRecurringTimeEntry(entryId)
+    if (!periodId) {
+      set({ isMutating: false })
+      return
+    }
+
+    set((state) => ({
+      isMutating: false,
+      timeEntriesByPeriodId: {
+        ...state.timeEntriesByPeriodId,
         [periodId]: entries,
       },
     }))
   },
   overview: (nowIso = new Date().toISOString()) =>
-    buildRecurringOverview(get().tasks, get().periodsByTaskId, get().entriesByPeriodId, nowIso),
+    buildRecurringOverview(get().tasks, get().periodsByTaskId, get().timeEntriesByPeriodId, nowIso),
 }))
