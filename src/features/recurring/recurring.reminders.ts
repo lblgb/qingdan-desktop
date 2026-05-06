@@ -26,21 +26,34 @@ export function deriveRecurringReminderSnapshot(
       continue
     }
 
-    for (const period of periodsByTaskId[task.id] ?? []) {
-      const entries = entriesByPeriodId[period.id] ?? []
-      const completedMinutes = entries.reduce((total, entry) => total + entry.durationMinutes, 0)
-      if (completedMinutes >= task.targetMinutesPerPeriod) {
-        continue
-      }
+    const period = findCurrentPeriod(periodsByTaskId[task.id] ?? [], now)
+    if (!period) {
+      continue
+    }
 
-      const item = { task, period }
-      pending.push(item)
+    const entries = entriesByPeriodId[period.id] ?? []
+    const completedMinutes = entries.reduce((total, entry) => total + entry.durationMinutes, 0)
+    if (completedMinutes >= task.targetMinutesPerPeriod) {
+      continue
+    }
 
-      if (task.remindAtEnd && dayjs(period.endAt).isBefore(now)) {
-        overdue.push(item)
-      }
+    const item = { task, period }
+    pending.push(item)
+
+    if (task.remindAtEnd && dayjs(period.endAt).isBefore(now)) {
+      overdue.push(item)
     }
   }
 
   return { pending, overdue }
+}
+
+function findCurrentPeriod(periods: RecurringPeriod[], now: dayjs.Dayjs) {
+  return (
+    periods.find((period) => {
+      const start = dayjs(period.startAt)
+      const end = dayjs(period.endAt)
+      return (start.isBefore(now) || start.isSame(now)) && end.isAfter(now)
+    }) ?? [...periods].sort((left, right) => right.startAt.localeCompare(left.startAt))[0] ?? null
+  )
 }

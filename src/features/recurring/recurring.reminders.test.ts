@@ -78,4 +78,47 @@ describe('recurring.reminders', () => {
     expect(snapshot.pending).toHaveLength(1)
     expect(snapshot.overdue).toHaveLength(1)
   })
+
+  it('only evaluates the current period for reminder state', () => {
+    const task: RecurringTask = {
+      id: 'task-1',
+      title: 'Practice',
+      description: '',
+      cadenceUnit: 'week',
+      cadenceInterval: 1,
+      targetMinutesPerPeriod: 120,
+      remindAtEnd: true,
+      isActive: true,
+      createdAt: '2026-05-01T08:00:00.000Z',
+      updatedAt: '2026-05-01T08:00:00.000Z',
+    }
+    const previousPeriod: RecurringPeriod = {
+      id: 'period-old',
+      taskId: 'task-1',
+      startAt: '2026-05-01T08:00:00.000Z',
+      endAt: '2026-05-08T08:00:00.000Z',
+      closedAt: null,
+      createdAt: '2026-05-01T08:00:00.000Z',
+      updatedAt: '2026-05-01T08:00:00.000Z',
+    }
+    const currentPeriod: RecurringPeriod = {
+      id: 'period-current',
+      taskId: 'task-1',
+      startAt: '2026-05-08T08:00:00.000Z',
+      endAt: '2026-05-15T08:00:00.000Z',
+      closedAt: null,
+      createdAt: '2026-05-08T08:00:00.000Z',
+      updatedAt: '2026-05-08T08:00:00.000Z',
+    }
+
+    const snapshot = deriveRecurringReminderSnapshot(
+      [task],
+      { 'task-1': [currentPeriod, previousPeriod] },
+      {},
+      '2026-05-10T08:00:00.000Z',
+    )
+
+    expect(snapshot.pending.map((item) => item.period.id)).toEqual(['period-current'])
+    expect(snapshot.overdue).toHaveLength(0)
+  })
 })
