@@ -56,14 +56,21 @@ export const useRecurringStore = create<RecurringState>((set, get) => ({
   hydrate: async () => {
     set({ isLoading: true })
     const tasks = await listRecurringTasks()
+    const periodPairs = await Promise.all(tasks.map(async (task) => [task.id, await listRecurringPeriods(task.id)] as const))
+    const periodsByTaskId = Object.fromEntries(periodPairs)
+    const entryPairs = await Promise.all(
+      periodPairs.flatMap(([, periods]) => periods.map(async (period) => [period.id, await listRecurringTimeEntries(period.id)] as const)),
+    )
+    const timeEntriesByPeriodId = Object.fromEntries(entryPairs)
+    const selectedTaskId = get().selectedTaskId ?? tasks[0]?.id ?? null
     set({
       tasks,
+      periodsByTaskId,
+      timeEntriesByPeriodId,
       isLoading: false,
-      selectedTaskId: get().selectedTaskId ?? tasks[0]?.id ?? null,
+      selectedTaskId,
+      selectedPeriodId: selectedTaskId ? periodsByTaskId[selectedTaskId]?.[0]?.id ?? null : null,
     })
-    if ((get().selectedTaskId ?? tasks[0]?.id) != null) {
-      await get().selectTask(get().selectedTaskId ?? tasks[0].id)
-    }
   },
   openCenter: () => set({ isCenterOpen: true }),
   closeCenter: () => set({ isCenterOpen: false }),

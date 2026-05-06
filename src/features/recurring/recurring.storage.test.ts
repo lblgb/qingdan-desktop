@@ -14,6 +14,7 @@ describe('recurring.storage', () => {
   beforeEach(() => {
     vi.resetModules()
     vi.clearAllMocks()
+    window.localStorage.clear()
     Object.defineProperty(window, '__TAURI_INTERNALS__', {
       configurable: true,
       value: {},
@@ -66,5 +67,56 @@ describe('recurring.storage', () => {
         note: 'read docs',
       },
     })
+  })
+
+  it('rejects invalid local recurring time entries before saving', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (window as any).__TAURI_INTERNALS__
+    const { createRecurringTimeEntry } = await import('./recurring.storage')
+
+    await expect(
+      createRecurringTimeEntry({
+        periodId: 'period-1',
+        startedAt: '2026-05-02T09:30:00.000Z',
+        endedAt: '2026-05-02T08:00:00.000Z',
+        durationMinutes: 0,
+        note: 'invalid',
+      }),
+    ).rejects.toThrow('duration')
+  })
+
+  it('migrates legacy local progress entries into zero-minute time entries', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (window as any).__TAURI_INTERNALS__
+    window.localStorage.setItem(
+      'qingdan.recurring.entries',
+      JSON.stringify({
+        'period-1': [
+          {
+            id: 'legacy-1',
+            periodId: 'period-1',
+            content: 'old note',
+            createdAt: '2026-05-02T08:00:00.000Z',
+            updatedAt: '2026-05-02T09:00:00.000Z',
+          },
+        ],
+      }),
+    )
+    const { listRecurringTimeEntries } = await import('./recurring.storage')
+
+    const entries = await listRecurringTimeEntries('period-1')
+
+    expect(entries).toEqual([
+      {
+        id: 'legacy-1',
+        periodId: 'period-1',
+        startedAt: '2026-05-02T08:00:00.000Z',
+        endedAt: '2026-05-02T08:00:00.000Z',
+        durationMinutes: 0,
+        note: 'old note',
+        createdAt: '2026-05-02T08:00:00.000Z',
+        updatedAt: '2026-05-02T09:00:00.000Z',
+      },
+    ])
   })
 })

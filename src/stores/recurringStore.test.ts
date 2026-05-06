@@ -98,4 +98,77 @@ describe('recurringStore', () => {
 
     expect(useRecurringStore.getState().timeEntriesByPeriodId['period-1'][0].durationMinutes).toBe(90)
   })
+
+  it('hydrates periods and time entries for all recurring tasks so overview totals are complete', async () => {
+    const { useRecurringStore } = await loadStore()
+    mockListRecurringTasks.mockResolvedValueOnce([
+      {
+        id: 'task-1',
+        title: 'Weekly report',
+        description: '',
+        cadenceUnit: 'week',
+        cadenceInterval: 1,
+        targetMinutesPerPeriod: 420,
+        remindAtEnd: true,
+        isActive: true,
+        createdAt: '2026-05-01T08:00:00.000Z',
+        updatedAt: '2026-05-01T08:00:00.000Z',
+      },
+      {
+        id: 'task-2',
+        title: 'Practice',
+        description: '',
+        cadenceUnit: 'week',
+        cadenceInterval: 1,
+        targetMinutesPerPeriod: 120,
+        remindAtEnd: true,
+        isActive: true,
+        createdAt: '2026-05-01T08:00:00.000Z',
+        updatedAt: '2026-05-01T08:00:00.000Z',
+      },
+    ])
+    mockListRecurringPeriods
+      .mockResolvedValueOnce([
+        {
+          id: 'period-1',
+          taskId: 'task-1',
+          startAt: '2026-05-01T08:00:00.000Z',
+          endAt: '2026-05-08T08:00:00.000Z',
+          closedAt: null,
+          createdAt: '2026-05-01T08:00:00.000Z',
+          updatedAt: '2026-05-01T08:00:00.000Z',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 'period-2',
+          taskId: 'task-2',
+          startAt: '2026-05-01T08:00:00.000Z',
+          endAt: '2026-05-08T08:00:00.000Z',
+          closedAt: null,
+          createdAt: '2026-05-01T08:00:00.000Z',
+          updatedAt: '2026-05-01T08:00:00.000Z',
+        },
+      ])
+    mockListRecurringTimeEntries.mockResolvedValueOnce([]).mockResolvedValueOnce([
+      {
+        id: 'entry-2',
+        periodId: 'period-2',
+        startedAt: '2026-05-02T08:00:00.000Z',
+        endedAt: '2026-05-02T09:00:00.000Z',
+        durationMinutes: 60,
+        note: 'practice',
+        createdAt: '2026-05-02T09:00:00.000Z',
+        updatedAt: '2026-05-02T09:00:00.000Z',
+      },
+    ])
+
+    await useRecurringStore.getState().hydrate()
+
+    const overview = useRecurringStore.getState().overview('2026-05-02T10:00:00.000Z')
+    expect(overview.totalTargetMinutes).toBe(540)
+    expect(overview.totalCompletedMinutes).toBe(60)
+    expect(mockListRecurringPeriods).toHaveBeenCalledTimes(2)
+    expect(mockListRecurringTimeEntries).toHaveBeenCalledTimes(2)
+  })
 })

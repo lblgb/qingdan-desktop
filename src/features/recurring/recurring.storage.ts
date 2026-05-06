@@ -14,6 +14,7 @@ import type {
 const TASKS_STORAGE_KEY = 'qingdan.recurring.tasks'
 const PERIODS_STORAGE_KEY = 'qingdan.recurring.periods'
 const TIME_ENTRIES_STORAGE_KEY = 'qingdan.recurring.timeEntries'
+const LEGACY_ENTRIES_STORAGE_KEY = 'qingdan.recurring.entries'
 
 const recurringTaskSchema = z.object({
   id: z.string(),
@@ -45,6 +46,14 @@ const recurringTimeEntrySchema = z.object({
   endedAt: z.string(),
   durationMinutes: z.number().int().min(0),
   note: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+})
+
+const legacyRecurringEntrySchema = z.object({
+  id: z.string(),
+  periodId: z.string(),
+  content: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
@@ -90,7 +99,7 @@ function saveLocalPeriodsRecord(periods: Record<string, RecurringPeriod[]>) {
 function loadLocalTimeEntriesRecord() {
   const raw = window.localStorage.getItem(TIME_ENTRIES_STORAGE_KEY)
   if (!raw) {
-    return {} as Record<string, RecurringTimeEntry[]>
+    return migrateLocalLegacyEntries()
   }
 
   const parsed = JSON.parse(raw)
@@ -100,6 +109,46 @@ function loadLocalTimeEntriesRecord() {
 
 function saveLocalTimeEntriesRecord(entries: Record<string, RecurringTimeEntry[]>) {
   window.localStorage.setItem(TIME_ENTRIES_STORAGE_KEY, JSON.stringify(entries))
+}
+
+function migrateLocalLegacyEntries() {
+  const raw = window.localStorage.getItem(LEGACY_ENTRIES_STORAGE_KEY)
+  if (!raw) {
+    return {} as Record<string, RecurringTimeEntry[]>
+  }
+
+  const parsed = JSON.parse(raw)
+  const result = z.record(z.string(), z.array(legacyRecurringEntrySchema)).safeParse(parsed)
+  if (!result.success) {
+    return {} as Record<string, RecurringTimeEntry[]>
+  }
+
+  const migrated = Object.fromEntries(
+    Object.entries(result.data).map(([periodId, entries]) => [
+      periodId,
+      entries.map((entry) => ({
+        id: entry.id,
+        periodId: entry.periodId,
+        startedAt: entry.createdAt,
+        endedAt: entry.createdAt,
+        durationMinutes: 0,
+        note: entry.content,
+        createdAt: entry.createdAt,
+        updatedAt: entry.updatedAt,
+      })),
+    ]),
+  )
+  saveLocalTimeEntriesRecord(migrated)
+  return migrated
+}
+
+function validateTimeEntryInput(input: CreateRecurringTimeEntryInput) {
+  if (input.durationMinutes < 1) {
+    throw new Error('recurring time entry duration must be at least 1 minute')
+  }
+  if (new Date(input.startedAt).getTime() > new Date(input.endedAt).getTime()) {
+    throw new Error('recurring time entry start cannot be after end')
+  }
 }
 
 function toCadenceMs(unit: RecurringCadenceUnit, interval: number) {
@@ -263,6 +312,8 @@ export async function listRecurringTimeEntries(periodId: string): Promise<Recurr
 }
 
 export async function createRecurringTimeEntry(input: CreateRecurringTimeEntryInput): Promise<RecurringTimeEntry[]> {
+  validateTimeEntryInput(input)
+
   if (isTauriRuntime()) {
     return invoke<RecurringTimeEntry[]>('create_recurring_time_entry', { input })
   }
